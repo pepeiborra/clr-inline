@@ -7,7 +7,6 @@ module Clr (invokeS, MethodS(..), invokeI, MethodI(..), module Clr.Prim, module 
 import Clr.Resolver
 import Clr.Common
 import Clr.Bridge
-import Clr.Marshal
 import Clr.Prim
 
 import Foreign.C

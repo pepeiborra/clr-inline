@@ -15,7 +15,7 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Clr, Clr.Bridge, Clr.Common, Clr.Marshal, Clr.Prim, Clr.Resolver
+  exposed-modules:     Clr, Clr.Bridge, Clr.Common, Clr.Prim, Clr.Resolver
   other-modules:
   build-depends:       base >= 4.7 && < 5, tuple
   default-language:    Haskell2010
