@@ -2,12 +2,14 @@
 {-# LANGUAGE FlexibleInstances, FlexibleContexts, ScopedTypeVariables, ExistentialQuantification #-}
 {-# LANGUAGE UndecidableInstances, TypeApplications, AllowAmbiguousTypes, TypeInType, TypeFamilyDependencies, FunctionalDependencies #-}
 
-module Clr (invokeS, MethodS(..), invokeI, MethodI(..), module Clr.Prim, module Clr.Common ) where
+module Clr (invokeS, MethodS(..), invokeI, MethodI(..), Members, SuperTypeOf, ObjectID, Object(..) ) where
 
-import Clr.Resolver
 import Clr.Common
 import Clr.Bridge
 import Clr.Prim
+import Clr.ListTuple
+import Clr.Curry
+import Clr.Marshal
 
 import Foreign.C
 import Data.Int
@@ -19,48 +21,79 @@ import Data.Type.Bool
 import Data.Type.Equality
 import Data.Kind
 
-import Data.Tuple.Curry
+import Unsafe.Coerce
+
+type family BridgeTypeM (x::Maybe Symbol) :: Type where
+  BridgeTypeM 'Nothing = ()
+  BridgeTypeM ('Just x) = BridgeType x
+
+type family BridgeType (x::Symbol) :: Type where
+  BridgeType a = If (IsPrimType a) (BridgeTypePrim a) ObjectID
+
+type family BridgeTypePrim (x::Symbol)
+
+type instance BridgeTypePrim "System.String"  = CString
+type instance BridgeTypePrim "System.Int16"   = Int16
+type instance BridgeTypePrim "System.UInt16"  = Word16
+type instance BridgeTypePrim "System.Int32"   = Int32
+type instance BridgeTypePrim "System.UInt32"  = Word32
+type instance BridgeTypePrim "System.Int64"   = Int64
+type instance BridgeTypePrim "System.UInt64"  = Word64
+type instance BridgeTypePrim "System.IntPtr"  = IntPtr
+type instance BridgeTypePrim "System.UIntPtr" = WordPtr
+type instance BridgeTypePrim "System.Char"    = Char
+type instance BridgeTypePrim "System.Single"  = CFloat
+type instance BridgeTypePrim "System.Double"  = CDouble
+
+type family BridgeTypeL (a::[Symbol]) :: [Type] where
+  BridgeTypeL '[] = '[]
+  BridgeTypeL (x ': xs) = BridgeType x ': BridgeTypeL xs
+
+type family BridgeTypes (x::[Symbol]) :: Type where
+  BridgeTypes x = ListToTuple (BridgeTypeL x)
+
+type instance SuperTypeOf "System.Object"    = 'Nothing
+type instance SuperTypeOf "System.ValueType" = 'Just "System.Object"
+
+type instance SuperTypeOf "System.String"  = 'Just "System.Object"
+type instance SuperTypeOf "System.Int16"   = 'Just "System.ValueType"
+type instance SuperTypeOf "System.UInt16"  = 'Just "System.ValueType"
+type instance SuperTypeOf "System.Int32"   = 'Just "System.ValueType"
+type instance SuperTypeOf "System.UInt32"  = 'Just "System.ValueType"
+type instance SuperTypeOf "System.Int64"   = 'Just "System.ValueType"
+type instance SuperTypeOf "System.UInt64"  = 'Just "System.ValueType"
+type instance SuperTypeOf "System.IntPtr"  = 'Just "System.ValueType"
+type instance SuperTypeOf "System.UIntPtr" = 'Just "System.ValueType"
+type instance SuperTypeOf "System.Char"    = 'Just "System.ValueType"
+type instance SuperTypeOf "System.Single"  = 'Just "System.ValueType"
+type instance SuperTypeOf "System.Double"  = 'Just "System.ValueType"
 
 
-type family TupleSize (x::k) :: Nat where
-  TupleSize (a,b,c,d) = 4
-  TupleSize (a,b,c) = 3
-  TupleSize (a,b) = 2
-  TupleSize (a) = 1
+type ObjectID = Int64
 
-type family ListSize (x::[k]) :: Nat where
-  ListSize '[a, b, c, d, e, f] = 6
-  ListSize '[a, b, c, d, e] = 5
-  ListSize '[a, b, c, d] = 4
-  ListSize '[a, b, c] = 3
-  ListSize '[a, b] = 2
-  ListSize '[a] = 1
+data Object (typ::Symbol) = Object ObjectID
 
-type family CurryT x r where
-  CurryT (a,b,c,d) r = a -> b -> c -> d -> r
-  CurryT (a,b,c) r = a -> b -> c -> r
-  CurryT (a,b) r = a -> b -> r
-  CurryT a r = a -> r
+type family SuperTypeOf (t::Symbol) :: Maybe Symbol
 
-class Curry' (n::Nat) a b | n b -> a, n a -> b where
-  curryN' :: a -> b
-  uncurryN' :: b -> a
+type family SuperTypesOf' (t :: Maybe Symbol) :: [Maybe Symbol] where
+  SuperTypesOf' ('Just x) = (SuperTypeOf x) ': (SuperTypesOf' (SuperTypeOf x))
+  SuperTypesOf' 'Nothing  = '[]
 
-instance Curry' 1 (a -> r) (a -> r) where
-  curryN' = id
-  uncurryN' = id
+type family SuperTypesOf (t :: Symbol) :: [Symbol] where
+  SuperTypesOf x = UnMaybeList (SuperTypesOf' ('Just x))
 
-instance Curry' 2 ((a,b) -> r) (a -> b -> r)  where
-  curryN' = curryN
-  uncurryN' = uncurryN
+type family InheritsFrom (t1 :: Symbol) (t2 :: Symbol) :: Bool where
+  InheritsFrom t1 t2 = t1 == t2 || Elem t2 (SuperTypesOf t1)
 
-instance Curry' 3 ((a,b,c) -> r) (a -> b -> c -> r)  where
-  curryN' = curryN
-  uncurryN' = uncurryN
+type family IsValueType (a::Symbol) :: Bool where
+  IsValueType a = a `InheritsFrom` "System.ValueType"
 
-instance Curry' 4 ((a,b,c,d) -> r) (a -> b -> c -> d -> r)  where
-  curryN' = curryN
-  uncurryN' = uncurryN
+type family IsPrimType (a::Symbol) :: Bool where
+  IsPrimType "System.String" = True
+  IsPrimType  a              = IsValueType a
+
+type family IsRefType (a::Symbol) :: Bool where
+  IsRefType a = Not (IsValueType a)
 
 
 class MethodS (t::Symbol) (m::Symbol) (args::[Symbol]) where
@@ -71,8 +104,28 @@ class MethodI (t::Symbol) (m::Symbol) (args::[Symbol]) where
   type ResultTypeI t m args :: Maybe Symbol
   rawInvokeI :: (BridgeType t) -> CurryT (BridgeTypes args) (IO (BridgeTypeM (ResultTypeI t m args)))
 
+type family HasMember (t::Symbol) (m::Symbol) :: Bool where
+  HasMember t m = m `Elem` (Members t)
 
-invokeS :: forall m t args args'. ( Resolve t m args' ~ args
+type family UnBridgeType (t::Type) :: [Symbol] where
+  UnBridgeType String = '["System.String"]
+  UnBridgeType Int32 = '["System.Int32"]
+  UnBridgeType Int64 = '["System.Int64"]
+  UnBridgeType (a, b) = UnBridgeType a `Concat` UnBridgeType b
+
+type family ResolveArgTypes t m (args'::Type) :: [Symbol] where
+  ResolveArgTypes t m args' = UnBridgeType args'
+
+type family Members (t::Symbol) :: [Symbol]
+
+type family ResolveBaseType (t::Symbol) (m::Symbol) :: Symbol where
+  ResolveBaseType t m = ResolveBaseType' ('Just t) m
+
+type family ResolveBaseType' (t::Maybe Symbol) (m::Symbol) :: Symbol where
+  ResolveBaseType' 'Nothing  m = "Error"
+  ResolveBaseType' ('Just t) m = If (m `Elem` (Members t)) t (ResolveBaseType' (SuperTypeOf t) m)
+
+invokeS :: forall m t args args'. ( ResolveArgTypes t m args' ~ args
                                   , MethodS t m args
                                   , Marshal args' (BridgeTypes args)
                                   , Unmarshal (BridgeTypeM (ResultTypeS t m args)) (UnmarshalAs (BridgeTypeM (ResultTypeS t m args)))
@@ -80,14 +133,18 @@ invokeS :: forall m t args args'. ( Resolve t m args' ~ args
                                   ) => args' -> IO (UnmarshalAs (BridgeTypeM (ResultTypeS t m args)))
 invokeS x = marshal @args' @(BridgeTypes args) @((BridgeTypeM (ResultTypeS t m args))) x (\tup-> uncurryN' @(TupleSize args') (rawInvokeS @t @m @args) tup) >>= unmarshal
 
-invokeI :: forall m t args args'. ( Resolve t m args' ~ args
-                                  , MethodI t m args
-                                  , Marshal args' (BridgeTypes args)
-                                  , Marshal (Object t) (BridgeType t)
-                                  , Unmarshal (BridgeTypeM (ResultTypeI t m args)) (UnmarshalAs (BridgeTypeM (ResultTypeI t m args)))
-                                  , Curry' (TupleSize args') ((BridgeTypes args) -> (IO (BridgeTypeM (ResultTypeI t m args)))) (CurryT (BridgeTypes args) (IO (BridgeTypeM (ResultTypeI t m args))))
-                                  ) => Object t -> args' -> IO (UnmarshalAs (BridgeTypeM (ResultTypeI t m args)))
-invokeI obj x = marshal @args' @(BridgeTypes args) @((BridgeTypeM (ResultTypeI t m args))) x (\tup-> marshal @(Object t) @(BridgeType t) @((BridgeTypeM (ResultTypeI t m args))) obj (\obj'-> uncurryN' @(TupleSize args') (rawInvokeI @t @m @args obj') tup)) >>= unmarshal
+invokeI :: forall m t t' args args'. ( ResolveBaseType t' m ~ t
+                                     , ResolveArgTypes t m args' ~ args
+                                     , MethodI t m args
+                                     , Marshal args' (BridgeTypes args)
+                                     , Marshal (Object t) (BridgeType t)
+                                     , Unmarshal (BridgeTypeM (ResultTypeI t m args)) (UnmarshalAs (BridgeTypeM (ResultTypeI t m args)))
+                                     , Curry' (TupleSize args') ((BridgeTypes args) -> (IO (BridgeTypeM (ResultTypeI t m args)))) (CurryT (BridgeTypes args) (IO (BridgeTypeM (ResultTypeI t m args))))
+                                     ) => Object t' -> args' -> IO (UnmarshalAs (BridgeTypeM (ResultTypeI t m args)))
+invokeI obj x = marshal @args' @(BridgeTypes args) @((BridgeTypeM (ResultTypeI t m args))) x (\tup-> marshal @(Object t) @(BridgeType t) @((BridgeTypeM (ResultTypeI t m args))) (upcast obj) (\obj'-> uncurryN' @(TupleSize args') (rawInvokeI @t @m @args obj') tup)) >>= unmarshal
+
+upcast :: Object t -> Object t'
+upcast = unsafeCoerce
 
 
 class Marshal a b where
@@ -124,5 +181,7 @@ instance Unmarshal CString String where
 
 instance Unmarshal () () where
   unmarshal = return
+
+
 
 
