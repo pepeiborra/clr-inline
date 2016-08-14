@@ -4,12 +4,12 @@
 
 module Clr (invokeS, MethodS(..), invokeI, MethodI(..), Members, SuperTypeOf, ObjectID, Object(..) ) where
 
-import Clr.Common
 import Clr.Bridge
-import Clr.Prim
-import Clr.ListTuple
 import Clr.Curry
+import Clr.Inheritance
+import Clr.ListTuple
 import Clr.Marshal
+import Clr.Object
 
 import Foreign.C
 import Data.Int
@@ -21,79 +21,6 @@ import Data.Type.Bool
 import Data.Type.Equality
 import Data.Kind
 
-import Unsafe.Coerce
-
-type family BridgeTypeM (x::Maybe Symbol) :: Type where
-  BridgeTypeM 'Nothing = ()
-  BridgeTypeM ('Just x) = BridgeType x
-
-type family BridgeType (x::Symbol) :: Type where
-  BridgeType a = If (IsPrimType a) (BridgeTypePrim a) ObjectID
-
-type family BridgeTypePrim (x::Symbol)
-
-type instance BridgeTypePrim "System.String"  = CString
-type instance BridgeTypePrim "System.Int16"   = Int16
-type instance BridgeTypePrim "System.UInt16"  = Word16
-type instance BridgeTypePrim "System.Int32"   = Int32
-type instance BridgeTypePrim "System.UInt32"  = Word32
-type instance BridgeTypePrim "System.Int64"   = Int64
-type instance BridgeTypePrim "System.UInt64"  = Word64
-type instance BridgeTypePrim "System.IntPtr"  = IntPtr
-type instance BridgeTypePrim "System.UIntPtr" = WordPtr
-type instance BridgeTypePrim "System.Char"    = Char
-type instance BridgeTypePrim "System.Single"  = CFloat
-type instance BridgeTypePrim "System.Double"  = CDouble
-
-type family BridgeTypeL (a::[Symbol]) :: [Type] where
-  BridgeTypeL '[] = '[]
-  BridgeTypeL (x ': xs) = BridgeType x ': BridgeTypeL xs
-
-type family BridgeTypes (x::[Symbol]) :: Type where
-  BridgeTypes x = ListToTuple (BridgeTypeL x)
-
-type instance SuperTypeOf "System.Object"    = 'Nothing
-type instance SuperTypeOf "System.ValueType" = 'Just "System.Object"
-
-type instance SuperTypeOf "System.String"  = 'Just "System.Object"
-type instance SuperTypeOf "System.Int16"   = 'Just "System.ValueType"
-type instance SuperTypeOf "System.UInt16"  = 'Just "System.ValueType"
-type instance SuperTypeOf "System.Int32"   = 'Just "System.ValueType"
-type instance SuperTypeOf "System.UInt32"  = 'Just "System.ValueType"
-type instance SuperTypeOf "System.Int64"   = 'Just "System.ValueType"
-type instance SuperTypeOf "System.UInt64"  = 'Just "System.ValueType"
-type instance SuperTypeOf "System.IntPtr"  = 'Just "System.ValueType"
-type instance SuperTypeOf "System.UIntPtr" = 'Just "System.ValueType"
-type instance SuperTypeOf "System.Char"    = 'Just "System.ValueType"
-type instance SuperTypeOf "System.Single"  = 'Just "System.ValueType"
-type instance SuperTypeOf "System.Double"  = 'Just "System.ValueType"
-
-
-type ObjectID = Int64
-
-data Object (typ::Symbol) = Object ObjectID
-
-type family SuperTypeOf (t::Symbol) :: Maybe Symbol
-
-type family SuperTypesOf' (t :: Maybe Symbol) :: [Maybe Symbol] where
-  SuperTypesOf' ('Just x) = (SuperTypeOf x) ': (SuperTypesOf' (SuperTypeOf x))
-  SuperTypesOf' 'Nothing  = '[]
-
-type family SuperTypesOf (t :: Symbol) :: [Symbol] where
-  SuperTypesOf x = UnMaybeList (SuperTypesOf' ('Just x))
-
-type family InheritsFrom (t1 :: Symbol) (t2 :: Symbol) :: Bool where
-  InheritsFrom t1 t2 = t1 == t2 || Elem t2 (SuperTypesOf t1)
-
-type family IsValueType (a::Symbol) :: Bool where
-  IsValueType a = a `InheritsFrom` "System.ValueType"
-
-type family IsPrimType (a::Symbol) :: Bool where
-  IsPrimType "System.String" = True
-  IsPrimType  a              = IsValueType a
-
-type family IsRefType (a::Symbol) :: Bool where
-  IsRefType a = Not (IsValueType a)
 
 
 class MethodS (t::Symbol) (m::Symbol) (args::[Symbol]) where
@@ -123,7 +50,7 @@ type family ResolveBaseType (t::Symbol) (m::Symbol) :: Symbol where
 
 type family ResolveBaseType' (t::Maybe Symbol) (m::Symbol) :: Symbol where
   ResolveBaseType' 'Nothing  m = "Error"
-  ResolveBaseType' ('Just t) m = If (m `Elem` (Members t)) t (ResolveBaseType' (SuperTypeOf t) m)
+  ResolveBaseType' ('Just t) m = If (t `HasMember` m) t (ResolveBaseType' (SuperTypeOf t) m)
 
 invokeS :: forall m t args args'. ( ResolveArgTypes t m args' ~ args
                                   , MethodS t m args
@@ -134,6 +61,7 @@ invokeS :: forall m t args args'. ( ResolveArgTypes t m args' ~ args
 invokeS x = marshal @args' @(BridgeTypes args) @((BridgeTypeM (ResultTypeS t m args))) x (\tup-> uncurryN' @(TupleSize args') (rawInvokeS @t @m @args) tup) >>= unmarshal
 
 invokeI :: forall m t t' args args'. ( ResolveBaseType t' m ~ t
+                                     , t' `InheritsFrom` t ~ True
                                      , ResolveArgTypes t m args' ~ args
                                      , MethodI t m args
                                      , Marshal args' (BridgeTypes args)
@@ -141,47 +69,41 @@ invokeI :: forall m t t' args args'. ( ResolveBaseType t' m ~ t
                                      , Unmarshal (BridgeTypeM (ResultTypeI t m args)) (UnmarshalAs (BridgeTypeM (ResultTypeI t m args)))
                                      , Curry' (TupleSize args') ((BridgeTypes args) -> (IO (BridgeTypeM (ResultTypeI t m args)))) (CurryT (BridgeTypes args) (IO (BridgeTypeM (ResultTypeI t m args))))
                                      ) => Object t' -> args' -> IO (UnmarshalAs (BridgeTypeM (ResultTypeI t m args)))
-invokeI obj x = marshal @args' @(BridgeTypes args) @((BridgeTypeM (ResultTypeI t m args))) x (\tup-> marshal @(Object t) @(BridgeType t) @((BridgeTypeM (ResultTypeI t m args))) (upcast obj) (\obj'-> uncurryN' @(TupleSize args') (rawInvokeI @t @m @args obj') tup)) >>= unmarshal
-
-upcast :: Object t -> Object t'
-upcast = unsafeCoerce
+invokeI obj x = marshal @args' @(BridgeTypes args) @((BridgeTypeM (ResultTypeI t m args))) x (\tup-> marshal @(Object t) @(BridgeType t) @((BridgeTypeM (ResultTypeI t m args))) (upCast obj) (\obj'-> uncurryN' @(TupleSize args') (rawInvokeI @t @m @args obj') tup)) >>= unmarshal
 
 
-class Marshal a b where
-  marshal :: a -> (b-> IO c) -> IO c
 
-instance Marshal String CString where
-  marshal = withCString
+--
+-- Todo: Move more code to seperate modules when GHC bug is fixed
+--
 
-instance Marshal (Object t) ObjectID where
-  marshal (Object x) f = f x
+type family BridgeTypeM (x::Maybe Symbol) :: Type where
+  BridgeTypeM 'Nothing = ()
+  BridgeTypeM ('Just x) = BridgeType x
 
-instance Marshal Int32 Int32 where
-  marshal x f = f x
+type family BridgeType (x::Symbol) :: Type where
+  BridgeType a = If (IsPrimType a) (BridgeTypePrim a) ObjectID
 
-instance Marshal Int64 Int64 where
-  marshal x f = f x
+type family BridgeTypePrim (x::Symbol)
 
-instance (Marshal a1 b1, Marshal a2 b2) => Marshal (a1, a2) (b1, b2) where
-  marshal (x1,x2) f = marshal x1 (\x1'-> marshal x2 (\x2'-> f (x1', x2')))
+type instance BridgeTypePrim "System.String"  = CString
+type instance BridgeTypePrim "System.Int16"   = Int16
+type instance BridgeTypePrim "System.UInt16"  = Word16
+type instance BridgeTypePrim "System.Int32"   = Int32
+type instance BridgeTypePrim "System.UInt32"  = Word32
+type instance BridgeTypePrim "System.Int64"   = Int64
+type instance BridgeTypePrim "System.UInt64"  = Word64
+type instance BridgeTypePrim "System.IntPtr"  = IntPtr
+type instance BridgeTypePrim "System.UIntPtr" = WordPtr
+type instance BridgeTypePrim "System.Char"    = Char
+type instance BridgeTypePrim "System.Single"  = CFloat
+type instance BridgeTypePrim "System.Double"  = CDouble
 
-type family UnmarshalAs (x::k) :: k'
+type family BridgeTypeL (a::[Symbol]) :: [Type] where
+  BridgeTypeL '[] = '[]
+  BridgeTypeL (x ': xs) = BridgeType x ': BridgeTypeL xs
 
-type instance UnmarshalAs () = ()
-type instance UnmarshalAs CString   = String
-
-class Unmarshal a b where
-  unmarshal :: a -> IO b
-
-instance Unmarshal CString String where
-  unmarshal cs = do
-    s <- peekCString cs
-    -- free cs
-    return s
-
-instance Unmarshal () () where
-  unmarshal = return
-
-
+type family BridgeTypes (x::[Symbol]) :: Type where
+  BridgeTypes x = ListToTuple (BridgeTypeL x)
 
 

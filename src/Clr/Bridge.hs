@@ -2,7 +2,9 @@
 
 module Clr.Bridge where
 
-import Clr.Common
+import Clr.Inheritance
+import Clr.Object
+import Clr.ListTuple
 
 import Data.Kind
 import Data.Type.Bool
@@ -12,5 +14,4 @@ import Data.Int
 import Data.Word
 import Foreign.C
 import Foreign.Ptr
-
 

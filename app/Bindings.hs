@@ -3,7 +3,6 @@
 module Bindings where
 
 import Clr
-
 import Foreign.C
 import Data.Int
 
