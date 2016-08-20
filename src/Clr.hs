@@ -14,7 +14,6 @@ import Clr.Object
 import Foreign.C
 import Data.Int
 import Data.Word
-import Data.Bool
 import Foreign.Ptr
 import GHC.TypeLits
 import Data.Type.Bool
@@ -89,7 +88,7 @@ invokeS x = marshal @args' @(BridgeTypes args) @((BridgeTypeM (ResultTypeS t m a
 -- Instance method invocation
 --
 invokeI :: forall m t t' args args'. ( ResolveBaseType t' m ~ t
-                                     , t' `InheritsFrom` t ~ True
+                                     , t' `InheritsFrom` t ~ 'True
                                      , ResolveArgTypes t m args' ~ args
                                      , MethodI t m args
                                      , Marshal args' (BridgeTypes args)
