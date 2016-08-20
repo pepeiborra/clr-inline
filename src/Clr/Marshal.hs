@@ -24,6 +24,9 @@ instance Marshal Int32 Int32 where
 instance Marshal Int64 Int64 where
   marshal x f = f x
 
+instance Marshal () () where
+  marshal x f = f x
+
 instance (Marshal a1 b1, Marshal a2 b2) => Marshal (a1, a2) (b1, b2) where
   marshal (x1,x2) f = marshal x1 (\x1'-> marshal x2 (\x2'-> f (x1', x2')))
 
@@ -46,6 +49,9 @@ instance Unmarshal CString String where
     s <- peekCString cs
     -- free cs
     return s
+
+instance Unmarshal ObjectID (Object t) where
+  unmarshal oid = return $ Object oid
 
 instance Unmarshal () () where
   unmarshal = return

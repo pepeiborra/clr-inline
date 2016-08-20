@@ -28,6 +28,9 @@ instance MethodS "System.Console" "WriteLine" '["System.String", "System.String"
 
 type instance SuperTypeOf "BaseType" = 'Just "System.Object"
 
+instance Constructor "BaseType" '[] where
+  rawNew () = putStrLn "Constructed BaseType" >> return (1::Int64)
+
 type instance Members "BaseType" = '["Foo", "Bar"]
 
 -- Foo
@@ -79,6 +82,9 @@ rawInvokeBaseTypeBarInt32 d s = putStrLn "BaseType.Bar(Int32)"
 --
 
 type instance SuperTypeOf "DerivedType" = 'Just "BaseType"
+
+instance Constructor "DerivedType" '[] where
+  rawNew () = putStrLn "Constructed DerivedType" >> return (1::Int64)
 
 type instance Members "DerivedType" = '["Foo"]
 

@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleInstances, FlexibleContexts, ScopedTypeVariables, ExistentialQuantification #-}
 {-# LANGUAGE UndecidableInstances, TypeApplications, AllowAmbiguousTypes, TypeInType, TypeFamilyDependencies, FunctionalDependencies #-}
 
-module Clr (invokeS, MethodS(..), invokeI, MethodI(..), Members, SuperTypeOf, ObjectID, Object(..) ) where
+module Clr (invokeS, MethodS(..), invokeI, MethodI(..), new, Constructor(..), Members, SuperTypeOf, ObjectID, Object(..) ) where
 
 import Clr.Bridge
 import Clr.Curry
@@ -36,6 +36,12 @@ class MethodI (t::Symbol) (m::Symbol) (args::[Symbol]) where
   rawInvokeI :: (BridgeType t) -> CurryT (BridgeTypes args) (IO (BridgeTypeM (ResultTypeI t m args)))
 
 --
+-- Constructor
+--
+class Constructor (t::Symbol) (args::[Symbol]) where
+  rawNew :: CurryT (BridgeTypes args) (IO (BridgeType t))
+
+--
 -- Declaration of all compile type chooseable members of a particular type
 --
 type family Members (t::Symbol) :: [Symbol]
@@ -58,8 +64,9 @@ type family ResolveArgTypes t m (args'::Type) :: [Symbol] where
 --
 type family UnBridgeType (t::Type) :: [Symbol] where
   UnBridgeType String = '["System.String"]
-  UnBridgeType Int32 = '["System.Int32"]
-  UnBridgeType Int64 = '["System.Int64"]
+  UnBridgeType Int32  = '["System.Int32"]
+  UnBridgeType Int64  = '["System.Int64"]
+  UnBridgeType ()     = '[]
   UnBridgeType (a, b) = UnBridgeType a `Concat` UnBridgeType b
 
 --
@@ -97,6 +104,17 @@ invokeI :: forall m t t' args args'. ( ResolveBaseType t' m ~ t
                                      , Curry (TupleSize args') ((BridgeTypes args) -> (IO (BridgeTypeM (ResultTypeI t m args)))) (CurryT (BridgeTypes args) (IO (BridgeTypeM (ResultTypeI t m args))))
                                      ) => Object t' -> args' -> IO (UnmarshalAs (BridgeTypeM (ResultTypeI t m args)))
 invokeI obj x = marshal @args' @(BridgeTypes args) @((BridgeTypeM (ResultTypeI t m args))) x (\tup-> marshal @(Object t) @(BridgeType t) @((BridgeTypeM (ResultTypeI t m args))) (upCast obj) (\obj'-> uncurryN @(TupleSize args') (rawInvokeI @t @m @args obj') tup)) >>= unmarshal
+
+--
+-- Constructor invocation
+--
+new :: forall t args args' . ( ResolveArgTypes t t args' ~ args
+                             , Constructor t args
+                             , Marshal args' (BridgeTypes args)
+                             , Unmarshal (BridgeType t) (Object t)
+                             , Curry (TupleSize args') ((BridgeTypes args) -> (IO (BridgeType t))) (CurryT (BridgeTypes args) (IO (BridgeType t)))
+                             ) => args' -> IO (Object t)
+new x = marshal @args' @(BridgeTypes args) @(BridgeType t) x (\tup-> uncurryN @(TupleSize args') (rawNew @t @args) tup) >>= unmarshal
 
 
 
