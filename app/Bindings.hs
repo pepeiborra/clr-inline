@@ -10,9 +10,9 @@ import Data.Int
 -- Static method
 --
 writeLineRaw1 :: CString -> IO ()
-writeLineRaw1 cs = putStrLn "static method called with 1 string"
+writeLineRaw1 cs = putStrLn "Console.WriteLine(String)"
 writeLineRaw2 :: CString -> CString -> IO ()
-writeLineRaw2 cs1 cs2 = putStrLn "static method called with 2 strings"
+writeLineRaw2 cs1 cs2 = putStrLn "Console.WriteLine(String, String)"
 
 instance MethodS "System.Console" "WriteLine" '["System.String"] where
   type ResultTypeS "System.Console" "WriteLine" '["System.String"] = 'Nothing
