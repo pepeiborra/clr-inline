@@ -1,13 +1,13 @@
 name:                clr
 version:             0.1.0.0
-synopsis:            Initial project template from stack
+synopsis:            Haskell <-> CLR bridge
 description:         Please see README.md
-homepage:            https://github.com/tim-m89/clr#readme
+homepage:            https://gitlab.com/tim-m89/clr
 license:             BSD3
 license-file:        LICENSE
 author:              Tim Matthews
 maintainer:          tim.matthews7@gmail.com
-copyright:           Copyright: (c) 2015 Tim Matthews
+copyright:           Copyright: (c) 2016 Tim Matthews
 category:            Development
 build-type:          Simple
 -- extra-source-files:
@@ -40,4 +40,4 @@ test-suite clr-test
 
 source-repository head
   type:     git
-  location: https://github.com/tim-m89/clr
+  location: https://gitlab.com/tim-m89/clr
