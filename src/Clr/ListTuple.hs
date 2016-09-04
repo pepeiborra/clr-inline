@@ -55,9 +55,9 @@ type family Concat (a::[t]) (b::[t]) :: [t] where
 --
 -- Drops each Nothing from a list and does a fromJust on the others
 --
-type family UnMaybeList (l :: [Maybe k]) :: [k] where
-  UnMaybeList '[]             = '[]
-  UnMaybeList ('Just x ': xs)  = x ': UnMaybeList xs
-  UnMaybeList ('Nothing ': xs) = UnMaybeList xs
+type family CatMaybes (l :: [Maybe k]) :: [k] where
+  CatMaybes '[]              = '[]
+  CatMaybes ('Just x ': xs)  = x ': CatMaybes xs
+  CatMaybes ('Nothing ': xs) = CatMaybes xs
 
 

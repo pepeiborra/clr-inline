@@ -23,7 +23,7 @@ type family SuperTypeOf (t::Type) :: Maybe Type
 -- A list of all types that t inherits from
 --
 type family SuperTypesOf (t :: Type) :: [Type] where
-  SuperTypesOf x = UnMaybeList (SuperTypesOf' ('Just x))
+  SuperTypesOf x = CatMaybes (SuperTypesOf' ('Just x))
 
 type family SuperTypesOf' (t :: Maybe Type) :: [Maybe Type] where
   SuperTypesOf' ('Just x) = (SuperTypeOf x) ': (SuperTypesOf' (SuperTypeOf x))
