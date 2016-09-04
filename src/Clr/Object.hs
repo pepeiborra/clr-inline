@@ -1,7 +1,8 @@
-{-# LANGUAGE DataKinds, KindSignatures #-}
+{-# LANGUAGE DataKinds, KindSignatures, GADTs, TypeInType #-}
 
 module Clr.Object where
 
+import Data.Kind
 import Data.Int
 import GHC.TypeLits
 
@@ -11,8 +12,11 @@ import GHC.TypeLits
 --
 type ObjectID = Int64
 
+data ClrType (name::Symbol) (genArgs::[Type])
+
 --
--- An object is just its unique indentifer with extra type information
+-- An object is just its unique identifer + information of its type
 --
-data Object (typ::Symbol) = Object ObjectID
+data Object (typ::Type) where
+  Object :: ObjectID -> Object typ
 
