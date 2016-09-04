@@ -1,10 +1,11 @@
-{-# LANGUAGE DataKinds, FlexibleInstances, MultiParamTypeClasses, TypeFamilies #-}
+{-# LANGUAGE DataKinds, FlexibleInstances, MultiParamTypeClasses, TypeFamilies, AllowAmbiguousTypes, ScopedTypeVariables, TypeApplications, TypeOperators #-}
 
 module Bindings where
 
 import Clr
 import Foreign.C
 import Data.Int
+import Data.Kind
 
 --
 -- Static method
@@ -14,37 +15,37 @@ writeLineRaw1 cs = putStrLn "Console.WriteLine(String)"
 writeLineRaw2 :: CString -> CString -> IO ()
 writeLineRaw2 cs1 cs2 = putStrLn "Console.WriteLine(String, String)"
 
-instance MethodS "System.Console" "WriteLine" '["System.String"] where
-  type ResultTypeS "System.Console" "WriteLine" '["System.String"] = 'Nothing
-  rawInvokeS = writeLineRaw1
+instance MethodS1 (ClrType "System.Console" '[]) (ClrType "WriteLine" '[]) (ClrType "System.String" '[]) where
+  type ResultTypeS1 (ClrType "System.Console" '[]) (ClrType "WriteLine" '[]) (ClrType "System.String" '[]) = 'Nothing
+  rawInvokeS1 = writeLineRaw1
 
-instance MethodS "System.Console" "WriteLine" '["System.String", "System.String"] where
-  type ResultTypeS "System.Console" "WriteLine" '["System.String", "System.String"] = 'Nothing
-  rawInvokeS = writeLineRaw2
+instance MethodS2 (ClrType "System.Console" '[]) (ClrType "WriteLine" '[]) (ClrType "System.String" '[]) (ClrType "System.String" '[]) where
+  type ResultTypeS2 (ClrType "System.Console" '[]) (ClrType "WriteLine" '[]) (ClrType "System.String" '[]) (ClrType "System.String" '[]) = 'Nothing
+  rawInvokeS2 = writeLineRaw2
 
 --
 -- Base type
 --
 
-type instance SuperTypeOf "BaseType" = 'Just "System.Object"
+type instance SuperTypeOf (ClrType "BaseType" '[]) = 'Just (ClrType "System.Object" '[])
 
-instance Constructor "BaseType" '[] where
-  rawNew () = putStrLn "Constructed BaseType" >> return (1::Int64)
+instance Constructor1 (ClrType "BaseType" '[]) () where
+  rawNew1 () = putStrLn "Constructed BaseType" >> return (1::Int64)
 
-type instance Members "BaseType" = '["Foo", "Bar"]
+type instance Members (ClrType "BaseType" '[]) = '[(ClrType "Foo" '[]), (ClrType "Bar" '[])]
 
 -- Foo
-instance MethodI "BaseType" "Foo" '["System.String"] where
-  type ResultTypeI "BaseType" "Foo" '["System.String"] = 'Nothing
-  rawInvokeI = rawInvokeBaseTypeFooStr
+instance MethodI1 (ClrType "BaseType" '[]) (ClrType "Foo" '[]) (ClrType "System.String" '[]) where
+  type ResultTypeI1 (ClrType "BaseType" '[]) (ClrType "Foo" '[]) (ClrType "System.String" '[]) = 'Nothing
+  rawInvokeI1 = rawInvokeBaseTypeFooStr
 
-instance MethodI "BaseType" "Foo" '["System.Int64"] where
-  type ResultTypeI "BaseType" "Foo" '["System.Int64"] = 'Nothing
-  rawInvokeI = rawInvokeBaseTypeFooInt64
+instance MethodI1 (ClrType "BaseType" '[]) (ClrType "Foo" '[]) (ClrType "System.Int64" '[]) where
+  type ResultTypeI1 (ClrType "BaseType" '[]) (ClrType "Foo" '[]) (ClrType "System.Int64" '[]) = 'Nothing
+  rawInvokeI1 = rawInvokeBaseTypeFooInt64
 
-instance MethodI "BaseType" "Foo" '["System.Int32"] where
-  type ResultTypeI "BaseType" "Foo" '["System.Int32"] = 'Nothing
-  rawInvokeI = rawInvokeBaseTypeFooInt32
+instance MethodI1 (ClrType "BaseType" '[]) (ClrType "Foo" '[]) (ClrType "System.Int32" '[]) where
+  type ResultTypeI1 (ClrType "BaseType" '[]) (ClrType "Foo" '[]) (ClrType "System.Int32" '[]) = 'Nothing
+  rawInvokeI1 = rawInvokeBaseTypeFooInt32
 
 rawInvokeBaseTypeFooStr :: ObjectID -> CString -> IO ()
 rawInvokeBaseTypeFooStr d s = putStrLn "BaseType.Foo(String)"
@@ -56,17 +57,17 @@ rawInvokeBaseTypeFooInt32 :: ObjectID -> Int32 -> IO ()
 rawInvokeBaseTypeFooInt32 d s = putStrLn "BaseType.Foo(Int32)"
 
 -- Bar
-instance MethodI "BaseType" "Bar" '["System.String"] where
-  type ResultTypeI "BaseType" "Bar" '["System.String"] = 'Nothing
-  rawInvokeI = rawInvokeBaseTypeBarStr
+instance MethodI1 (ClrType "BaseType" '[]) (ClrType "Bar" '[]) (ClrType "System.String" '[]) where
+  type ResultTypeI1 (ClrType "BaseType" '[]) (ClrType "Bar" '[]) (ClrType "System.String" '[]) = 'Nothing
+  rawInvokeI1 = rawInvokeBaseTypeBarStr
 
-instance MethodI "BaseType" "Bar" '["System.Int64"] where
-  type ResultTypeI "BaseType" "Bar" '["System.Int64"] = 'Nothing
-  rawInvokeI = rawInvokeBaseTypeBarInt64
+instance MethodI1 (ClrType "BaseType" '[]) (ClrType "Bar" '[]) (ClrType "System.Int64" '[]) where
+  type ResultTypeI1 (ClrType "BaseType" '[]) (ClrType "Bar" '[]) (ClrType "System.Int64" '[]) = 'Nothing
+  rawInvokeI1 = rawInvokeBaseTypeBarInt64
 
-instance MethodI "BaseType" "Bar" '["System.Int32"] where
-  type ResultTypeI "BaseType" "Bar" '["System.Int32"] = 'Nothing
-  rawInvokeI = rawInvokeBaseTypeBarInt32
+instance MethodI1 (ClrType "BaseType" '[]) (ClrType "Bar" '[]) (ClrType "System.Int32" '[]) where
+  type ResultTypeI1 (ClrType "BaseType" '[]) (ClrType "Bar" '[]) (ClrType "System.Int32" '[]) = 'Nothing
+  rawInvokeI1 = rawInvokeBaseTypeBarInt32
 
 rawInvokeBaseTypeBarStr :: ObjectID -> CString -> IO ()
 rawInvokeBaseTypeBarStr d s = putStrLn "BaseType.Bar(String)"
@@ -81,24 +82,24 @@ rawInvokeBaseTypeBarInt32 d s = putStrLn "BaseType.Bar(Int32)"
 -- Derived type
 --
 
-type instance SuperTypeOf "DerivedType" = 'Just "BaseType"
+type instance SuperTypeOf (ClrType "DerivedType" '[]) = 'Just (ClrType "BaseType" '[])
 
-instance Constructor "DerivedType" '[] where
-  rawNew () = putStrLn "Constructed DerivedType" >> return (1::Int64)
+instance Constructor1 (ClrType "DerivedType" '[]) () where
+  rawNew1 () = putStrLn "Constructed DerivedType" >> return (1::Int64)
 
-type instance Members "DerivedType" = '["Foo"]
+type instance Members (ClrType "DerivedType" '[]) = '[(ClrType "Foo" '[])]
 
-instance MethodI "DerivedType" "Foo" '["System.String"] where
-  type ResultTypeI "DerivedType" "Foo" '["System.String"] = 'Nothing
-  rawInvokeI = rawInvokeDerivedTypeStr
+instance MethodI1 (ClrType "DerivedType" '[]) (ClrType "Foo" '[]) (ClrType "System.String" '[]) where
+  type ResultTypeI1 (ClrType "DerivedType" '[]) (ClrType "Foo" '[]) (ClrType "System.String" '[]) = 'Nothing
+  rawInvokeI1 = rawInvokeDerivedTypeStr
 
-instance MethodI "DerivedType" "Foo" '["System.Int64"] where
-  type ResultTypeI "DerivedType" "Foo" '["System.Int64"] = 'Nothing
-  rawInvokeI = rawInvokeDerivedTypeInt64
+instance MethodI1 (ClrType "DerivedType" '[]) (ClrType "Foo" '[]) (ClrType "System.Int64" '[]) where
+  type ResultTypeI1 (ClrType "DerivedType" '[]) (ClrType "Foo" '[]) (ClrType "System.Int64" '[]) = 'Nothing
+  rawInvokeI1 = rawInvokeDerivedTypeInt64
 
-instance MethodI "DerivedType" "Foo" '["System.Int32"] where
-  type ResultTypeI "DerivedType" "Foo" '["System.Int32"] = 'Nothing
-  rawInvokeI = rawInvokeDerivedTypeInt32
+instance MethodI1 (ClrType "DerivedType" '[]) (ClrType "Foo" '[]) (ClrType "System.Int32" '[]) where
+  type ResultTypeI1 (ClrType "DerivedType" '[]) (ClrType "Foo" '[]) (ClrType "System.Int32" '[]) = 'Nothing
+  rawInvokeI1 = rawInvokeDerivedTypeInt32
 
 rawInvokeDerivedTypeStr :: ObjectID -> CString -> IO ()
 rawInvokeDerivedTypeStr d s = putStrLn "DerivedType.Foo(String)"
@@ -109,4 +110,24 @@ rawInvokeDerivedTypeInt64 d s = putStrLn "DerivedType.Foo(Int64)"
 rawInvokeDerivedTypeInt32 :: ObjectID -> Int32 -> IO ()
 rawInvokeDerivedTypeInt32 d s = putStrLn "DerivedType.Foo(Int32)"
 
+type instance SuperTypeOf (ClrType "MyGenType" '[gt0]) = 'Just (ClrType "System.Object" '[])
 
+instance Constructor1 (ClrType "MyGenType" '[gt0]) () where
+  rawNew1 () = putStrLn "Constructed MyGenType" >> return (1::Int64)
+
+type instance Members (ClrType "MyGenType" '[gt0]) = '[(ClrType "Add" '[])]
+
+instance MethodI1 (ClrType "MyGenType" '[(ClrType "System.String" '[])]) (ClrType "Add" '[]) (ClrType "System.String" '[]) where
+  type ResultTypeI1 (ClrType "MyGenType" '[(ClrType "System.String" '[])]) (ClrType "Add" '[]) (ClrType "System.String" '[]) = 'Nothing
+  rawInvokeI1 = rawInvokeMyGenTypeAddStr
+
+instance MethodI1 (ClrType "MyGenType" '[(ClrType "System.Int32" '[])]) (ClrType "Add" '[]) (ClrType "System.Int32" '[]) where
+  type ResultTypeI1 (ClrType "MyGenType" '[(ClrType "System.Int32" '[])]) (ClrType "Add" '[]) (ClrType "System.Int32" '[]) = 'Nothing
+  rawInvokeI1 = rawInvokeMyGenTypeAddInt
+
+
+rawInvokeMyGenTypeAddStr :: ObjectID -> CString -> IO ()
+rawInvokeMyGenTypeAddStr oid s = putStrLn "MyGenType.Add(String)"
+
+rawInvokeMyGenTypeAddInt :: ObjectID -> Int32 -> IO ()
+rawInvokeMyGenTypeAddInt oid s = putStrLn "MyGenType.Add(Int32)"

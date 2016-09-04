@@ -14,20 +14,29 @@ import GHC.TypeLits
 --
 type family ListToTuple (t :: [Type]) :: Type where
   ListToTuple '[]                                 = ()
-  ListToTuple (a ': '[])                         = a
+  ListToTuple (a ': '[])                         = (a)
   ListToTuple (a ': b ': '[])                   = (a,b)
   ListToTuple (a ': b ': c ': '[])             = (a,b,c)
   ListToTuple (a ': b ': c ': d ': '[])       = (a,b,c,d)
   ListToTuple (a ': b ': c ': d ': e ': '[]) = (a,b,c,d,e)
 
 --
--- Compile time size of a tuple
+-- Size of a tuple
 --
 type family TupleSize (x::k) :: Nat where
   TupleSize (a,b,c,d) = 4
   TupleSize (a,b,c) = 3
   TupleSize (a,b) = 2
   TupleSize (a) = 1
+
+--
+-- Size of a list
+--
+type family ListSize (x::k) :: Nat where
+  ListSize '[a,b,c,d] = 4
+  ListSize '[a,b,c] = 3
+  ListSize '[a,b] = 2
+  ListSize '[a] = 1
 
 --
 -- a `Elem` xs is true if a is contained within xs

@@ -1,20 +1,26 @@
 {-# LANGUAGE DataKinds, TypeFamilies, MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleInstances, FlexibleContexts #-}
-{-# LANGUAGE AllowAmbiguousTypes, FunctionalDependencies #-}
+{-# LANGUAGE FlexibleInstances, FlexibleContexts, PolyKinds, TypeInType, TypeOperators #-}
+{-# LANGUAGE AllowAmbiguousTypes, FunctionalDependencies, UndecidableInstances #-}
 
 module Clr.Curry where
 
 import qualified Data.Tuple.Curry as C
+import Data.Kind
 import GHC.TypeLits
+import Clr.ListTuple
 
 --
--- A curried type transformation
+-- A curried type transformation. This allows signatures to be written rather generically.
 --
 type family CurryT x r where
-  CurryT (a,b,c,d) r = a -> b -> c -> d -> r
-  CurryT (a,b,c) r = a -> b -> c -> r
-  CurryT (a,b) r = a -> b -> r
-  CurryT a r = a -> r
+  CurryT () r = CurryT' 1 () r
+  CurryT x  r = CurryT' (TupleSize x) x r
+
+type family CurryT' (n::Nat) x r :: Type where
+  CurryT' 4 (a,b,c,d) r = a -> b -> c -> d -> r
+  CurryT' 3 (a,b,c) r = a -> b -> c -> r
+  CurryT' 2 (a,b) r = a -> b -> r
+  CurryT' 1 a r = a -> r
 
 --
 -- Curry is like that from the tuple package, except that we use id
