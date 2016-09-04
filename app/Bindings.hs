@@ -29,8 +29,8 @@ instance MethodS2 (ClrType "System.Console" '[]) (ClrType "WriteLine" '[]) (ClrT
 
 type instance SuperTypeOf (ClrType "BaseType" '[]) = 'Just (ClrType "System.Object" '[])
 
-instance Constructor (ClrType "BaseType" '[]) '[] where
-  rawNew () = putStrLn "Constructed BaseType" >> return (1::Int64)
+instance Constructor1 (ClrType "BaseType" '[]) () where
+  rawNew1 () = putStrLn "Constructed BaseType" >> return (1::Int64)
 
 type instance Members (ClrType "BaseType" '[]) = '[(ClrType "Foo" '[]), (ClrType "Bar" '[])]
 
@@ -84,8 +84,8 @@ rawInvokeBaseTypeBarInt32 d s = putStrLn "BaseType.Bar(Int32)"
 
 type instance SuperTypeOf (ClrType "DerivedType" '[]) = 'Just (ClrType "BaseType" '[])
 
-instance Constructor (ClrType "DerivedType" '[]) '[] where
-  rawNew () = putStrLn "Constructed DerivedType" >> return (1::Int64)
+instance Constructor1 (ClrType "DerivedType" '[]) () where
+  rawNew1 () = putStrLn "Constructed DerivedType" >> return (1::Int64)
 
 type instance Members (ClrType "DerivedType" '[]) = '[(ClrType "Foo" '[])]
 
@@ -112,8 +112,8 @@ rawInvokeDerivedTypeInt32 d s = putStrLn "DerivedType.Foo(Int32)"
 
 type instance SuperTypeOf (ClrType "MyGenType" '[gt0]) = 'Just (ClrType "System.Object" '[])
 
-instance Constructor (ClrType "MyGenType" '[gt0]) '[] where
-  rawNew () = putStrLn "Constructed MyGenType" >> return (1::Int64)
+instance Constructor1 (ClrType "MyGenType" '[gt0]) () where
+  rawNew1 () = putStrLn "Constructed MyGenType" >> return (1::Int64)
 
 type instance Members (ClrType "MyGenType" '[gt0]) = '[(ClrType "Add" '[])]
 

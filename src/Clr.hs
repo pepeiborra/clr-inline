@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleInstances, FlexibleContexts, ScopedTypeVariables, ExistentialQuantification #-}
 {-# LANGUAGE UndecidableInstances, TypeApplications, AllowAmbiguousTypes, TypeInType, TypeFamilyDependencies, FunctionalDependencies #-}
 
-module Clr (invokeS, MethodS1(..), MethodS2(..), invokeI, MethodI1(..), MethodI2(..), new, Constructor(..), Members, SuperTypeOf, ObjectID, ClrType, Object(..), BridgeType, BridgeTypeM, BridgeTypes, CurryT ) where
+module Clr (invokeS, MethodS1(..), MethodS2(..), invokeI, MethodI1(..), MethodI2(..), new, Constructor1(..), Constructor2(..), Members, SuperTypeOf, ObjectID, ClrType, Object(..), BridgeType, BridgeTypeM, BridgeTypes, CurryT ) where
 
 import Clr.Bridge
 import Clr.Curry
@@ -53,8 +53,6 @@ instance (MethodS2 t m a0 a1) => MethodS 2 t m '[a0, a1] where
   type ResultTypeS 2 t m '[a0, a1] = ResultTypeS2 t m a0 a1
   rawInvokeS = rawInvokeS2 @t @m @a0 @a1
 
-
-
 --
 -- Instance methods
 --
@@ -88,10 +86,29 @@ instance (MethodI2 t m a0 a1) => MethodI 2 t m '[a0, a1] where
   rawInvokeI = rawInvokeI2 @t @m @a0 @a1
 
 --
--- Constructor
+-- Constructors
 --
-class Constructor (t::Type) (args::[Type]) where
-  rawNew :: CurryT (BridgeTypes args) (IO (BridgeType t))
+class Constructor1 (t::Type) (arg0::Type) where
+  rawNew1 :: (BridgeType arg0) -> (IO (BridgeType t))
+
+class Constructor2 (t::Type) (arg0::Type) (arg1::Type) where
+  rawNew2 :: (BridgeType arg0) -> (BridgeType arg1) -> (IO (BridgeType t))
+
+--
+-- Unification of constructors
+--
+
+class Constructor (n::Nat) (t::Type) (args::[Type]) where
+  rawNew :: CurryT' n (BridgeTypes args) (IO (BridgeType t))
+
+instance (Constructor1 t ()) => Constructor 1 t '[] where
+  rawNew = rawNew1 @t @()
+
+instance (Constructor1 t a) => Constructor 1 t '[a] where
+  rawNew = rawNew1 @t @a
+
+instance (Constructor2 t a0 a1) => Constructor 2 t '[a0, a1] where
+  rawNew = rawNew2 @t @a0 @a1
 
 --
 -- Declaration of all compile type chooseable members of a particular type
@@ -168,13 +185,14 @@ invokeI obj x = marshal @args' @(BridgeTypes args) @((BridgeTypeM (ResultTypeI n
 --
 -- Constructor invocation
 --
-new :: forall t args args' . ( ResolveArgTypes t t args' ~ args
-                             , Constructor t args
-                             , Marshal args' (BridgeTypes args)
-                             , Unmarshal (BridgeType t) (Object t)
-                             , Curry (TupleSize args') ((BridgeTypes args) -> (IO (BridgeType t))) (CurryT (BridgeTypes args) (IO (BridgeType t)))
-                             ) => args' -> IO (Object t)
-new x = marshal @args' @(BridgeTypes args) @(BridgeType t) x (\tup-> uncurryN @(TupleSize args') (rawNew @t @args) tup) >>= unmarshal
+new :: forall t args args' n. ( TupleSize args' ~ n
+                              , ResolveArgTypes t t args' ~ args
+                              , Constructor n t args
+                              , Marshal args' (BridgeTypes args)
+                              , Unmarshal (BridgeType t) (Object t)
+                              , Curry n ((BridgeTypes args) -> (IO (BridgeType t))) (CurryT' n (BridgeTypes args) (IO (BridgeType t)))
+                              ) => args' -> IO (Object t)
+new x = marshal @args' @(BridgeTypes args) @(BridgeType t) x (\tup-> uncurryN @n (rawNew @n @t @args) tup) >>= unmarshal
 
 
 
