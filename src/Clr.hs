@@ -31,9 +31,6 @@ class MethodS (t::Type) (m::Type) (args::[Type]) where
 --
 -- Instance method
 --
-class MethodI (t::Type) (m::Type) (args::[Type]) where
-  type ResultTypeI t m args :: Maybe Type
-  rawInvokeI :: (BridgeType t) -> CurryT (BridgeTypes args) (IO (BridgeTypeM (ResultTypeI t m args)))
 
 class MethodI0 (t::Type) (m::Type) where
   type ResultTypeI0 t m :: Maybe Type
@@ -47,22 +44,25 @@ class MethodI2 (t::Type) (m::Type) (arg0::Type) (arg1::Type) where
   type ResultTypeI2 t m arg0 arg1 :: Maybe Type
   rawInvokeI2 :: (BridgeType t) -> (BridgeType arg0) -> (BridgeType arg1) -> (IO (BridgeTypeM (ResultTypeI2 t m arg0 arg1)))
 
-instance (MethodI1 t m ()) => MethodI t m '[] where
-  type ResultTypeI t m '[] = ResultTypeI1 t m ()
+--
+-- Instance method wrappers
+--
+
+class MethodI (n::Nat) (t::Type) (m::Type) (args::[Type]) where
+  type ResultTypeI n t m args :: Maybe Type
+  rawInvokeI :: (BridgeType t) -> CurryT' n (BridgeTypes args) (IO (BridgeTypeM (ResultTypeI n t m args)))
+
+instance (MethodI1 t m ()) => MethodI 1 t m '[] where
+  type ResultTypeI 1 t m '[] = ResultTypeI1 t m ()
   rawInvokeI = rawInvokeI1 @t @m @()
 
-class MethodI' (n::Nat) (t::Type) (m::Type) (args::[Type]) where
-  type ResultTypeI' n t m args :: Maybe Type
-  rawInvokeI' :: (BridgeType t) -> CurryT' n (BridgeTypes args) (IO (BridgeTypeM (ResultTypeI' n t m args)))
+instance (MethodI1 t m a) => MethodI 1 t m '[a] where
+  type ResultTypeI 1 t m '[a] = ResultTypeI1 t m a
+  rawInvokeI = rawInvokeI1 @t @m @a
 
-instance (MethodI1 t m a) => MethodI' 1 t m '[a] where
-  type ResultTypeI' 1 t m '[a] = ResultTypeI1 t m a
-  rawInvokeI' = rawInvokeI1 @t @m @a
-
-instance (MethodI2 t m a0 a1) => MethodI' 2 t m '[a0, a1] where
-  type ResultTypeI' 2 t m '[a0, a1] = ResultTypeI2 t m a0 a1
-  rawInvokeI' = rawInvokeI2 @t @m @a0 @a1
-
+instance (MethodI2 t m a0 a1) => MethodI 2 t m '[a0, a1] where
+  type ResultTypeI 2 t m '[a0, a1] = ResultTypeI2 t m a0 a1
+  rawInvokeI = rawInvokeI2 @t @m @a0 @a1
 
 --
 -- Constructor
@@ -125,28 +125,18 @@ invokeS x = marshal @args' @(BridgeTypes args) @((BridgeTypeM (ResultTypeS t m a
 --
 -- Instance method invocation
 --
-invokeI :: forall m t t' args args'. ( ResolveBaseType t' m ~ t
-                                     , t' `InheritsFrom` t ~ 'True
-                                     , ResolveArgTypes t m args' ~ args
-                                     , MethodI t m args
-                                     , Marshal args' (BridgeTypes args)
-                                     , Marshal (Object t) (BridgeType t)
-                                     , Unmarshal (BridgeTypeM (ResultTypeI t m args)) (UnmarshalAs (BridgeTypeM (ResultTypeI t m args)))
-                                     , Curry (TupleSize args') ((BridgeTypes args) -> (IO (BridgeTypeM (ResultTypeI t m args)))) (CurryT (BridgeTypes args) (IO (BridgeTypeM (ResultTypeI t m args))))
-                                     ) => Object t' -> args' -> IO (UnmarshalAs (BridgeTypeM (ResultTypeI t m args)))
-invokeI obj x = marshal @args' @(BridgeTypes args) @((BridgeTypeM (ResultTypeI t m args))) x (\tup-> marshal @(Object t) @(BridgeType t) @((BridgeTypeM (ResultTypeI t m args))) (upCast obj) (\obj'-> uncurryN @(TupleSize args') (rawInvokeI @t @m @args obj') tup)) >>= unmarshal
 
-invokeI' :: forall m t t' args args' n. ( TupleSize args' ~ n
-                                        , ResolveBaseType t' m ~ t
-                                        , t' `InheritsFrom` t ~ 'True
-                                        , ResolveArgTypes t m args' ~ args
-                                        , MethodI' n t m args
-                                        , Marshal args' (BridgeTypes args)
-                                        , Marshal (Object t) (BridgeType t)
-                                        , Unmarshal (BridgeTypeM (ResultTypeI' n t m args)) (UnmarshalAs (BridgeTypeM (ResultTypeI' n t m args)))
-                                        , Curry n ((BridgeTypes args) -> (IO (BridgeTypeM (ResultTypeI' n t m args)))) (CurryT' n (BridgeTypes args) (IO (BridgeTypeM (ResultTypeI' n t m args))))
-                                        ) => Object t' -> args' -> IO (UnmarshalAs (BridgeTypeM (ResultTypeI' n t m args)))
-invokeI' obj x = marshal @args' @(BridgeTypes args) @((BridgeTypeM (ResultTypeI' n t m args))) x (\tup-> marshal @(Object t) @(BridgeType t) @((BridgeTypeM (ResultTypeI' n t m args))) (upCast obj) (\obj'-> uncurryN @n (rawInvokeI' @n @t @m @args obj') tup)) >>= unmarshal
+invokeI :: forall m t t' args args' n. ( TupleSize args' ~ n
+                                       , ResolveBaseType t' m ~ t
+                                       , t' `InheritsFrom` t ~ 'True
+                                       , ResolveArgTypes t m args' ~ args
+                                       , MethodI n t m args
+                                       , Marshal args' (BridgeTypes args)
+                                       , Marshal (Object t) (BridgeType t)
+                                       , Unmarshal (BridgeTypeM (ResultTypeI n t m args)) (UnmarshalAs (BridgeTypeM (ResultTypeI n t m args)))
+                                       , Curry n ((BridgeTypes args) -> (IO (BridgeTypeM (ResultTypeI n t m args)))) (CurryT' n (BridgeTypes args) (IO (BridgeTypeM (ResultTypeI n t m args))))
+                                       ) => Object t' -> args' -> IO (UnmarshalAs (BridgeTypeM (ResultTypeI n t m args)))
+invokeI obj x = marshal @args' @(BridgeTypes args) @((BridgeTypeM (ResultTypeI n t m args))) x (\tup-> marshal @(Object t) @(BridgeType t) @((BridgeTypeM (ResultTypeI n t m args))) (upCast obj) (\obj'-> uncurryN @n (rawInvokeI @n @t @m @args obj') tup)) >>= unmarshal
 
 
 

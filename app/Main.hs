@@ -30,4 +30,9 @@ main = do
   invokeI @(ClrType "Bar" '[]) derived "hi"                               -- DerivedType doesn't implement Bar so should call it on base type
   invokeI @(ClrType "Bar" '[]) derived (2::Int32)
   invokeI @(ClrType "Bar" '[]) derived (2::Int64)
+  putStrLn ""
+  myGenType <- new @(ClrType "MyGenType" '[ClrType "System.String" '[]]) () -- Generic type
+  invokeI @(ClrType "Add" '[]) myGenType "hello"
+--  invokeI @(ClrType "Add" '[]) myGenType (2::Int32)                       -- This would be a compilation error
+  putStrLn ""
 

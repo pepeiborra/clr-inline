@@ -14,7 +14,7 @@ import GHC.TypeLits
 --
 type family ListToTuple (t :: [Type]) :: Type where
   ListToTuple '[]                                 = ()
-  ListToTuple (a ': '[])                         = a
+  ListToTuple (a ': '[])                         = (a)
   ListToTuple (a ': b ': '[])                   = (a,b)
   ListToTuple (a ': b ': c ': '[])             = (a,b,c)
   ListToTuple (a ': b ': c ': d ': '[])       = (a,b,c,d)
