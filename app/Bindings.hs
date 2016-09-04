@@ -15,13 +15,13 @@ writeLineRaw1 cs = putStrLn "Console.WriteLine(String)"
 writeLineRaw2 :: CString -> CString -> IO ()
 writeLineRaw2 cs1 cs2 = putStrLn "Console.WriteLine(String, String)"
 
-instance MethodS (ClrType "System.Console" '[]) (ClrType "WriteLine" '[]) '[(ClrType "System.String" '[])] where
-  type ResultTypeS (ClrType "System.Console" '[]) (ClrType "WriteLine" '[]) '[(ClrType "System.String" '[])] = 'Nothing
-  rawInvokeS = writeLineRaw1
+instance MethodS1 (ClrType "System.Console" '[]) (ClrType "WriteLine" '[]) (ClrType "System.String" '[]) where
+  type ResultTypeS1 (ClrType "System.Console" '[]) (ClrType "WriteLine" '[]) (ClrType "System.String" '[]) = 'Nothing
+  rawInvokeS1 = writeLineRaw1
 
-instance MethodS (ClrType "System.Console" '[]) (ClrType "WriteLine" '[]) '[(ClrType "System.String" '[]), (ClrType "System.String" '[])] where
-  type ResultTypeS (ClrType "System.Console" '[]) (ClrType "WriteLine" '[]) '[(ClrType "System.String" '[]), (ClrType "System.String" '[])] = 'Nothing
-  rawInvokeS = writeLineRaw2
+instance MethodS2 (ClrType "System.Console" '[]) (ClrType "WriteLine" '[]) (ClrType "System.String" '[]) (ClrType "System.String" '[]) where
+  type ResultTypeS2 (ClrType "System.Console" '[]) (ClrType "WriteLine" '[]) (ClrType "System.String" '[]) (ClrType "System.String" '[]) = 'Nothing
+  rawInvokeS2 = writeLineRaw2
 
 --
 -- Base type
@@ -117,10 +117,17 @@ instance Constructor (ClrType "MyGenType" '[gt0]) '[] where
 
 type instance Members (ClrType "MyGenType" '[gt0]) = '[(ClrType "Add" '[])]
 
-instance MethodI1 (ClrType "MyGenType" '[gt0]) (ClrType "Add" '[]) gt0 where
-  type ResultTypeI1 (ClrType "MyGenType" '[gt0]) (ClrType "Add" '[]) gt0 = 'Nothing
-  rawInvokeI1 = rawInvokeMyGenTypeAdd
+instance MethodI1 (ClrType "MyGenType" '[(ClrType "System.String" '[])]) (ClrType "Add" '[]) (ClrType "System.String" '[]) where
+  type ResultTypeI1 (ClrType "MyGenType" '[(ClrType "System.String" '[])]) (ClrType "Add" '[]) (ClrType "System.String" '[]) = 'Nothing
+  rawInvokeI1 = rawInvokeMyGenTypeAddStr
 
-rawInvokeMyGenTypeAdd :: ObjectID -> t -> IO ()
-rawInvokeMyGenTypeAdd oid t = putStrLn "MyGenType.Add(t)"
+instance MethodI1 (ClrType "MyGenType" '[(ClrType "System.Int32" '[])]) (ClrType "Add" '[]) (ClrType "System.Int32" '[]) where
+  type ResultTypeI1 (ClrType "MyGenType" '[(ClrType "System.Int32" '[])]) (ClrType "Add" '[]) (ClrType "System.Int32" '[]) = 'Nothing
+  rawInvokeI1 = rawInvokeMyGenTypeAddInt
 
+
+rawInvokeMyGenTypeAddStr :: ObjectID -> CString -> IO ()
+rawInvokeMyGenTypeAddStr oid s = putStrLn "MyGenType.Add(String)"
+
+rawInvokeMyGenTypeAddInt :: ObjectID -> Int32 -> IO ()
+rawInvokeMyGenTypeAddInt oid s = putStrLn "MyGenType.Add(Int32)"

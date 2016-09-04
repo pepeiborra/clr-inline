@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleInstances, FlexibleContexts, ScopedTypeVariables, ExistentialQuantification #-}
 {-# LANGUAGE UndecidableInstances, TypeApplications, AllowAmbiguousTypes, TypeInType, TypeFamilyDependencies, FunctionalDependencies #-}
 
-module Clr (invokeS, MethodS(..), invokeI, MethodI(..), MethodI1(..), new, Constructor(..), Members, SuperTypeOf, ObjectID, ClrType, Object(..), BridgeType, BridgeTypeM, BridgeTypes, CurryT ) where
+module Clr (invokeS, MethodS1(..), MethodS2(..), invokeI, MethodI1(..), MethodI2(..), new, Constructor(..), Members, SuperTypeOf, ObjectID, ClrType, Object(..), BridgeType, BridgeTypeM, BridgeTypes, CurryT ) where
 
 import Clr.Bridge
 import Clr.Curry
@@ -22,19 +22,42 @@ import Data.Kind
 
 
 --
--- Static method
---
-class MethodS (t::Type) (m::Type) (args::[Type]) where
-  type ResultTypeS t m args :: Maybe Type
-  rawInvokeS :: CurryT (BridgeTypes args) (IO (BridgeTypeM (ResultTypeS t m args)))
-
---
--- Instance method
+-- Static methods
 --
 
-class MethodI0 (t::Type) (m::Type) where
-  type ResultTypeI0 t m :: Maybe Type
-  rawInvokeI0 :: (BridgeType t) -> (IO (BridgeTypeM (ResultTypeI0 t m)))
+class MethodS1 (t::Type) (m::Type) (arg0::Type) where
+  type ResultTypeS1 t m arg0 :: Maybe Type
+  rawInvokeS1 :: (BridgeType arg0) -> (IO (BridgeTypeM (ResultTypeS1 t m arg0)))
+
+class MethodS2 (t::Type) (m::Type) (arg0::Type) (arg1::Type) where
+  type ResultTypeS2 t m arg0 arg1 :: Maybe Type
+  rawInvokeS2 :: (BridgeType arg0) -> (BridgeType arg1) -> (IO (BridgeTypeM (ResultTypeS2 t m arg0 arg1)))
+
+--
+-- Unification of static methods
+--
+
+class MethodS (n::Nat) (t::Type) (m::Type) (args::[Type]) where
+  type ResultTypeS n t m args :: Maybe Type
+  rawInvokeS :: CurryT' n (BridgeTypes args) (IO (BridgeTypeM (ResultTypeS n t m args)))
+
+instance (MethodS1 t m ()) => MethodS 1 t m '[] where
+  type ResultTypeS 1 t m '[] = ResultTypeS1 t m ()
+  rawInvokeS = rawInvokeS1 @t @m @()
+
+instance (MethodS1 t m a) => MethodS 1 t m '[a] where
+  type ResultTypeS 1 t m '[a] = ResultTypeS1 t m a
+  rawInvokeS = rawInvokeS1 @t @m @a
+
+instance (MethodS2 t m a0 a1) => MethodS 2 t m '[a0, a1] where
+  type ResultTypeS 2 t m '[a0, a1] = ResultTypeS2 t m a0 a1
+  rawInvokeS = rawInvokeS2 @t @m @a0 @a1
+
+
+
+--
+-- Instance methods
+--
 
 class MethodI1 (t::Type) (m::Type) (arg0::Type) where
   type ResultTypeI1 t m arg0 :: Maybe Type
@@ -45,7 +68,7 @@ class MethodI2 (t::Type) (m::Type) (arg0::Type) (arg1::Type) where
   rawInvokeI2 :: (BridgeType t) -> (BridgeType arg0) -> (BridgeType arg1) -> (IO (BridgeTypeM (ResultTypeI2 t m arg0 arg1)))
 
 --
--- Instance method wrappers
+-- Unification of instance methods
 --
 
 class MethodI (n::Nat) (t::Type) (m::Type) (args::[Type]) where
@@ -114,13 +137,14 @@ data Error (s::Symbol) = Error
 --
 -- Static method invocation
 --
-invokeS :: forall m t args args'. ( ResolveArgTypes t m args' ~ args
-                                  , MethodS t m args
-                                  , Marshal args' (BridgeTypes args)
-                                  , Unmarshal (BridgeTypeM (ResultTypeS t m args)) (UnmarshalAs (BridgeTypeM (ResultTypeS t m args)))
-                                  , Curry (TupleSize args') ((BridgeTypes args) -> (IO (BridgeTypeM (ResultTypeS t m args)))) (CurryT (BridgeTypes args) (IO (BridgeTypeM (ResultTypeS t m args))))
-                                  ) => args' -> IO (UnmarshalAs (BridgeTypeM (ResultTypeS t m args)))
-invokeS x = marshal @args' @(BridgeTypes args) @((BridgeTypeM (ResultTypeS t m args))) x (\tup-> uncurryN @(TupleSize args') (rawInvokeS @t @m @args) tup) >>= unmarshal
+invokeS :: forall m t args args' n. ( TupleSize args' ~ n
+                                    , ResolveArgTypes t m args' ~ args
+                                    , MethodS n t m args
+                                    , Marshal args' (BridgeTypes args)
+                                    , Unmarshal (BridgeTypeM (ResultTypeS n t m args)) (UnmarshalAs (BridgeTypeM (ResultTypeS n t m args)))
+                                    , Curry n ((BridgeTypes args) -> (IO (BridgeTypeM (ResultTypeS n t m args)))) (CurryT' n (BridgeTypes args) (IO (BridgeTypeM (ResultTypeS n t m args))))
+                                    ) => args' -> IO (UnmarshalAs (BridgeTypeM (ResultTypeS n t m args)))
+invokeS x = marshal @args' @(BridgeTypes args) @((BridgeTypeM (ResultTypeS n t m args))) x (\tup-> uncurryN @n (rawInvokeS @n @t @m @args) tup) >>= unmarshal
 
 --
 -- Instance method invocation
