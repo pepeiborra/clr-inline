@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleInstances, FlexibleContexts, ScopedTypeVariables, ExistentialQuantification #-}
 {-# LANGUAGE UndecidableInstances, TypeApplications, AllowAmbiguousTypes, TypeInType, TypeFamilyDependencies, FunctionalDependencies #-}
 
-module Clr (invokeS, MethodS1(..), MethodS2(..), invokeI, MethodI1(..), MethodI2(..), new, Constructor1(..), Constructor2(..), Members, SuperTypeOf, ObjectID, ClrType, Object(..), BridgeType, BridgeTypeM, BridgeTypes, CurryT, T, GT ) where
+module Clr (invokeS, MethodS1(..), MethodS2(..), invokeI, MethodI1(..), MethodI2(..), new, Constructor1(..), Constructor2(..), Members, SuperTypeOf, ObjectID, T, Object(..), BridgeType, BridgeTypeM, BridgeTypes, CurryT, GenT ) where
 
 import Clr.Bridge
 import Clr.Curry
@@ -132,9 +132,9 @@ type family ResolveArgTypes t m (args'::Type) :: [Type] where
 -- Something simple just to get the above working for now
 --
 type family UnBridgeType (t::Type) :: [Type] where
-  UnBridgeType String = '[(ClrType "System.String" '[])]
-  UnBridgeType Int32  = '[(ClrType "System.Int32" '[])]
-  UnBridgeType Int64  = '[(ClrType "System.Int64" '[])]
+  UnBridgeType String = '[(T "System.String" '[])]
+  UnBridgeType Int32  = '[(T "System.Int32" '[])]
+  UnBridgeType Int64  = '[(T "System.Int64" '[])]
   UnBridgeType ()     = '[]
   UnBridgeType (a, b) = UnBridgeType a `Concat` UnBridgeType b
 
@@ -154,29 +154,32 @@ data Error (s::Symbol) = Error
 --
 -- Static method invocation
 --
-invokeS :: forall m t args args' n. ( TupleSize args' ~ n
-                                    , ResolveArgTypes t m args' ~ args
-                                    , MethodS n t m args
-                                    , Marshal args' (BridgeTypes args)
-                                    , Unmarshal (BridgeTypeM (ResultTypeS n t m args)) (UnmarshalAs (BridgeTypeM (ResultTypeS n t m args)))
-                                    , Curry n ((BridgeTypes args) -> (IO (BridgeTypeM (ResultTypeS n t m args)))) (CurryT' n (BridgeTypes args) (IO (BridgeTypeM (ResultTypeS n t m args))))
-                                    ) => args' -> IO (UnmarshalAs (BridgeTypeM (ResultTypeS n t m args)))
+invokeS :: forall ms ts m t args args' n. ( ToClrType ms ~ m
+                                          , ToClrType ts ~ t
+                                          , TupleSize args' ~ n
+                                          , ResolveArgTypes t m args' ~ args
+                                          , MethodS n t m args
+                                          , Marshal args' (BridgeTypes args)
+                                          , Unmarshal (BridgeTypeM (ResultTypeS n t m args)) (UnmarshalAs (BridgeTypeM (ResultTypeS n t m args)))
+                                          , Curry n ((BridgeTypes args) -> (IO (BridgeTypeM (ResultTypeS n t m args)))) (CurryT' n (BridgeTypes args) (IO (BridgeTypeM (ResultTypeS n t m args))))
+                                          ) => args' -> IO (UnmarshalAs (BridgeTypeM (ResultTypeS n t m args)))
 invokeS x = marshal @args' @(BridgeTypes args) @((BridgeTypeM (ResultTypeS n t m args))) x (\tup-> uncurryN @n (rawInvokeS @n @t @m @args) tup) >>= unmarshal
 
 --
 -- Instance method invocation
 --
 
-invokeI :: forall m t t' args args' n. ( TupleSize args' ~ n
-                                       , ResolveBaseType t' m ~ t
-                                       , t' `InheritsFrom` t ~ 'True
-                                       , ResolveArgTypes t m args' ~ args
-                                       , MethodI n t m args
-                                       , Marshal args' (BridgeTypes args)
-                                       , Marshal (Object t) (BridgeType t)
-                                       , Unmarshal (BridgeTypeM (ResultTypeI n t m args)) (UnmarshalAs (BridgeTypeM (ResultTypeI n t m args)))
-                                       , Curry n ((BridgeTypes args) -> (IO (BridgeTypeM (ResultTypeI n t m args)))) (CurryT' n (BridgeTypes args) (IO (BridgeTypeM (ResultTypeI n t m args))))
-                                       ) => Object t' -> args' -> IO (UnmarshalAs (BridgeTypeM (ResultTypeI n t m args)))
+invokeI :: forall ms m t t' args args' n. ( ToClrType ms ~ m
+                                          , TupleSize args' ~ n
+                                          , ResolveBaseType t' m ~ t
+                                          , t' `InheritsFrom` t ~ 'True
+                                          , ResolveArgTypes t m args' ~ args
+                                          , MethodI n t m args
+                                          , Marshal args' (BridgeTypes args)
+                                          , Marshal (Object t) (BridgeType t)
+                                          , Unmarshal (BridgeTypeM (ResultTypeI n t m args)) (UnmarshalAs (BridgeTypeM (ResultTypeI n t m args)))
+                                          , Curry n ((BridgeTypes args) -> (IO (BridgeTypeM (ResultTypeI n t m args)))) (CurryT' n (BridgeTypes args) (IO (BridgeTypeM (ResultTypeI n t m args))))
+                                          ) => Object t' -> args' -> IO (UnmarshalAs (BridgeTypeM (ResultTypeI n t m args)))
 invokeI obj x = marshal @args' @(BridgeTypes args) @((BridgeTypeM (ResultTypeI n t m args))) x (\tup-> marshal @(Object t) @(BridgeType t) @((BridgeTypeM (ResultTypeI n t m args))) (upCast obj) (\obj'-> uncurryN @n (rawInvokeI @n @t @m @args obj') tup)) >>= unmarshal
 
 
@@ -185,13 +188,14 @@ invokeI obj x = marshal @args' @(BridgeTypes args) @((BridgeTypeM (ResultTypeI n
 --
 -- Constructor invocation
 --
-new :: forall t args args' n. ( TupleSize args' ~ n
-                              , ResolveArgTypes t t args' ~ args
-                              , Constructor n t args
-                              , Marshal args' (BridgeTypes args)
-                              , Unmarshal (BridgeType t) (Object t)
-                              , Curry n ((BridgeTypes args) -> (IO (BridgeType t))) (CurryT' n (BridgeTypes args) (IO (BridgeType t)))
-                              ) => args' -> IO (Object t)
+new :: forall ts t args args' n. ( ToClrType ts ~ t
+                                 , TupleSize args' ~ n
+                                 , ResolveArgTypes t t args' ~ args
+                                 , Constructor n t args
+                                 , Marshal args' (BridgeTypes args)
+                                 , Unmarshal (BridgeType t) (Object t)
+                                 , Curry n ((BridgeTypes args) -> (IO (BridgeType t))) (CurryT' n (BridgeTypes args) (IO (BridgeType t)))
+                                 ) => args' -> IO (Object t)
 new x = marshal @args' @(BridgeTypes args) @(BridgeType t) x (\tup-> uncurryN @n (rawNew @n @t @args) tup) >>= unmarshal
 
 
@@ -221,18 +225,18 @@ type family BridgeTypeM (x::Maybe Type) :: Type where
 --
 type family BridgeTypePrim (x::Type)
 
-type instance BridgeTypePrim (ClrType "System.String" '[])  = CString
-type instance BridgeTypePrim (ClrType "System.Int16" '[])   = Int16
-type instance BridgeTypePrim (ClrType "System.UInt16" '[])  = Word16
-type instance BridgeTypePrim (ClrType "System.Int32" '[])   = Int32
-type instance BridgeTypePrim (ClrType "System.UInt32" '[])  = Word32
-type instance BridgeTypePrim (ClrType "System.Int64" '[])   = Int64
-type instance BridgeTypePrim (ClrType "System.UInt64" '[])  = Word64
-type instance BridgeTypePrim (ClrType "System.IntPtr" '[])  = IntPtr
-type instance BridgeTypePrim (ClrType "System.UIntPtr" '[]) = WordPtr
-type instance BridgeTypePrim (ClrType "System.Char" '[])    = Char
-type instance BridgeTypePrim (ClrType "System.Single" '[])  = CFloat
-type instance BridgeTypePrim (ClrType "System.Double" '[])  = CDouble
+type instance BridgeTypePrim (T "System.String" '[])  = CString
+type instance BridgeTypePrim (T "System.Int16" '[])   = Int16
+type instance BridgeTypePrim (T "System.UInt16" '[])  = Word16
+type instance BridgeTypePrim (T "System.Int32" '[])   = Int32
+type instance BridgeTypePrim (T "System.UInt32" '[])  = Word32
+type instance BridgeTypePrim (T "System.Int64" '[])   = Int64
+type instance BridgeTypePrim (T "System.UInt64" '[])  = Word64
+type instance BridgeTypePrim (T "System.IntPtr" '[])  = IntPtr
+type instance BridgeTypePrim (T "System.UIntPtr" '[]) = WordPtr
+type instance BridgeTypePrim (T "System.Char" '[])    = Char
+type instance BridgeTypePrim (T "System.Single" '[])  = CFloat
+type instance BridgeTypePrim (T "System.Double" '[])  = CDouble
 
 --
 -- Bridge type that operates on lists

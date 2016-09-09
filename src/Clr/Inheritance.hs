@@ -39,24 +39,24 @@ type family InheritsFrom (t1 :: Type) (t2 :: Type) :: Bool where
 -- Value types are just those that inherit from System.ValueType
 --
 type family IsValueType (a::Type) :: Bool where
-  IsValueType a = a `InheritsFrom` (ClrType "System.ValueType" '[])
+  IsValueType a = a `InheritsFrom` (T "System.ValueType" '[])
 
 --
 -- Prim types are all values types + Sytem.String
 --
 type family IsPrimType (a::Type) :: Bool where
-  IsPrimType (ClrType "System.String" '[])  = 'True
-  IsPrimType (ClrType "System.Int16" '[])   = 'True
-  IsPrimType (ClrType "System.UInt16" '[])  = 'True
-  IsPrimType (ClrType "System.Int32" '[])   = 'True
-  IsPrimType (ClrType "System.UInt32" '[])  = 'True
-  IsPrimType (ClrType "System.Int64" '[])   = 'True
-  IsPrimType (ClrType "System.UInt64" '[])  = 'True
-  IsPrimType (ClrType "System.IntPtr" '[])  = 'True
-  IsPrimType (ClrType "System.UIntPtr" '[]) = 'True
-  IsPrimType (ClrType "System.Char" '[])    = 'True
-  IsPrimType (ClrType "System.Single" '[])  = 'True
-  IsPrimType (ClrType "System.Double" '[])  = 'True
+  IsPrimType (T "System.String" '[])  = 'True
+  IsPrimType (T "System.Int16" '[])   = 'True
+  IsPrimType (T "System.UInt16" '[])  = 'True
+  IsPrimType (T "System.Int32" '[])   = 'True
+  IsPrimType (T "System.UInt32" '[])  = 'True
+  IsPrimType (T "System.Int64" '[])   = 'True
+  IsPrimType (T "System.UInt64" '[])  = 'True
+  IsPrimType (T "System.IntPtr" '[])  = 'True
+  IsPrimType (T "System.UIntPtr" '[]) = 'True
+  IsPrimType (T "System.Char" '[])    = 'True
+  IsPrimType (T "System.Single" '[])  = 'True
+  IsPrimType (T "System.Double" '[])  = 'True
   IsPrimType t = 'False
   -- IsPrimType  a                            = IsValueType a
 
@@ -69,24 +69,24 @@ type family IsRefType (a::Type) :: Bool where
 --
 -- Important SuperType declarations
 --
-type instance SuperTypeOf (ClrType "System.Object" '[])    = 'Nothing
-type instance SuperTypeOf (ClrType "System.ValueType" '[]) = 'Just (ClrType "System.Object" '[])
+type instance SuperTypeOf (T "System.Object" '[])    = 'Nothing
+type instance SuperTypeOf (T "System.ValueType" '[]) = 'Just (T "System.Object" '[])
 
 --
 -- SuperType declarations for each prim type
 --
-type instance SuperTypeOf (ClrType "System.String" '[])  = 'Just (ClrType "System.Object" '[])
-type instance SuperTypeOf (ClrType "System.Int16" '[])   = 'Just (ClrType "System.ValueType" '[])
-type instance SuperTypeOf (ClrType "System.UInt16" '[])  = 'Just (ClrType "System.ValueType" '[])
-type instance SuperTypeOf (ClrType "System.Int32" '[])   = 'Just (ClrType "System.ValueType" '[])
-type instance SuperTypeOf (ClrType "System.UInt32" '[])  = 'Just (ClrType "System.ValueType" '[])
-type instance SuperTypeOf (ClrType "System.Int64" '[])   = 'Just (ClrType "System.ValueType" '[])
-type instance SuperTypeOf (ClrType "System.UInt64" '[])  = 'Just (ClrType "System.ValueType" '[])
-type instance SuperTypeOf (ClrType "System.IntPtr" '[])  = 'Just (ClrType "System.ValueType" '[])
-type instance SuperTypeOf (ClrType "System.UIntPtr" '[]) = 'Just (ClrType "System.ValueType" '[])
-type instance SuperTypeOf (ClrType "System.Char" '[])    = 'Just (ClrType "System.ValueType" '[])
-type instance SuperTypeOf (ClrType "System.Single" '[])  = 'Just (ClrType "System.ValueType" '[])
-type instance SuperTypeOf (ClrType "System.Double" '[])  = 'Just (ClrType "System.ValueType" '[])
+type instance SuperTypeOf (T "System.String" '[])  = 'Just (T "System.Object" '[])
+type instance SuperTypeOf (T "System.Int16" '[])   = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.UInt16" '[])  = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.Int32" '[])   = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.UInt32" '[])  = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.Int64" '[])   = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.UInt64" '[])  = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.IntPtr" '[])  = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.UIntPtr" '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.Char" '[])    = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.Single" '[])  = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.Double" '[])  = 'Just (T "System.ValueType" '[])
 
 --
 -- Casting up the hierarchy. Always safe

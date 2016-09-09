@@ -20,19 +20,26 @@ data Object (typ::Type) where
   Object :: ObjectID -> Object typ
 
 --
--- A type in the Clr is its name plus ero or more other types that it is instantiated with (generics)
+-- A type in the Clr is its name plus zero or more other types that it is instantiated with (generics)
 --
-data ClrType (name::Symbol) (genArgs::[Type])
+data T (name::Symbol) (genArgs::[Type])
 
 --
--- Simple construction of a non generic type
+-- Simplifies contruction of a ClrType from just the name
 --
-type family T (name::Symbol) where
-  T name = ClrType name '[]
+type family ToClrType (x::k) :: Type where
+  ToClrType (name::Symbol) = T name '[]
+  ToClrType (T name gt)    = T name  gt
 
 --
--- Construction of a generic type
+-- Like above, but works on a list
 --
-type family GT (name::Symbol) (gt::[Type]) where
-  GT name gt = ClrType name gt
+type family ToClrTypeL (ts::[k]) :: [Type] where
+  ToClrTypeL (x ': '[]) = '[ToClrType x]
+  ToClrTypeL (x ':  xs) = (ToClrType x) ': (ToClrTypeL xs)
 
+--
+-- Simplifies contruction of generic type as the list may be symbols
+--
+type family GenT (name::Symbol) (xs::k) :: Type where
+  GenT (name::Symbol) xs = T name (ToClrTypeL xs)
