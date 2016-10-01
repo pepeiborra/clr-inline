@@ -5,7 +5,6 @@ module Bindings where
 import Clr
 import Foreign.C
 import Data.Int
-import Data.Kind
 
 --
 -- Static method

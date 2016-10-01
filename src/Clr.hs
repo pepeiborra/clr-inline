@@ -17,7 +17,6 @@ import Data.Word
 import Foreign.Ptr
 import GHC.TypeLits
 import Data.Type.Bool
-import Data.Type.Equality
 import Data.Kind
 
 

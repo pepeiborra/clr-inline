@@ -7,7 +7,6 @@ module Clr.Inheritance where
 import Clr.ListTuple
 import Clr.Object
 
-import GHC.TypeLits
 import Data.Kind
 import Data.Type.Equality
 import Data.Type.Bool
@@ -91,12 +90,12 @@ type instance SuperTypeOf (T "System.Double" '[])  = 'Just (T "System.ValueType"
 --
 -- Casting up the hierarchy. Always safe
 --
-upCast :: (t `InheritsFrom` t' ~ True ) => Object t -> Object t'
+upCast :: (t `InheritsFrom` t' ~ 'True ) => Object t -> Object t'
 upCast = unsafeCoerce
 
 --
 -- Casting down the hierarchy. TODO: runtime checks
 --
-unsafeDownCast :: (t' `InheritsFrom` t ~ True ) => Object t -> Object t'
+unsafeDownCast :: (t' `InheritsFrom` t ~ 'True ) => Object t -> Object t'
 unsafeDownCast = unsafeCoerce
 
