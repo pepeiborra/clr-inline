@@ -1,4 +1,4 @@
-{-# LANGUAGE DataKinds, FlexibleInstances, MultiParamTypeClasses, TypeFamilies, AllowAmbiguousTypes, ScopedTypeVariables, TypeApplications, TypeOperators #-}
+{-# LANGUAGE DataKinds, FlexibleInstances, MultiParamTypeClasses, TypeFamilies, AllowAmbiguousTypes, ScopedTypeVariables, TypeApplications, TypeOperators, TypeInType #-}
 
 module Bindings where
 
@@ -131,3 +131,6 @@ rawInvokeMyGenTypeAddStr oid s = putStrLn "MyGenType.Add(String)"
 
 rawInvokeMyGenTypeAddInt :: ObjectID -> Int32 -> IO ()
 rawInvokeMyGenTypeAddInt oid s = putStrLn "MyGenType.Add(Int32)"
+
+instance Foldable (T "MyGenType") where
+  foldr = undefined -- just need to make sure this compiles for now to ensure we can get good support for IEnumerable

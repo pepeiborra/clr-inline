@@ -1,4 +1,4 @@
-{-# LANGUAGE DataKinds, KindSignatures, GADTs, TypeInType, TypeOperators, TypeFamilies #-}
+{-# LANGUAGE DataKinds, KindSignatures, GADTs, TypeInType, TypeOperators, TypeFamilies, UndecidableInstances #-}
 
 module Clr.Object where
 
@@ -22,7 +22,7 @@ data Object (typ::Type) where
 --
 -- A type in the Clr is its name plus zero or more other types that it is instantiated with (generics)
 --
-data T (name::Symbol) (genArgs::[Type])
+data T (name::Symbol) genArgs
 
 --
 -- Simplifies contruction of a ClrType from just the name
