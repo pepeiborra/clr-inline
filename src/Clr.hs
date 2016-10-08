@@ -11,10 +11,7 @@ import Clr.ListTuple
 import Clr.Marshal
 import Clr.Object
 
-import Foreign.C
 import Data.Int
-import Data.Word
-import Foreign.Ptr
 import GHC.TypeLits
 import Data.Type.Bool
 import Data.Kind
@@ -148,7 +145,7 @@ type family ResolveBaseType' (t::Maybe Type) (m::Type) :: Type where
   ResolveBaseType' 'Nothing  m = Error "No Base Type Of Nothing"
   ResolveBaseType' ('Just t) m = If (t `HasMember` m) t (ResolveBaseType' (SuperTypeOf t) m)
 
-data Error (s::Symbol) = Error
+data Error (s::Symbol)
 
 --
 -- Static method invocation
@@ -196,58 +193,4 @@ new :: forall ts t args args' n. ( ToClrType ts ~ t
                                  , Curry n ((BridgeTypes args) -> (IO (BridgeType t))) (CurryT' n (BridgeTypes args) (IO (BridgeType t)))
                                  ) => args' -> IO (Object t)
 new x = marshal @args' @(BridgeTypes args) @(BridgeType t) x (\tup-> uncurryN @n (rawNew @n @t @args) tup) >>= unmarshal
-
-
-
---
--- I attempted to move the following lines into a sperate module Clr.Bridge but it
--- wouldn't copmpile with stack build. Perhaps some obscure ghc bug since
--- it would load fine stack ghci though. Could do with further investigation.
---
-
---
--- Bridge type goes from something like "System.String" to CString
---
-type family BridgeType (x::Type) :: Type where
-  BridgeType () = ()
-  BridgeType a  = If (IsPrimType a) (BridgeTypePrim a) ObjectID
-
---
--- Maybe on bridge types, choosing () for Nothing
---
-type family BridgeTypeM (x::Maybe Type) :: Type where
-  BridgeTypeM 'Nothing = ()
-  BridgeTypeM ('Just x) = BridgeType x
-
---
--- Bridge types of each primitive
---
-type family BridgeTypePrim (x::Type)
-
-type instance BridgeTypePrim (T "System.String" '[])  = CString
-type instance BridgeTypePrim (T "System.Int16" '[])   = Int16
-type instance BridgeTypePrim (T "System.UInt16" '[])  = Word16
-type instance BridgeTypePrim (T "System.Int32" '[])   = Int32
-type instance BridgeTypePrim (T "System.UInt32" '[])  = Word32
-type instance BridgeTypePrim (T "System.Int64" '[])   = Int64
-type instance BridgeTypePrim (T "System.UInt64" '[])  = Word64
-type instance BridgeTypePrim (T "System.IntPtr" '[])  = IntPtr
-type instance BridgeTypePrim (T "System.UIntPtr" '[]) = WordPtr
-type instance BridgeTypePrim (T "System.Char" '[])    = Char
-type instance BridgeTypePrim (T "System.Single" '[])  = CFloat
-type instance BridgeTypePrim (T "System.Double" '[])  = CDouble
-
---
--- Bridge type that operates on lists
---
-type family BridgeTypeL (a::[Type]) :: [Type] where
-  BridgeTypeL '[] = '[]
-  BridgeTypeL (x ': xs) = BridgeType x ': BridgeTypeL xs
-
---
--- Bridge types with a param of a list a result as a tuple
---
-type family BridgeTypes (x::[Type]) :: Type where
-  BridgeTypes x = ListToTuple (BridgeTypeL x)
-
 
