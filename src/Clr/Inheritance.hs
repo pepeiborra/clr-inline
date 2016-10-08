@@ -5,6 +5,7 @@
 module Clr.Inheritance where
 
 import Clr.ListTuple
+import Clr.Types
 import Clr.Object
 
 import Data.Kind
@@ -39,25 +40,6 @@ type family InheritsFrom (t1 :: Type) (t2 :: Type) :: Bool where
 --
 type family IsValueType (a::Type) :: Bool where
   IsValueType a = a `InheritsFrom` (T "System.ValueType" '[])
-
---
--- Prim types are all values types + Sytem.String
---
-type family IsPrimType (a::Type) :: Bool where
-  IsPrimType (T "System.String" '[])  = 'True
-  IsPrimType (T "System.Int16" '[])   = 'True
-  IsPrimType (T "System.UInt16" '[])  = 'True
-  IsPrimType (T "System.Int32" '[])   = 'True
-  IsPrimType (T "System.UInt32" '[])  = 'True
-  IsPrimType (T "System.Int64" '[])   = 'True
-  IsPrimType (T "System.UInt64" '[])  = 'True
-  IsPrimType (T "System.IntPtr" '[])  = 'True
-  IsPrimType (T "System.UIntPtr" '[]) = 'True
-  IsPrimType (T "System.Char" '[])    = 'True
-  IsPrimType (T "System.Single" '[])  = 'True
-  IsPrimType (T "System.Double" '[])  = 'True
-  IsPrimType t = 'False
-  -- IsPrimType  a                            = IsValueType a
 
 --
 -- Reference types are those that do not inherit fom System.ValueType

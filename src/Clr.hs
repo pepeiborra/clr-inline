@@ -10,6 +10,7 @@ import Clr.Inheritance
 import Clr.ListTuple
 import Clr.Marshal
 import Clr.Object
+import Clr.Types
 
 import Data.Int
 import GHC.TypeLits

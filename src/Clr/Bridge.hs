@@ -2,13 +2,12 @@
 
 module Clr.Bridge where
 
-import Clr.Inheritance
-import Clr.Object
 import Clr.ListTuple
+import Clr.Object
+import Clr.Types
 
 import Data.Kind
 import Data.Type.Bool
-import GHC.TypeLits
 
 import Data.Int
 import Data.Word
