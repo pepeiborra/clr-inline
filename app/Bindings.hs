@@ -1,4 +1,4 @@
-{-# LANGUAGE DataKinds, FlexibleInstances, MultiParamTypeClasses, TypeFamilies, AllowAmbiguousTypes, ScopedTypeVariables, TypeApplications, TypeOperators #-}
+{-# LANGUAGE TypeInType, FlexibleInstances, MultiParamTypeClasses, TypeFamilies, AllowAmbiguousTypes, ScopedTypeVariables, TypeApplications, TypeOperators #-}
 
 module Bindings where
 
@@ -111,6 +111,8 @@ rawInvokeDerivedTypeInt32 d s = putStrLn "DerivedType.Foo(Int32)"
 
 type instance SuperTypeOf (T "MyGenType" '[gt0]) = 'Just (T "System.Object" '[])
 
+type instance Interfaces (T "MyGenType" t) = '[T "IEnumerable" '[], T "IEnumerable" t]
+
 instance Constructor1 (T "MyGenType" '[gt0]) () where
   rawNew1 () = putStrLn "Constructed MyGenType" >> return (1::Int64)
 
@@ -123,7 +125,6 @@ instance MethodI1 (T "MyGenType" '[(T "System.String" '[])]) (T "Add" '[]) (T "S
 instance MethodI1 (T "MyGenType" '[(T "System.Int32" '[])]) (T "Add" '[]) (T "System.Int32" '[]) where
   type ResultTypeI1 (T "MyGenType" '[(T "System.Int32" '[])]) (T "Add" '[]) (T "System.Int32" '[]) = 'Nothing
   rawInvokeI1 = rawInvokeMyGenTypeAddInt
-
 
 rawInvokeMyGenTypeAddStr :: ObjectID -> CString -> IO ()
 rawInvokeMyGenTypeAddStr oid s = putStrLn "MyGenType.Add(String)"

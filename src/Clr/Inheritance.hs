@@ -1,6 +1,5 @@
-{-# LANGUAGE DataKinds, PolyKinds, TypeFamilies, MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleInstances, FlexibleContexts, UndecidableInstances #-}
-{-# LANGUAGE AllowAmbiguousTypes, FunctionalDependencies, TypeOperators #-}
+{-# LANGUAGE TypeInType, PolyKinds, TypeFamilies  #-}
+{-# LANGUAGE UndecidableInstances, TypeOperators #-}
 
 module Clr.Inheritance where
 

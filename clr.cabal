@@ -15,7 +15,15 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Clr, Clr.Bridge, Clr.Curry, Clr.Inheritance, Clr.ListTuple, Clr.Marshal, Clr.Object
+  exposed-modules:     Clr,
+                       Clr.Bridge,
+                       Clr.Curry,
+                       Clr.Inheritance,
+                       Clr.Interface,
+                       Clr.ListTuple,
+                       Clr.Marshal,
+                       Clr.Object,
+                       Clr.Types
   other-modules:
   build-depends:       base >= 4.7 && < 5, tuple
   default-language:    Haskell2010

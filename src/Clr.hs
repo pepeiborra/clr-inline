@@ -2,11 +2,12 @@
 {-# LANGUAGE FlexibleInstances, FlexibleContexts, ScopedTypeVariables, ExistentialQuantification #-}
 {-# LANGUAGE UndecidableInstances, TypeApplications, AllowAmbiguousTypes, TypeInType, TypeFamilyDependencies, FunctionalDependencies #-}
 
-module Clr (invokeS, MethodS1(..), MethodS2(..), invokeI, MethodI1(..), MethodI2(..), new, Constructor1(..), Constructor2(..), Members, SuperTypeOf, ObjectID, T, Object(..), BridgeType, BridgeTypeM, BridgeTypes, CurryT, GenT ) where
+module Clr (invokeS, MethodS1(..), MethodS2(..), invokeI, MethodI1(..), MethodI2(..), new, Constructor1(..), Constructor2(..), Members, SuperTypeOf, Interfaces, Implements, ObjectID, T, ToClrType, Object(..), BridgeType, BridgeTypeM, BridgeTypes, CurryT, GenT ) where
 
 import Clr.Bridge
 import Clr.Curry
 import Clr.Inheritance
+import Clr.Interface
 import Clr.ListTuple
 import Clr.Marshal
 import Clr.Object
