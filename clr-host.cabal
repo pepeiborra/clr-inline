@@ -1,0 +1,54 @@
+name:                clr-host
+version:             0.1.0.0
+synopsis:            Initial project template from stack
+description:         Please see README.md
+homepage:            https://gitlab.com/tim-m89/clr-host
+license:             BSD3
+license-file:        LICENSE
+author:              Tim Matthews
+maintainer:          tim.matthews7@gmail.com
+copyright:           Copyright: (c) 2016 Tim Matthews
+category:            Development
+build-type:          Simple
+cabal-version:       >=1.10
+
+flag build_dotNet
+  description: build with .Net support
+  default: False
+
+flag build_mono
+  description: build with mono support
+  default: False
+
+library
+  hs-source-dirs:      src
+  c-sources:           src/dotNetHost.c
+  default-language:    Haskell2010
+  if flag(build_dotNet) && flag(build_mono)
+    Cpp-options:         -DBUILD_DOTNET, -DBUILD_MONO
+    cc-options:          -DBUILD_DOTNET, -DBUILD_MONO
+    exposed-modules:     Clr.Host, Clr.Host.Config, Clr.Host.DotNet, Clr.Host.Mono
+    build-depends:       base >= 4.7 && < 5, Win32, bytestring, file-embed
+  else { if flag(build_dotNet) {
+    Cpp-options:         -DBUILD_DOTNET
+    cc-options:          -DBUILD_DOTNET
+    exposed-modules:     Clr.Host, Clr.Host.Config, Clr.Host.DotNet
+    build-depends:       base >= 4.7 && < 5, Win32, bytestring, file-embed }
+  else { if flag(build_mono) {
+    Cpp-options:         -DBUILD_MONO
+    cc-options:          -DBUILD_MONO
+    exposed-modules:     Clr.Host, Clr.Host.Config, Clr.Host.Mono
+    build-depends:       base >= 4.7 && < 5, bytestring, file-embed } } }
+
+test-suite clr-host-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  build-depends:       base
+                     , clr-host
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  default-language:    Haskell2010
+
+source-repository head
+  type:     git
+  location: https://gitlab.com/tim-m89/clr-host
