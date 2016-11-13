@@ -9,36 +9,52 @@ author:              Tim Matthews
 maintainer:          tim.matthews7@gmail.com
 copyright:           Copyright: (c) 2016 Tim Matthews
 category:            Development
-build-type:          Simple
+build-type:          Custom
+extra-source-files:  src/Driver.cs
+extra-tmp-files:     src/Driver.dll
 cabal-version:       >=1.10
 
-flag build_dotNet
+flag enable_dotnet
   description: build with .Net support
   default: False
 
-flag build_mono
+flag enable_mono
   description: build with mono support
   default: False
+
+custom-setup
+  setup-depends:       base, directory, filepath, Cabal, transformers
 
 library
   hs-source-dirs:      src
   c-sources:           src/dotNetHost.c
   default-language:    Haskell2010
-  if flag(build_dotNet) && flag(build_mono)
-    Cpp-options:         -DBUILD_DOTNET, -DBUILD_MONO
-    cc-options:          -DBUILD_DOTNET, -DBUILD_MONO
+  other-modules:       Clr.Host.Driver
+  if flag(enable_dotnet) && flag(enable_mono)
+    Cpp-options:         -DHAVE_DOTNET, -DHAVE_MONO
+    cc-options:          -DHAVE_DOTNET, -DHAVE_MONO
     exposed-modules:     Clr.Host, Clr.Host.Config, Clr.Host.DotNet, Clr.Host.Mono
-    build-depends:       base >= 4.7 && < 5, Win32, bytestring, file-embed
-  else { if flag(build_dotNet) {
-    Cpp-options:         -DBUILD_DOTNET
-    cc-options:          -DBUILD_DOTNET
+  if flag(enable_dotnet) && !flag(enable_mono)
+    Cpp-options:         -DHAVE_DOTNET
+    cc-options:          -DHAVE_DOTNET
     exposed-modules:     Clr.Host, Clr.Host.Config, Clr.Host.DotNet
-    build-depends:       base >= 4.7 && < 5, Win32, bytestring, file-embed }
-  else { if flag(build_mono) {
-    Cpp-options:         -DBUILD_MONO
-    cc-options:          -DBUILD_MONO
+  if !flag(enable_dotnet) && flag(enable_mono)
+    Cpp-options:         -DHAVE_MONO
+    cc-options:          -DHAVE_MONO
     exposed-modules:     Clr.Host, Clr.Host.Config, Clr.Host.Mono
-    build-depends:       base >= 4.7 && < 5, bytestring, file-embed } } }
+  if !flag(enable_dotnet) && !flag(enable_mono)
+    if os(windows)
+      Cpp-options:         -DHAVE_DOTNET
+      cc-options:          -DHAVE_DOTNET
+      exposed-modules:     Clr.Host, Clr.Host.Config, Clr.Host.DotNet
+    else
+      Cpp-options:         -DHAVE_MONO
+      cc-options:          -DHAVE_MONO
+      exposed-modules:     Clr.Host, Clr.Host.Config, Clr.Host.Mono
+  if os(windows)
+    build-depends:       base >= 4.7 && < 5, bytestring, file-embed, Win32
+  else
+    build-depends:       base >= 4.7 && < 5, bytestring, file-embed
 
 test-suite clr-host-test
   type:                exitcode-stdio-1.0
