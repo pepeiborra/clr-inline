@@ -22,11 +22,9 @@ import Text.Printf
 import Clr.Host.Driver
 
 
--- | 'InterfacePtr' is a pointer to an arbitrary COM interface (which is a pointer to
---   a vtable of function pointers for the interface methods).
-type InterfacePtr = Ptr (Ptr (FunPtr ()))
 
 type ICorRuntimeHost = InterfacePtr
+type ICLRRuntimeHost = InterfacePtr
 type ICLRMetaHost    = InterfacePtr
 type ICLRRuntimeInfo = InterfacePtr
 type IEnumUnknown    = InterfacePtr
@@ -43,6 +41,9 @@ stopHostDotNet = do
 
 clsid_CorRuntimeHost = Guid 0xCB2F6723 0xAB3A 0x11D2 0x9C 0x40 0x00 0xC0 0x4F 0xA3 0x0A 0x3E
 iid_ICorRuntimeHost  = Guid 0xCB2F6722 0xAB3A 0x11D2 0x9C 0x40 0x00 0xC0 0x4F 0xA3 0x0A 0x3E
+
+clsid_CLRRuntimeHost = Guid 0x90F1A06E 0x7712 0x4762 0x86 0xB5 0x7A 0x5E 0xBA 0x6B 0xDB 0x02
+iid_ICLRRuntimeHost  = Guid 0x90F1A06C 0x7712 0x4762 0x86 0xB5 0x7A 0x5E 0xBA 0x6B 0xDB 0x02
 
 -- | 'corBindToRunTimeEx' loads the CLR execution engine into the process and returns
 --   a COM interface for it.
@@ -66,23 +67,28 @@ corBindToRuntimeEx hMscoree = do
 type CorBindToRuntimeEx = LPCWSTR -> LPCWSTR -> DWORD -> Ptr CLSID -> Ptr IID -> Ptr ICorRuntimeHost -> IO HResult
 foreign import stdcall "dynamic" makeCorBindToRuntimeEx :: FunPtr CorBindToRuntimeEx -> CorBindToRuntimeEx
 
-
--- | 'createMetaHost'
-createMetaHost :: Addr -> IO ICLRMetaHost
-createMetaHost clrCreateInstanceAddr = do
-  let clsid_CLRMetaHost = Guid 0X9280188D 0X0E8E 0X4867 0XB3 0X0C 0X7F 0XA8 0X38 0X84 0XE8 0XDE
-    iid_ICLRMetaHost  = Guid 0XD332DB9E 0XB9B3 0X4125 0X82 0X07 0XA1 0X48 0X84 0XF5 0X32 0X16
-
-  let clrCreateInstance = makeCLRCreateInstance $ castPtrToFunPtr clrCreateInstanceAddr
-
-  with (nullPtr :: ICLRMetaHost) $ \clrMetaHostPtr ->
-    with clsid_CLRMetaHost $ \refCLSID_CLRMetaHost ->
-      with iid_ICLRMetaHost $ \refIID_ICLRMetaHost -> do
-        hr <- clrCreateInstance refCLSID_CLRMetaHost refIID_ICLRMetaHost clrMetaHostPtr
+clrCreateInstance :: HINSTANCE -> Guid -> Guid -> IO InterfacePtr
+clrCreateInstance hMscoree clsid iid = do
+  clrCreateInstanceAddr <- getProcAddress hMscoree "CLRCreateInstance"
+  if clrCreateInstanceAddr == nullPtr then
+    return nullPtr
+  else do
+    let clrCreateInstance' = makeCLRCreateInstance $ castPtrToFunPtr clrCreateInstanceAddr
+    with (nullPtr :: InterfacePtr) $ \interfacePtr ->
+      with clsid $ \refCLSID -> with iid $ \refIID -> do
+        hr <- clrCreateInstance refCLSID refIID interfacePtr
         if hr == 0 then
-          peek clrMetaHostPtr
+          peek interfacePtr
         else
           return nullPtr
+
+
+-- | 'createMetaHost'
+createMetaHost :: HINSTANCE -> IO ICLRMetaHost
+createMetaHost hMscoree = clrCreateInstance hMscoree clsid_CLRMetaHost iid_ICLRMetaHost
+                            where clsid_CLRMetaHost = Guid 0X9280188D 0X0E8E 0X4867 0XB3 0X0C 0X7F 0XA8 0X38 0X84 0XE8 0XDE
+                                  iid_ICLRMetaHost  = Guid 0XD332DB9E 0XB9B3 0X4125 0X82 0X07 0XA1 0X48 0X84 0XF5 0X32 0X16
+
 
 type CLRCreateInstance = Ptr CLSID -> Ptr IID -> Ptr ICLRMetaHost -> IO HResult
 foreign import stdcall "dynamic" makeCLRCreateInstance :: FunPtr CLRCreateInstance -> CLRCreateInstance
@@ -142,13 +148,21 @@ foreign import stdcall "dynamic" makeGetVersionString_ICLRRuntimeInfo :: FunPtr 
 
 -- | 'getCorHost_ICLRRuntimeInfo'
 getCorHost_ICLRRuntimeInfo :: ICLRRuntimeInfo -> IO ICorRuntimeHost
-getCorHost_ICLRRuntimeInfo this = do
+getCorHost_ICLRRuntimeInfo this = getInterface_ICLRRuntimeInfo this clsid_CorRuntimeHost iid_ICorRuntimeHost
+
+-- | 'getCLRHost_ICLRRuntimeInfo'
+getCLRHost_ICLRRuntimeInfo :: ICLRRuntimeInfo -> IO ICLRRuntimeHost
+getCLRHost_ICLRRuntimeInfo this = getInterface_ICLRRuntimeInfo this clsid_CLRRuntimeHost iid_ICLRRuntimeHost
+
+-- | 'getInterface_ICLRRuntimeInfo'
+getInterface_ICLRRuntimeInfo :: ICLRRuntimeInfo -> Guid -> Guid -> IO InterfacePtr
+getInterface_ICLRRuntimeInfo this clsid iid = do
   f <- getInterfaceFunction 9 makeGetInterface_ICLRRuntimeInfo this
-  with (nullPtr :: ICorRuntimeHost) $ \clrHostPtr -> do
-    with clsid_CorRuntimeHost $ \refCLSID_CorRuntimeHost ->
-      with iid_ICorRuntimeHost $ \refIID_ICorRuntimeHost ->
-        f this refCLSID_CorRuntimeHost refIID_ICorRuntimeHost clrHostPtr >>= checkHR "GetCorHost_ICLRRuntimeInfo"
-    peek clrHostPtr
+  with (nullPtr :: InterfacePtr) $ \interfacePtr -> do
+    with clsid $ \refCLSID ->
+      with iid $ \refIID ->
+        f this refCLSID refIID interfacePtr >>= checkHR "GetInterface_ICLRRuntimeInfo"
+    peek interfacePtr
 
 type GetInterface_ICLRRuntimeInfo = ICLRRuntimeInfo -> Ptr CLSID -> Ptr IID -> Ptr ICorRuntimeHost -> IO HResult
 foreign import stdcall "dynamic" makeGetInterface_ICLRRuntimeInfo :: FunPtr GetInterface_ICLRRuntimeInfo -> GetInterface_ICLRRuntimeInfo
@@ -162,21 +176,15 @@ initClrHost = do
   -- appropriate version of the real runtime via a call to
   -- 'CorBindToRuntimeEx'.
   hMscoree <- loadLibrary "mscoree.dll"
-
   -- Attempt .Net 4.0 binding by first obtaining a pointer to 'CLRCreateInstance'
   -- If this fails, fall back to corBindToRuntimeEx which only allows
   -- binding to MS .Net versions < 4.0
-  clrCreateInstanceAddr <- getProcAddress hMscoree "CLRCreateInstance"
-
-  if clrCreateInstanceAddr == nullPtr then
+  metaHost <- createMetaHost hMscoree
+  if metaHost == nullPtr then
     corBindToRuntimeEx hMscoree
   else do
-    metaHost <- createMetaHost clrCreateInstanceAddr
-    if metaHost == nullPtr then
-      corBindToRuntimeEx hMscoree
-    else do
-      runtimes <- getRuntimes_ICLRMetaHost metaHost
-      getCorHost_ICLRRuntimeInfo $ head runtimes
+    runtimes <- getRuntimes_ICLRMetaHost metaHost
+    getCorHost_ICLRRuntimeInfo $ head runtimes
 
 -- | 'start_ICorRuntimeHost' calls the Start method of the given ICorRuntimeHost interface.
 start_ICorRuntimeHost this = do
@@ -187,8 +195,8 @@ start_ICorRuntimeHost this = do
   f <- getInterfaceFunction 10 makeStart this
   f this >>= checkHR "ICorRuntimeHost.Start"
 
-type Start = ICorRuntimeHost -> IO HResult
-foreign import stdcall "dynamic" makeStart :: FunPtr Start -> Start
+type Start_ICorRuntimeHost = ICorRuntimeHost -> IO HResult
+foreign import stdcall "dynamic" makeStart :: FunPtr Start_ICorRuntimeHost -> Start_ICorRuntimeHost
 
 
 -- | 'stop_ICorRuntimeHost' calls the Stop method of the given ICorRuntimeHost interface.
@@ -197,8 +205,8 @@ stop_ICorRuntimeHost this = do
   f this >>= checkHR "ICorRuntimeHost.Stop"
   coUninitialize
 
-type Stop = ICorRuntimeHost -> IO HResult
-foreign import stdcall "dynamic" makeStop :: FunPtr Stop -> Stop
+type Stop_ICorRuntimeHost = ICorRuntimeHost -> IO HResult
+foreign import stdcall "dynamic" makeStop :: FunPtr Stop_ICorRuntimeHost -> Stop_ICorRuntimeHost
 
 
 -- | 'getDefaultDomain_ICorRuntimeHost' calls the GetDefaultDOmain method of the given
@@ -243,17 +251,17 @@ type Assembly = InterfacePtr -- mscorlib::_Assembly
 getType_Assembly this name = do
   f <- getInterfaceFunction 17 makeGetType_Assembly this
   withBStr name $ \name' ->
-    with (nullPtr :: Type) $ \typePtr -> do
+    with (nullPtr :: CorLibType) $ \typePtr -> do
       f this name' typePtr >>= checkHR "Assembly.GetType"
       t <- peek typePtr
       if t == nullPtr then error "Assembly.GetType failed"
               else return t
 
-type GetType_Assembly = Assembly -> BStr -> Ptr Type -> IO HResult
+type GetType_Assembly = Assembly -> BStr -> Ptr CorLibType -> IO HResult
 foreign import stdcall "dynamic" makeGetType_Assembly :: FunPtr GetType_Assembly -> GetType_Assembly
 
 
-type Type = InterfacePtr -- mscorlib::_Type
+type CorLibType = InterfacePtr -- mscorlib::_Type
 
 -- | 'invokeMember_Type' calls mscorlib::_Type.InvokeMember_3(BStr name,
 --   BindingFlags invokeAttr, _Binder* binder, Variant target, SafeArray* args,
@@ -276,9 +284,9 @@ invokeMember_Type this memberName = do
 --                   For Stdcall, this is encoded as two Word64 arguments.
 --                   For Win64, it would expect an argument of this size to be passed by reference.
 #if x86_64_HOST_ARCH
-type InvokeMember_Type = Type -> BStr -> Word32 -> Ptr () -> Ptr Variant -> Ptr () -> Ptr Variant -> IO HResult
+type InvokeMember_Type = CorLibType -> BStr -> Word32 -> Ptr () -> Ptr Variant -> Ptr () -> Ptr Variant -> IO HResult
 #else
-type InvokeMember_Type = Type -> BStr -> Word32 -> Ptr () -> Word64 -> Word64 -> Ptr () -> Ptr Variant -> IO HResult
+type InvokeMember_Type = CorLibType -> BStr -> Word32 -> Ptr () -> Word64 -> Word64 -> Ptr () -> Ptr Variant -> IO HResult
 #endif
 foreign import stdcall "dynamic" makeInvokeMember_Type :: FunPtr InvokeMember_Type -> InvokeMember_Type
 
@@ -318,159 +326,6 @@ loadDriverAndBoot clrHost = do
               -- Return a wrapper function for the 'GetPointerToMethod' method
               return $ unsafeCoerce returnValue)
 
-
---
--- Types and functions for programming the COM
---
-
-type HResult  = Word32
-type CLSID    = Guid
-type IID      = Guid
-
--- | 'queryInterface' calls the QueryInterface method of the given COM interface.
-queryInterface this iid = do
-  f <- getInterfaceFunction 0 {- QueryInterface -} makeQueryInterface this
-  with (nullPtr :: InterfacePtr) $ \interfacePtr -> do
-    with iid $ \refIID -> f this refIID interfacePtr >>= checkHR "IUnknown.QueryInterface"
-    peek interfacePtr
-
-type QueryInterface = InterfacePtr -> Ptr IID -> Ptr InterfacePtr -> IO HResult
-foreign import stdcall "dynamic" makeQueryInterface :: FunPtr QueryInterface -> QueryInterface
-
-
--- | 'release' calls the Release method of the given COM interface.
-release this = do
-  f <- getInterfaceFunction 2 {- Release -} makeRelease this
-  f this
-
-type Release = InterfacePtr -> IO Word32
-foreign import stdcall "dynamic" makeRelease :: FunPtr Release -> Release
-
-
--- | 'withInterface i f' is like 'bracket' but for COM interface pointers, it calls
---   'release' once the computation is finished.
-withInterface :: (IO InterfacePtr) -> (InterfacePtr -> IO a) -> IO a
-withInterface i = bracket i (\x -> if x == nullPtr then return 0 else release x)
-
-
--- | 'getInterfaceFunction' @i makeFun obj@ is an action that returns the @i@th function
---   of the COM interface referred to by @obj@.  The function is returned as a Haskell
---   function by passing it through @makeFun@.
-getInterfaceFunction :: Int -> (FunPtr a -> b) -> InterfacePtr -> IO b
-getInterfaceFunction index makeFun this = do
-  -- Obtain a pointer to the appropriate element in the vtable for this interface
-  funPtr <- peek this >>= (flip peekElemOff) index
-  -- Cast the function pointer to the expected type, and import it as a Haskell function
-  return $ makeFun $ castFunPtr funPtr
-
-
-foreign import stdcall "CoInitializeEx" coInitializeEx :: Ptr () -> Int32 -> IO HResult
-foreign import stdcall "CoUninitialize" coUninitialize :: IO ()
-
-coInit_MultiThreaded     = 0 :: Int32
-coInit_ApartmentThreaded = 2 :: Int32
-
-data Guid = Guid Word32 Word16 Word16 Word8 Word8 Word8 Word8 Word8 Word8 Word8 Word8
-  deriving (Show, Eq)
-
-instance Storable Guid where
-  sizeOf    _ = 16
-  alignment _ = 4
-
-  peek guidPtr = do
-    a  <- peek $ plusPtr guidPtr 0
-    b  <- peek $ plusPtr guidPtr 4
-    c  <- peek $ plusPtr guidPtr 6
-    d0 <- peek $ plusPtr guidPtr 8
-    d1 <- peek $ plusPtr guidPtr 9
-    d2 <- peek $ plusPtr guidPtr 10
-    d3 <- peek $ plusPtr guidPtr 11
-    d4 <- peek $ plusPtr guidPtr 12
-    d5 <- peek $ plusPtr guidPtr 13
-    d6 <- peek $ plusPtr guidPtr 14
-    d7 <- peek $ plusPtr guidPtr 15
-    return $ Guid a b c d0 d1 d2 d3 d4 d5 d6 d7
-
-  poke guidPtr (Guid a b c d0 d1 d2 d3 d4 d5 d6 d7) = do
-    poke (plusPtr guidPtr 0)  a
-    poke (plusPtr guidPtr 4)  b
-    poke (plusPtr guidPtr 6)  c
-    poke (plusPtr guidPtr 8)  d0
-    poke (plusPtr guidPtr 9)  d1
-    poke (plusPtr guidPtr 10) d2
-    poke (plusPtr guidPtr 11) d3
-    poke (plusPtr guidPtr 12) d4
-    poke (plusPtr guidPtr 13) d5
-    poke (plusPtr guidPtr 14) d6
-    poke (plusPtr guidPtr 15) d7
-
---
--- Variant Support
---
-data Variant = Variant VarType Word64 deriving (Show, Eq)
-type VarType = Word16
-
-varType_Empty, varType_UI1 :: VarType
-varType_Empty = 0
-varType_UI1   = 17
-
-emptyVariant = Variant varType_Empty 0
-
-instance Storable Variant where
-#if x86_64_HOST_ARCH
-  sizeOf    _ = 24
-#else
-  sizeOf    _ = 16
-#endif
-  alignment _ = 8
-
-  peek ptr = do
-    a  <- peek $ plusPtr ptr 0
-    b  <- peek $ plusPtr ptr 8
-    return $ Variant a b
-
-  poke ptr (Variant a b) = do
-    poke (plusPtr ptr 0) a
-    poke (plusPtr ptr 2) (0 :: Word16)
-    poke (plusPtr ptr 4) (0 :: Word16)
-    poke (plusPtr ptr 6) (0 :: Word16)
-    poke (plusPtr ptr 8) b
-
---
--- Safe Array Support
---
-
-newtype SafeArray = SafeArray (Ptr ()) deriving (Show, Eq)
-
-foreign import stdcall "SafeArrayCreateVector" prim_SafeArrayCreateVector :: VarType -> Int32 -> Word32 -> IO SafeArray
-foreign import stdcall "SafeArrayAccessData"   prim_SafeArrayAccessData   :: SafeArray -> Ptr (Ptr a) -> IO HResult
-foreign import stdcall "SafeArrayUnaccessData" prim_SafeArrayUnaccessData :: SafeArray -> IO HResult
-foreign import stdcall "SafeArrayDestroy"      prim_SafeArrayDestroy      :: SafeArray -> IO HResult
-
---
--- BStr Support
---
-
-newtype BStr = BStr (Ptr ()) deriving (Show, Eq)
-
-sysAllocString :: String -> IO BStr
-sysAllocString s = withCWString s prim_SysAllocString
-foreign import stdcall "oleauto.h SysAllocString" prim_SysAllocString :: CWString -> IO BStr
-
-sysFreeString :: BStr -> IO ()
-sysFreeString = prim_SysFreeString
-foreign import stdcall "oleauto.h SysFreeString" prim_SysFreeString :: BStr -> IO ()
-
-withBStr :: String -> (BStr -> IO a) -> IO a
-withBStr s = bracket (sysAllocString s) (sysFreeString)
-
---
--- HResult Support
---
-
-checkHR :: String -> HResult -> IO HResult
-checkHR msg 0 = return 0
-checkHR msg r = error $ printf "%s failed (0x%8x)" msg r
 
 
 type SalsaString = CWString
