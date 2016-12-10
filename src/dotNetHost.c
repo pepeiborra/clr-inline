@@ -1,11 +1,11 @@
 
 void * global_ICorRuntimeHost;
-void * global_IClrRuntimeHost;
+void * global_ICLRRuntimeHost;
 
-void setHostRefs(void * ICorRuntimeHost, void * IClrRuntimeHost)
+void setHostRefs(void * ICorRuntimeHost, void * ICLRRuntimeHost)
 {
   global_ICorRuntimeHost = ICorRuntimeHost;
-  global_IClrRuntimeHost = IClrRuntimeHost;
+  global_ICLRRuntimeHost = ICLRRuntimeHost;
 }
 
 void * getICorRuntimeHost()
@@ -13,8 +13,8 @@ void * getICorRuntimeHost()
   return global_ICorRuntimeHost;
 }
 
-void * getIClrRuntimeHost()
+void * getIClRRuntimeHost()
 {
-  return global_IClrRuntimeHost;
+  return global_ICLRRuntimeHost;
 }
 

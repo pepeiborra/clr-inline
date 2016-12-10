@@ -8,9 +8,9 @@ module Clr.Host.DotNet (
 import Data.Word
 import Data.Int
 import Foreign.Ptr
-import Foreign.Storable
 import Foreign.Marshal
 import Foreign.C.String
+import Foreign.Storable
 import System.Win32
 import System.IO
 import Control.Exception (bracket)
@@ -19,9 +19,12 @@ import System.IO.Unsafe (unsafePerformIO)
 import qualified Data.ByteString as S
 import Text.Printf
 
+import Clr.Host.DotNet.BStr
+import Clr.Host.DotNet.Common
+import Clr.Host.DotNet.Guid
+import Clr.Host.DotNet.SafeArray
+import Clr.Host.DotNet.Variant
 import Clr.Host.Driver
-
-
 
 type ICorRuntimeHost = InterfacePtr
 type ICLRRuntimeHost = InterfacePtr
@@ -29,15 +32,34 @@ type ICLRMetaHost    = InterfacePtr
 type ICLRRuntimeInfo = InterfacePtr
 type IEnumUnknown    = InterfacePtr
 
+foreign import stdcall "dotNetHost.c getICorRuntimeHost" getICorRuntimeHost :: IO ICorRuntimeHost
+foreign import ccall "dotNetHost.c getICLRRuntimeHost" getICLRRuntimeHost :: IO ICLRRuntimeHost
 
 startHostDotNet :: IO ()
 startHostDotNet = return ()
 
+-- | 'stop_ICorRuntimeHost' calls the Stop method of the given ICorRuntimeHost interface.
+stop_ICorRuntimeHost this = do
+  f <- getInterfaceFunction 11 makeStop_ICorRuntimeHost this
+  f this >>= checkHR "ICorRuntimeHost.Stop"
+  return ()
+
+type Stop_ICorRuntimeHost = ICorRuntimeHost -> IO HResult
+foreign import stdcall "dynamic" makeStop_ICorRuntimeHost :: FunPtr Stop_ICorRuntimeHost -> Stop_ICorRuntimeHost
+
+-- | 'stop_ICLRRuntimeHost' calls the Stop method of the given ICLRRuntimeHost interface.
+stop_ICLRRuntimeHost this = do
+  f <- getInterfaceFunction 4 makeStop_ICLRRuntimeHost this
+  f this >>= checkHR "ICLRRuntimeHost.Stop"
+
+type Stop_ICLRRuntimeHost = ICLRRuntimeHost -> IO HResult
+foreign import stdcall "dynamic" makeStop_ICLRRuntimeHost :: FunPtr Stop_ICLRRuntimeHost -> Stop_ICLRRuntimeHost
+
 stopHostDotNet :: IO ()
 stopHostDotNet = do
-  clrHost <- getIClrRuntimeHost
-  stop_IClrRuntimeHost clrHost
-
+  clrHost <- getICLRRuntimeHost
+  stop_ICLRRuntimeHost clrHost
+  return ()
 
 clsid_CorRuntimeHost = Guid 0xCB2F6723 0xAB3A 0x11D2 0x9C 0x40 0x00 0xC0 0x4F 0xA3 0x0A 0x3E
 iid_ICorRuntimeHost  = Guid 0xCB2F6722 0xAB3A 0x11D2 0x9C 0x40 0x00 0xC0 0x4F 0xA3 0x0A 0x3E
@@ -67,31 +89,29 @@ corBindToRuntimeEx hMscoree = do
 type CorBindToRuntimeEx = LPCWSTR -> LPCWSTR -> DWORD -> Ptr CLSID -> Ptr IID -> Ptr ICorRuntimeHost -> IO HResult
 foreign import stdcall "dynamic" makeCorBindToRuntimeEx :: FunPtr CorBindToRuntimeEx -> CorBindToRuntimeEx
 
-clrCreateInstance :: HINSTANCE -> Guid -> Guid -> IO InterfacePtr
+clrCreateInstance :: HINSTANCE -> CLSID -> IID -> IO InterfacePtr
 clrCreateInstance hMscoree clsid iid = do
   clrCreateInstanceAddr <- getProcAddress hMscoree "CLRCreateInstance"
   if clrCreateInstanceAddr == nullPtr then
     return nullPtr
   else do
-    let clrCreateInstance' = makeCLRCreateInstance $ castPtrToFunPtr clrCreateInstanceAddr
+    let clrCreateInstanceRaw = makeCLRCreateInstance $ castPtrToFunPtr clrCreateInstanceAddr
     with (nullPtr :: InterfacePtr) $ \interfacePtr ->
       with clsid $ \refCLSID -> with iid $ \refIID -> do
-        hr <- clrCreateInstance refCLSID refIID interfacePtr
+        hr <- clrCreateInstanceRaw refCLSID refIID interfacePtr
         if hr == 0 then
           peek interfacePtr
         else
           return nullPtr
 
+type CLRCreateInstance = Ptr CLSID -> Ptr IID -> Ptr InterfacePtr -> IO HResult
+foreign import stdcall "dynamic" makeCLRCreateInstance :: FunPtr CLRCreateInstance -> CLRCreateInstance
 
 -- | 'createMetaHost'
 createMetaHost :: HINSTANCE -> IO ICLRMetaHost
 createMetaHost hMscoree = clrCreateInstance hMscoree clsid_CLRMetaHost iid_ICLRMetaHost
                             where clsid_CLRMetaHost = Guid 0X9280188D 0X0E8E 0X4867 0XB3 0X0C 0X7F 0XA8 0X38 0X84 0XE8 0XDE
                                   iid_ICLRMetaHost  = Guid 0XD332DB9E 0XB9B3 0X4125 0X82 0X07 0XA1 0X48 0X84 0XF5 0X32 0X16
-
-
-type CLRCreateInstance = Ptr CLSID -> Ptr IID -> Ptr ICLRMetaHost -> IO HResult
-foreign import stdcall "dynamic" makeCLRCreateInstance :: FunPtr CLRCreateInstance -> CLRCreateInstance
 
 -- | 'enumInstalledRuntimes_ICLRMetaHost'
 enumInstalledRuntimes_ICLRMetaHost :: ICLRMetaHost -> IO IEnumUnknown
@@ -199,14 +219,6 @@ type Start_ICorRuntimeHost = ICorRuntimeHost -> IO HResult
 foreign import stdcall "dynamic" makeStart :: FunPtr Start_ICorRuntimeHost -> Start_ICorRuntimeHost
 
 
--- | 'stop_ICorRuntimeHost' calls the Stop method of the given ICorRuntimeHost interface.
-stop_ICorRuntimeHost this = do
-  f <- getInterfaceFunction 11 makeStop this
-  f this >>= checkHR "ICorRuntimeHost.Stop"
-  coUninitialize
-
-type Stop_ICorRuntimeHost = ICorRuntimeHost -> IO HResult
-foreign import stdcall "dynamic" makeStop :: FunPtr Stop_ICorRuntimeHost -> Stop_ICorRuntimeHost
 
 
 -- | 'getDefaultDomain_ICorRuntimeHost' calls the GetDefaultDOmain method of the given

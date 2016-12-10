@@ -1,5 +1,9 @@
 module Clr.Host.DotNet.Guid where
 
+import Data.Word
+import Foreign.Ptr
+import Foreign.Storable
+
 data Guid = Guid Word32 Word16 Word16 Word8 Word8 Word8 Word8 Word8 Word8 Word8 Word8
   deriving (Show, Eq)
 

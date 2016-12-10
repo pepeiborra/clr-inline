@@ -1,5 +1,9 @@
 module Clr.Host.DotNet.BStr where
 
+import Control.Exception (bracket)
+import Foreign.C.String
+import Foreign.Ptr
+
 newtype BStr = BStr (Ptr ()) deriving (Show, Eq)
 
 sysAllocString :: String -> IO BStr

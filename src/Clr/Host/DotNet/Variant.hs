@@ -1,4 +1,10 @@
+{-# LANGUAGE CPP #-}
+
 module Clr.Host.DotNet.Variant where
+
+import Data.Word
+import Foreign.Ptr
+import Foreign.Storable
 
 data Variant = Variant VarType Word64 deriving (Show, Eq)
 type VarType = Word16
