@@ -27,7 +27,7 @@ custom-setup
 
 library
   hs-source-dirs:      src
-  c-sources:           src/dotNetHost.c
+  c-sources:           src/clrHost.c, src/dotNetHost.c
   default-language:    Haskell2010
   other-modules:       Clr.Host.Driver
                      , Clr.Host.DotNet.BStr
