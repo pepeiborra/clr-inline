@@ -32,9 +32,9 @@ type ICLRMetaHost    = InterfacePtr
 type ICLRRuntimeInfo = InterfacePtr
 type IEnumUnknown    = InterfacePtr
 
-foreign import stdcall "dotNetHost.c getICorRuntimeHost" getICorRuntimeHost :: IO ICorRuntimeHost
-foreign import stdcall "dotNetHost.c getICLRRuntimeHost" getICLRRuntimeHost :: IO ICLRRuntimeHost
-foreign import stdcall "dotNetHost.c setHostRefs"        setHostRefs        :: ICorRuntimeHost -> ICLRRuntimeHost -> IO ()
+foreign import ccall "dotNetHost.c getICorRuntimeHost" getICorRuntimeHost :: IO ICorRuntimeHost
+foreign import ccall "dotNetHost.c getICLRRuntimeHost" getICLRRuntimeHost :: IO ICLRRuntimeHost
+foreign import ccall "dotNetHost.c setHostRefs"        setHostRefs        :: ICorRuntimeHost -> ICLRRuntimeHost -> IO ()
 
 
 -- | 'start_ICorRuntimeHost' calls the Start method of the given ICorRuntimeHost interface.
