@@ -27,6 +27,55 @@ using System.Threading;
 
 namespace Salsa
 {
+    public class UTF8Marshaler : ICustomMarshaler {
+        static UTF8Marshaler marshaler = new UTF8Marshaler();
+
+        public static ICustomMarshaler GetInstance(string cookie) {
+            return marshaler;
+        }
+
+        public void CleanUpManagedData(object ManagedObj) {
+        }
+
+        public void CleanUpNativeData(IntPtr pNativeData) {
+            Marshal.FreeHGlobal(pNativeData);
+        }
+
+        public int GetNativeDataSize() {
+            return -1;
+        }
+
+        public IntPtr MarshalManagedToNative(object ManagedObj) {
+            if (ManagedObj == null)
+                return IntPtr.Zero;
+            if (ManagedObj.GetType() != typeof(string))
+                throw new ArgumentException("ManagedObj", "Can only marshal type of System.string");
+
+            byte[] array = Encoding.UTF8.GetBytes((string) ManagedObj);
+            int size = Marshal.SizeOf(typeof(byte)) * (array.Length + 1);
+
+            IntPtr ptr = Marshal.AllocHGlobal(size);
+            Marshal.Copy(array, 0, ptr, array.Length);
+            Marshal.WriteByte(ptr, array.Length, 0);
+
+            return ptr;
+        }
+
+        public object MarshalNativeToManaged(IntPtr pNativeData) {
+            if (pNativeData == IntPtr.Zero)
+                return null;
+
+            int size = 0;
+            while (Marshal.ReadByte(pNativeData, size) > 0)
+                size++;
+
+            byte[] array = new byte[size];
+            Marshal.Copy(pNativeData, array, 0, size);
+
+            return Encoding.UTF8.GetString(array);
+        }
+    }
+
     public class Driver
     {
         internal static AssemblyBuilder _assemblyBuilder;
@@ -1023,9 +1072,14 @@ namespace Salsa
                     {
                         // Add a MarshalAs attribute to the return/parameter
                         ParameterBuilder pb = methodBuilder.DefineParameter(i, ParameterAttributes.None, null);
-                        pb.SetCustomAttribute(new CustomAttributeBuilder(
+                        pb.SetCustomAttribute(
+                            new CustomAttributeBuilder(
                                 typeof(MarshalAsAttribute).GetConstructor(new Type[] { typeof(UnmanagedType) }),
-                                new object[] { marshalAs.Value }));
+                                new object[] { marshalAs.Value },
+                                new FieldInfo[] { typeof(MarshalAsAttribute).GetField("MarshalTypeRef") },
+                                new Object[] { typeof(UTF8Marshaler) }
+                            )
+                        );
                     }
                 }
                 return typeBuilder.CreateType();
