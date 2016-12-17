@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, RankNTypes #-}
 
 module Clr.Host where
 
@@ -10,11 +10,19 @@ import Clr.Host.Mono
 import Clr.Host.DotNet
 #endif
 
+import Foreign.Ptr
+import Foreign.C.String
+
+type GetPtrToMethod a = FunPtr (CString -> IO (FunPtr a))
+
+foreign import stdcall "clrHost.c getPointerToMethod_set" getPtrToMethod_set :: GetPtrToMethod a -> IO ()
+foreign import stdcall "clrHost.c getPointerToMethod_get" getPtrToMethod_get :: IO (GetPtrToMethod a)
+
 startClr :: IO ()
 startClr = do
   putStrLn "startClr"
   ClrHostConfig hostType <- getClrHostConfig
-  case hostType of
+  getPtrToMethod <- case hostType of
 #ifdef HAVE_MONO
     ClrHostMono   -> startHostMono
 #else
@@ -25,6 +33,10 @@ startClr = do
 #else
     ClrHostDotNet -> error "not built with .Net support enabled"
 #endif
+  if getPtrToMethod == nullFunPtr then
+    error "Failed to boot the driver"
+  else
+    getPtrToMethod_set getPtrToMethod
 
 stopClr :: IO ()
 stopClr = putStrLn "stopClr"

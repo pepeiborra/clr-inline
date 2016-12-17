@@ -2,7 +2,6 @@
 module Clr.Host.Mono (
   startHostMono,
   stopHostMono,
-  SalsaString, withSalsaString, peekSalsaString
   ) where
 
 import Data.Word
@@ -74,7 +73,7 @@ getDriverDataArray = unsafeUseAsCStringLen driverData $ \(p,l)-> do
     mono_value_copy_array ar 0 p l
     return ar
 
-startHostMono :: IO ()
+startHostMono :: IO (FunPtr (CString -> IO (FunPtr a)))
 startHostMono = do
   mono_config_parse nullPtr
   domain <- return "salsa" >>= flip withCString mono_jit_init
@@ -83,8 +82,7 @@ startHostMono = do
   else do
     setupDomain
     loadDriver
-    funGetPtrToMethod <- bootDriver
-    return ()
+    bootDriver
 
 stopHostMono :: IO ()
 stopHostMono = return ()
@@ -146,7 +144,4 @@ loadDriver = do
       withArray [dd] $ \argp-> mono_runtime_invoke method nullPtr argp nullPtr
       return ()
 
-type SalsaString = CString
-withSalsaString = withCString
-peekSalsaString = peekCString
 

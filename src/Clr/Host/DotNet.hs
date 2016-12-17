@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, LambdaCase #-}
 
 module Clr.Host.DotNet (
   startHostDotNet,
@@ -33,24 +33,77 @@ type ICLRRuntimeInfo = InterfacePtr
 type IEnumUnknown    = InterfacePtr
 
 foreign import stdcall "dotNetHost.c getICorRuntimeHost" getICorRuntimeHost :: IO ICorRuntimeHost
-foreign import ccall "dotNetHost.c getICLRRuntimeHost" getICLRRuntimeHost :: IO ICLRRuntimeHost
+foreign import stdcall "dotNetHost.c getICLRRuntimeHost" getICLRRuntimeHost :: IO ICLRRuntimeHost
+foreign import stdcall "dotNetHost.c setHostRefs"        setHostRefs        :: ICorRuntimeHost -> ICLRRuntimeHost -> IO ()
 
-startHostDotNet :: IO ()
-startHostDotNet = return ()
+
+-- | 'start_ICorRuntimeHost' calls the Start method of the given ICorRuntimeHost interface.
+start_ICorRuntimeHost :: ICorRuntimeHost -> IO ()
+start_ICorRuntimeHost corHost = do
+  -- Initialise COM (and the threading model)
+  coInitializeEx nullPtr coInit_ApartmentThreaded
+  -- TODO: Allow the library user to select their desired threading model
+  --       (we use an STA for the time being so we can use GUI libraries).
+  f <- getInterfaceFunction 10 makeStartCor corHost
+  f corHost >>= checkHR "ICorRuntimeHost.Start"
+  return ()
+
+type Start_ICorRuntimeHost = ICorRuntimeHost -> IO HResult
+foreign import stdcall "dynamic" makeStartCor :: FunPtr Start_ICorRuntimeHost -> Start_ICorRuntimeHost
+
+-- | 'start_ICLRRuntimeHost' calls the Start method of the given ICLRRuntimeHost interface.
+start_ICLRRuntimeHost :: ICLRRuntimeHost -> IO ()
+start_ICLRRuntimeHost clrHost = do
+  f <- getInterfaceFunction 3 makeStartCLR clrHost
+  f clrHost >>= checkHR "ICLRRuntimeHost.Start"
+  return ()
+
+type Start_ICLRRuntimeHost = ICLRRuntimeHost -> IO HResult
+foreign import stdcall "dynamic" makeStartCLR :: FunPtr Start_ICLRRuntimeHost -> Start_ICLRRuntimeHost
+
+startHostDotNet :: IO (FunPtr (CString -> IO (FunPtr a)))
+startHostDotNet = do
+  -- Load the 'mscoree' dynamic library into the process.  This is the
+  -- 'stub' library for the .NET execution engine, and is used to load an
+  -- appropriate version of the real runtime via a call to
+  -- 'CorBindToRuntimeEx'.
+  hMscoree <- loadLibrary "mscoree.dll"
+  -- Attempt .Net 4.0 binding by first obtaining a pointer to 'CLRCreateInstance'
+  -- If this fails, fall back to corBindToRuntimeEx which only allows
+  -- binding to MS .Net versions < 4.0
+  metaHost <- createMetaHost hMscoree
+  if metaHost == nullPtr then do
+    corHost <- corBindToRuntimeEx hMscoree
+    start_ICorRuntimeHost corHost
+    setHostRefs corHost nullPtr
+  else getRuntimes_ICLRMetaHost metaHost >>= \case
+    []           -> error "No runtime versions found"
+    (runtime:xs) -> do
+      version <- getVersionString_ICLRRuntimeInfo runtime
+      putStrLn $ "attempting to bind to runtime version " ++ version
+      clrHost <- getCLRHost_ICLRRuntimeInfo runtime
+      start_ICLRRuntimeHost clrHost
+      corHost <- getCorHost_ICLRRuntimeInfo runtime
+      setHostRefs clrHost corHost
+  corHost <- getICorRuntimeHost
+  loadDriverAndBoot corHost
 
 -- | 'stop_ICorRuntimeHost' calls the Stop method of the given ICorRuntimeHost interface.
-stop_ICorRuntimeHost this = do
-  f <- getInterfaceFunction 11 makeStop_ICorRuntimeHost this
-  f this >>= checkHR "ICorRuntimeHost.Stop"
+stop_ICorRuntimeHost :: ICorRuntimeHost -> IO ()
+stop_ICorRuntimeHost corHost = do
+  f <- getInterfaceFunction 11 makeStop_ICorRuntimeHost corHost
+  f corHost >>= checkHR "ICorRuntimeHost.Stop"
   return ()
 
 type Stop_ICorRuntimeHost = ICorRuntimeHost -> IO HResult
 foreign import stdcall "dynamic" makeStop_ICorRuntimeHost :: FunPtr Stop_ICorRuntimeHost -> Stop_ICorRuntimeHost
 
 -- | 'stop_ICLRRuntimeHost' calls the Stop method of the given ICLRRuntimeHost interface.
-stop_ICLRRuntimeHost this = do
-  f <- getInterfaceFunction 4 makeStop_ICLRRuntimeHost this
-  f this >>= checkHR "ICLRRuntimeHost.Stop"
+stop_ICLRRuntimeHost :: ICLRRuntimeHost -> IO ()
+stop_ICLRRuntimeHost clrHost = do
+  f <- getInterfaceFunction 4 makeStop_ICLRRuntimeHost clrHost
+  f clrHost >>= checkHR "ICLRRuntimeHost.Stop"
+  return ()
 
 type Stop_ICLRRuntimeHost = ICLRRuntimeHost -> IO HResult
 foreign import stdcall "dynamic" makeStop_ICLRRuntimeHost :: FunPtr Stop_ICLRRuntimeHost -> Stop_ICLRRuntimeHost
@@ -58,7 +111,14 @@ foreign import stdcall "dynamic" makeStop_ICLRRuntimeHost :: FunPtr Stop_ICLRRun
 stopHostDotNet :: IO ()
 stopHostDotNet = do
   clrHost <- getICLRRuntimeHost
-  stop_ICLRRuntimeHost clrHost
+  corHost <- getICorRuntimeHost
+  if clrHost == nullPtr then
+    if corHost == nullPtr then
+      return ()
+    else
+      stop_ICorRuntimeHost corHost
+  else
+    stop_ICLRRuntimeHost clrHost
   return ()
 
 clsid_CorRuntimeHost = Guid 0xCB2F6723 0xAB3A 0x11D2 0x9C 0x40 0x00 0xC0 0x4F 0xA3 0x0A 0x3E
@@ -187,40 +247,6 @@ getInterface_ICLRRuntimeInfo this clsid iid = do
 type GetInterface_ICLRRuntimeInfo = ICLRRuntimeInfo -> Ptr CLSID -> Ptr IID -> Ptr ICorRuntimeHost -> IO HResult
 foreign import stdcall "dynamic" makeGetInterface_ICLRRuntimeInfo :: FunPtr GetInterface_ICLRRuntimeInfo -> GetInterface_ICLRRuntimeInfo
 
-
--- | 'initClrHost'
-initClrHost :: IO ICorRuntimeHost
-initClrHost = do
-  -- Load the 'mscoree' dynamic library into the process.  This is the
-  -- 'stub' library for the .NET execution engine, and is used to load an
-  -- appropriate version of the real runtime via a call to
-  -- 'CorBindToRuntimeEx'.
-  hMscoree <- loadLibrary "mscoree.dll"
-  -- Attempt .Net 4.0 binding by first obtaining a pointer to 'CLRCreateInstance'
-  -- If this fails, fall back to corBindToRuntimeEx which only allows
-  -- binding to MS .Net versions < 4.0
-  metaHost <- createMetaHost hMscoree
-  if metaHost == nullPtr then
-    corBindToRuntimeEx hMscoree
-  else do
-    runtimes <- getRuntimes_ICLRMetaHost metaHost
-    getCorHost_ICLRRuntimeInfo $ head runtimes
-
--- | 'start_ICorRuntimeHost' calls the Start method of the given ICorRuntimeHost interface.
-start_ICorRuntimeHost this = do
-  -- Initialise COM (and the threading model)
-  coInitializeEx nullPtr coInit_ApartmentThreaded
-  -- TODO: Allow the library user to select their desired threading model
-  --       (we use an STA for the time being so we can use GUI libraries).
-  f <- getInterfaceFunction 10 makeStart this
-  f this >>= checkHR "ICorRuntimeHost.Start"
-
-type Start_ICorRuntimeHost = ICorRuntimeHost -> IO HResult
-foreign import stdcall "dynamic" makeStart :: FunPtr Start_ICorRuntimeHost -> Start_ICorRuntimeHost
-
-
-
-
 -- | 'getDefaultDomain_ICorRuntimeHost' calls the GetDefaultDOmain method of the given
 --   ICorRuntimeHost interface.
 getDefaultDomain_ICorRuntimeHost this = do
@@ -231,7 +257,6 @@ getDefaultDomain_ICorRuntimeHost this = do
 
 type GetDefaultDomain = ICorRuntimeHost -> Ptr InterfacePtr -> IO HResult
 foreign import stdcall "dynamic" makeGetDefaultDomain :: FunPtr GetDefaultDomain -> GetDefaultDomain
-
 
 type AppDomain = InterfacePtr -- mscorlib::_AppDomain
 
@@ -256,7 +281,6 @@ load_AppDomain_2 this assemblyString = do
 type Load_AppDomain_2 = AppDomain -> BStr -> Ptr InterfacePtr -> IO HResult
 foreign import stdcall "dynamic" makeLoad_AppDomain_2 :: FunPtr Load_AppDomain_2 -> Load_AppDomain_2
 
-
 type Assembly = InterfacePtr -- mscorlib::_Assembly
 
 -- | 'getType_Assembly' calls mscorlib::_Assembly.GetType_2(BStr name, _Type** result).
@@ -271,7 +295,6 @@ getType_Assembly this name = do
 
 type GetType_Assembly = Assembly -> BStr -> Ptr CorLibType -> IO HResult
 foreign import stdcall "dynamic" makeGetType_Assembly :: FunPtr GetType_Assembly -> GetType_Assembly
-
 
 type CorLibType = InterfacePtr -- mscorlib::_Type
 
@@ -307,7 +330,7 @@ foreign import stdcall "dynamic" makeInvokeMember_Type :: FunPtr InvokeMember_Ty
 --   memory (the binary data is originally stored in 'driverData'), and then invokes the
 --   Boot method (from the Salsa.Driver class) to obtain a function pointer for invoking
 --   the 'GetPointerToMethod' method.
-loadDriverAndBoot :: ICorRuntimeHost -> IO (FunPtr (SalsaString -> IO (FunPtr a)))
+loadDriverAndBoot :: ICorRuntimeHost -> IO (FunPtr (CString -> IO (FunPtr a)))
 loadDriverAndBoot clrHost = do
   -- Obtain an _AppDomain interface pointer to the default application domain
   withInterface (getDefaultDomain_ICorRuntimeHost clrHost) $ \untypedAppDomain -> do
@@ -339,8 +362,4 @@ loadDriverAndBoot clrHost = do
               return $ unsafeCoerce returnValue)
 
 
-
-type SalsaString = CWString
-withSalsaString = withCWString
-peekSalsaString = peekCWString
 
