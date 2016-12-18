@@ -88,7 +88,7 @@ stopHostMono :: IO ()
 stopHostMono = return ()
 
 getDriverImage :: IO MonoImagePtr
-getDriverImage = withCString "Salsa" $ \c-> do
+getDriverImage = withCString "Driver" $ \c-> do
   name <- mono_assembly_name_new c
   if name == nullPtr then
     error "Could not create assembly name"
