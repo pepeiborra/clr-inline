@@ -13,7 +13,7 @@ void * getICorRuntimeHost()
   return global_ICorRuntimeHost;
 }
 
-void * getIClRRuntimeHost()
+void * getICLRRuntimeHost()
 {
   return global_ICLRRuntimeHost;
 }
