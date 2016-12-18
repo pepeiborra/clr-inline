@@ -45,6 +45,7 @@ packages:
 extra-deps:
 - OneTuple-0.2.1
 - tuple-0.3.0.2
+- file-embed-0.0.10
 
 # Override default flag values for local packages and extra-deps
 flags: {}
