@@ -152,46 +152,53 @@ data Error (s::Symbol)
 --
 -- Static method invocation
 --
-invokeS :: forall ms ts m t args args' n. ( MakeT ms ~ m
-                                          , MakeT ts ~ t
-                                          , TupleSize args' ~ n
-                                          , ResolveArgTypes t m args' ~ args
-                                          , MethodS n t m args
-                                          , Marshal args' (BridgeTypes args)
-                                          , Unmarshal (BridgeTypeM (ResultTypeS n t m args)) (UnmarshalAs (BridgeTypeM (ResultTypeS n t m args)))
-                                          , Curry n ((BridgeTypes args) -> (IO (BridgeTypeM (ResultTypeS n t m args)))) (CurryT' n (BridgeTypes args) (IO (BridgeTypeM (ResultTypeS n t m args))))
-                                          ) => args' -> IO (UnmarshalAs (BridgeTypeM (ResultTypeS n t m args)))
-invokeS x = marshal @args' @(BridgeTypes args) @((BridgeTypeM (ResultTypeS n t m args))) x (\tup-> uncurryN @n (rawInvokeS @n @t @m @args) tup) >>= unmarshal
+invokeS :: forall ms ts m t argsClr argsHask argCount argsBridge resultBridge resultHask .
+            ( MakeT ms ~ m
+            , MakeT ts ~ t
+            , TupleSize argsHask ~ argCount
+            , ResolveArgTypes t m argsHask ~ argsClr
+            , MethodS argCount t m argsClr
+            , BridgeTypes argsClr ~ argsBridge
+            , BridgeTypeM (ResultTypeS argCount t m argsClr) ~ resultBridge
+            , Marshal argsHask argsBridge
+            , UnmarshalAs resultBridge ~ resultHask
+            , Unmarshal resultBridge resultHask
+            , Curry argCount (argsBridge -> IO resultBridge) (CurryT' argCount argsBridge (IO resultBridge))
+            ) => argsHask -> IO resultHask
+invokeS x = marshal @argsHask @argsBridge @resultBridge x (\tup-> uncurryN @argCount (rawInvokeS @argCount @t @m @argsClr) tup) >>= unmarshal
 
 --
 -- Instance method invocation
 --
-invokeI :: forall ms m t t' args args' n. ( MakeT ms ~ m
-                                          , TupleSize args' ~ n
-                                          , ResolveBaseType t' m ~ t
-                                          , t' `InheritsFrom` t ~ 'True
-                                          , ResolveArgTypes t m args' ~ args
-                                          , MethodI n t m args
-                                          , Marshal args' (BridgeTypes args)
-                                          , Marshal (Object t) (BridgeType t)
-                                          , Unmarshal (BridgeTypeM (ResultTypeI n t m args)) (UnmarshalAs (BridgeTypeM (ResultTypeI n t m args)))
-                                          , Curry n ((BridgeTypes args) -> (IO (BridgeTypeM (ResultTypeI n t m args)))) (CurryT' n (BridgeTypes args) (IO (BridgeTypeM (ResultTypeI n t m args))))
-                                          ) => Object t' -> args' -> IO (UnmarshalAs (BridgeTypeM (ResultTypeI n t m args)))
-invokeI obj x = marshal @args' @(BridgeTypes args) @((BridgeTypeM (ResultTypeI n t m args))) x (\tup-> marshal @(Object t) @(BridgeType t) @((BridgeTypeM (ResultTypeI n t m args))) (upCast obj) (\obj'-> uncurryN @n (rawInvokeI @n @t @m @args obj') tup)) >>= unmarshal
-
-
-
+invokeI :: forall ms m tBase tDerived argsClr argsHask argCount argsBridge resultBridge resultHask .
+            ( MakeT ms ~ m
+            , TupleSize argsHask ~ argCount
+            , ResolveBaseType tDerived m ~ tBase
+            , tDerived `InheritsFrom` tBase ~ 'True
+            , ResolveArgTypes tBase m argsHask ~ argsClr
+            , MethodI argCount tBase m argsClr
+            , BridgeTypes argsClr ~ argsBridge
+            , BridgeTypeM (ResultTypeI argCount tBase m argsClr) ~ resultBridge
+            , Marshal argsHask argsBridge
+            , Marshal (Object tBase) (BridgeType tBase)
+            , UnmarshalAs resultBridge ~ resultHask
+            , Unmarshal resultBridge resultHask
+            , Curry argCount (argsBridge -> IO resultBridge) (CurryT' argCount argsBridge (IO resultBridge))
+            ) => Object tDerived -> argsHask -> IO resultHask
+invokeI obj x = marshal @argsHask @argsBridge @resultBridge x (\tup-> marshal @(Object tBase) @(BridgeType tBase) @resultBridge (upCast obj) (\obj'-> uncurryN @argCount (rawInvokeI @argCount @tBase @m @argsClr obj') tup)) >>= unmarshal
 
 --
 -- Constructor invocation
 --
-new :: forall ts t args args' n. ( MakeT ts ~ t
-                                 , TupleSize args' ~ n
-                                 , ResolveArgTypes t t args' ~ args
-                                 , Constructor n t args
-                                 , Marshal args' (BridgeTypes args)
-                                 , Unmarshal (BridgeType t) (Object t)
-                                 , Curry n ((BridgeTypes args) -> (IO (BridgeType t))) (CurryT' n (BridgeTypes args) (IO (BridgeType t)))
-                                 ) => args' -> IO (Object t)
-new x = marshal @args' @(BridgeTypes args) @(BridgeType t) x (\tup-> uncurryN @n (rawNew @n @t @args) tup) >>= unmarshal
+new :: forall ts t argsClr argsHask argCount argsBridge resultBridge .
+        ( MakeT ts ~ t
+        , TupleSize argsHask ~ argCount
+        , ResolveArgTypes t t argsHask ~ argsClr
+        , Constructor argCount t argsClr
+        , BridgeTypes argsClr ~ argsBridge
+        , Marshal argsHask argsBridge
+        , Unmarshal (BridgeType t) (Object t)
+        , Curry argCount (argsBridge -> (IO (BridgeType t))) (CurryT' argCount argsBridge (IO (BridgeType t)))
+        ) => argsHask -> IO (Object t)
+new x = marshal @argsHask @argsBridge @(BridgeType t) x (\tup-> uncurryN @argCount (rawNew @argCount @t @argsClr) tup) >>= unmarshal
 
