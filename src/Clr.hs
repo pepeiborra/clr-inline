@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleInstances, FlexibleContexts, ScopedTypeVariables, ExistentialQuantification #-}
 {-# LANGUAGE UndecidableInstances, TypeApplications, AllowAmbiguousTypes, TypeInType, TypeFamilyDependencies, FunctionalDependencies #-}
 
-module Clr (invokeS, MethodS1(..), MethodS2(..), invokeI, MethodI1(..), MethodI2(..), new, Constructor1(..), Constructor2(..), Members, SuperTypeOf, Interfaces, Implements, ObjectID, T, ToClrType, Object(..), BridgeType, BridgeTypeM, BridgeTypes, CurryT, GenT ) where
+module Clr (invokeS, MethodS1(..), MethodS2(..), invokeI, MethodI1(..), MethodI2(..), new, Constructor1(..), Constructor2(..), Members, SuperTypeOf, Interfaces, Implements, ObjectID, T, MakeT, Object(..), BridgeType, BridgeTypeM, BridgeTypes, CurryT ) where
 
 import Clr.Bridge
 import Clr.Curry
@@ -152,8 +152,8 @@ data Error (s::Symbol)
 --
 -- Static method invocation
 --
-invokeS :: forall ms ts m t args args' n. ( ToClrType ms ~ m
-                                          , ToClrType ts ~ t
+invokeS :: forall ms ts m t args args' n. ( MakeT ms ~ m
+                                          , MakeT ts ~ t
                                           , TupleSize args' ~ n
                                           , ResolveArgTypes t m args' ~ args
                                           , MethodS n t m args
@@ -166,8 +166,7 @@ invokeS x = marshal @args' @(BridgeTypes args) @((BridgeTypeM (ResultTypeS n t m
 --
 -- Instance method invocation
 --
-
-invokeI :: forall ms m t t' args args' n. ( ToClrType ms ~ m
+invokeI :: forall ms m t t' args args' n. ( MakeT ms ~ m
                                           , TupleSize args' ~ n
                                           , ResolveBaseType t' m ~ t
                                           , t' `InheritsFrom` t ~ 'True
@@ -186,7 +185,7 @@ invokeI obj x = marshal @args' @(BridgeTypes args) @((BridgeTypeM (ResultTypeI n
 --
 -- Constructor invocation
 --
-new :: forall ts t args args' n. ( ToClrType ts ~ t
+new :: forall ts t args args' n. ( MakeT ts ~ t
                                  , TupleSize args' ~ n
                                  , ResolveArgTypes t t args' ~ args
                                  , Constructor n t args

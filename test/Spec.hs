@@ -32,7 +32,7 @@ main = do
   invokeI @"Bar" derived (2::Int32)
   invokeI @"Bar" derived (2::Int64)
   putStrLn ""
-  myGenType <- new @(GenT "MyGenType" '["System.String"]) () -- Generic type
+  myGenType <- new @'("MyGenType", "System.String") ()       -- Generic type
   invokeI @"Add" myGenType "hello"
 --  invokeI @"Add" myGenType (2::Int32)                      -- This would be a compilation error
   putStrLn ""
