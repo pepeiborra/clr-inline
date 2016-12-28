@@ -83,3 +83,22 @@ type instance HaskToClr Char    = T "System.Char"    '[]
 type instance HaskToClr Float   = T "System.Single"  '[]
 type instance HaskToClr Double  = T "System.Double"  '[]
 
+--
+-- C# style synonyms
+--
+type T_sbyte   = T "System.SByte"   '[]
+type T_byte    = T "System.Byte"    '[]
+type T_short   = T "System.Int16"   '[]
+type T_ushort  = T "System.UInt16"  '[]
+type T_int     = T "System.Int32"   '[]
+type T_uint    = T "System.UInt32"  '[]
+type T_long    = T "System.Int64"   '[]
+type T_ulong   = T "System.UInt64"  '[]
+type T_float   = T "System.Single"  '[]
+type T_double  = T "System.Double"  '[]
+type T_decimal = T "System.Decimal" '[]
+type T_object  = T "System.Object"  '[]
+type T_string  = T "System.String"  '[]
+type T_char    = T "System.Char"    '[]
+type T_bool    = T "System.Boolean" '[]
+
