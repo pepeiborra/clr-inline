@@ -55,18 +55,20 @@ type instance SuperTypeOf (T "System.ValueType" '[]) = 'Just (T "System.Object" 
 --
 -- SuperType declarations for each prim type
 --
-type instance SuperTypeOf (T "System.String" '[])  = 'Just (T "System.Object" '[])
-type instance SuperTypeOf (T "System.Int16" '[])   = 'Just (T "System.ValueType" '[])
-type instance SuperTypeOf (T "System.UInt16" '[])  = 'Just (T "System.ValueType" '[])
-type instance SuperTypeOf (T "System.Int32" '[])   = 'Just (T "System.ValueType" '[])
-type instance SuperTypeOf (T "System.UInt32" '[])  = 'Just (T "System.ValueType" '[])
-type instance SuperTypeOf (T "System.Int64" '[])   = 'Just (T "System.ValueType" '[])
-type instance SuperTypeOf (T "System.UInt64" '[])  = 'Just (T "System.ValueType" '[])
-type instance SuperTypeOf (T "System.IntPtr" '[])  = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.String"  '[]) = 'Just (T "System.Object" '[])
+type instance SuperTypeOf (T "System.SByte"   '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.Byte"    '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.Int16"   '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.UInt16"  '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.Int32"   '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.UInt32"  '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.Int64"   '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.UInt64"  '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.IntPtr"  '[]) = 'Just (T "System.ValueType" '[])
 type instance SuperTypeOf (T "System.UIntPtr" '[]) = 'Just (T "System.ValueType" '[])
-type instance SuperTypeOf (T "System.Char" '[])    = 'Just (T "System.ValueType" '[])
-type instance SuperTypeOf (T "System.Single" '[])  = 'Just (T "System.ValueType" '[])
-type instance SuperTypeOf (T "System.Double" '[])  = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.Char"    '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.Single"  '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.Double"  '[]) = 'Just (T "System.ValueType" '[])
 
 --
 -- Casting up the hierarchy. Always safe
