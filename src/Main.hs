@@ -9,8 +9,8 @@ import Data.Int(Int32)
 import Foreign.C.String(CString)
 import Foreign.Ptr(FunPtr)
 
-instance MethodS1 (T "System.Console" '[]) (T "WriteLine" '[]) (T "System.String" '[]) where
-  type ResultTypeS1 (T "System.Console" '[]) (T "WriteLine" '[]) (T "System.String" '[]) = 'Nothing
+instance MethodS1 (T "System.Console" 'Nothing '[]) (T "WriteLine" 'Nothing '[]) (T "System.String" 'Nothing '[]) where
+  type ResultTypeS1 (T "System.Console" 'Nothing '[]) (T "WriteLine" 'Nothing '[]) (T "System.String" 'Nothing '[]) = 'Nothing
   rawInvokeS1 x = stub1 >>= \f-> f x >> return ()
 
 foreign import ccall "dynamic" makeWriteLineType1 :: FunPtr (CString -> IO ()) -> (CString -> IO ())
@@ -18,8 +18,8 @@ foreign import ccall "dynamic" makeWriteLineType1 :: FunPtr (CString -> IO ()) -
 stub1 :: IO (CString -> IO ())
 stub1 = getMethodStub "System.Console, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" "WriteLine" "System.String" >>= return . makeWriteLineType1
 
-instance MethodS1 (T "System.Console" '[]) (T "WriteLine" '[]) (T "System.Int32" '[]) where
-  type ResultTypeS1 (T "System.Console" '[]) (T "WriteLine" '[]) (T "System.Int32" '[]) = 'Nothing
+instance MethodS1 (T "System.Console" 'Nothing '[]) (T "WriteLine" 'Nothing '[]) (T "System.Int32" 'Nothing '[]) where
+  type ResultTypeS1 (T "System.Console" 'Nothing '[]) (T "WriteLine" 'Nothing '[]) (T "System.Int32" 'Nothing '[]) = 'Nothing
   rawInvokeS1 x = stub2 >>= \f-> f x >> return ()
 
 foreign import ccall "dynamic" makeWriteLineType2 :: FunPtr (Int32 -> IO ()) -> (Int32 -> IO ())
