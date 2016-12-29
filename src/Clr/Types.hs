@@ -88,6 +88,10 @@ type instance HaskToClr Char    = T "System.Char"    'Nothing '[]
 type instance HaskToClr Float   = T "System.Single"  'Nothing '[]
 type instance HaskToClr Double  = T "System.Double"  'Nothing '[]
 
+type family HaskToClrL (l::[Type]) :: [Type] where
+  HaskToClrL   '[]     = '[]
+  HaskToClrL (x ': xs) = (HaskToClr x) ': (HaskToClrL xs)
+
 --
 -- C# style synonyms
 --

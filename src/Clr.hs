@@ -11,6 +11,7 @@ import Clr.Interface
 import Clr.ListTuple
 import Clr.Marshal
 import Clr.Object
+import Clr.Resolver
 import Clr.Types
 
 import Data.Int
@@ -120,23 +121,6 @@ type family HasMember (t::Type) (m::Type) :: Bool where
   HasMember t m = m `Elem` (Members t)
 
 --
--- Overload resolution. t is something like "Console". m is something like "WriteLine".
--- args' is Something like String. This should then result in something like "System.String".
---
-type family ResolveArgTypes t m (args'::Type) :: [Type] where
-  ResolveArgTypes t m args' = UnBridgeType args'
-
---
--- Something simple just to get the above working for now
---
-type family UnBridgeType (t::Type) :: [Type] where
-  UnBridgeType String = '[(T "System.String" 'Nothing '[])]
-  UnBridgeType Int32  = '[(T "System.Int32" 'Nothing '[])]
-  UnBridgeType Int64  = '[(T "System.Int64" 'Nothing '[])]
-  UnBridgeType ()     = '[]
-  UnBridgeType (a, b) = UnBridgeType a `Concat` UnBridgeType b
-
---
 -- When a method m is invoked on a type t, we need to go up the hierarchy
 -- to find the type that t derives from that declared m
 --
@@ -152,13 +136,14 @@ data Error (s::Symbol)
 --
 -- Static method invocation
 --
-invokeS :: forall ms ts m t argsClr argsHask argCount argsBridge resultBridge resultHask .
+invokeS :: forall ms ts m t argsClrUnResolved argsClr argsHask argCount argsBridge resultBridge resultHask .
             ( MakeT ms ~ m
             , MakeT ts ~ t
             , TupleSize argsHask ~ argCount
-            , ResolveArgTypes t m argsHask ~ argsClr
+            , HaskToClrL (TupleToList argsHask) ~ argsClrUnResolved
+            , ResolveMember argsClrUnResolved (Candidates t m) ~ argsClr
             , MethodS argCount t m argsClr
-            , BridgeTypes argsClr ~ argsBridge
+            , ListToTuple (BridgeTypeL argsClr) ~ argsBridge
             , BridgeTypeM (ResultTypeS argCount t m argsClr) ~ resultBridge
             , Marshal argsHask argsBridge
             , UnmarshalAs resultBridge ~ resultHask
@@ -170,14 +155,15 @@ invokeS x = marshal @argsHask @argsBridge @resultBridge x (\tup-> uncurryN @argC
 --
 -- Instance method invocation
 --
-invokeI :: forall ms m tBase tDerived argsClr argsHask argCount argsBridge resultBridge resultHask .
+invokeI :: forall ms m tBase tDerived argsClrUnResolved argsClr argsHask argCount argsBridge resultBridge resultHask .
             ( MakeT ms ~ m
             , TupleSize argsHask ~ argCount
             , ResolveBaseType tDerived m ~ tBase
             , tDerived `InheritsFrom` tBase ~ 'True
-            , ResolveArgTypes tBase m argsHask ~ argsClr
+            , HaskToClrL (TupleToList argsHask) ~ argsClrUnResolved
+            , ResolveMember argsClrUnResolved (Candidates tBase m) ~ argsClr
             , MethodI argCount tBase m argsClr
-            , BridgeTypes argsClr ~ argsBridge
+            , ListToTuple (BridgeTypeL argsClr) ~ argsBridge
             , BridgeTypeM (ResultTypeI argCount tBase m argsClr) ~ resultBridge
             , Marshal argsHask argsBridge
             , Marshal (Object tBase) (BridgeType tBase)
@@ -190,12 +176,13 @@ invokeI obj x = marshal @argsHask @argsBridge @resultBridge x (\tup-> marshal @(
 --
 -- Constructor invocation
 --
-new :: forall ts t argsClr argsHask argCount argsBridge resultBridge .
+new :: forall ts t argsClrUnResolved argsClr argsHask argCount argsBridge resultBridge .
         ( MakeT ts ~ t
         , TupleSize argsHask ~ argCount
-        , ResolveArgTypes t t argsHask ~ argsClr
+        , HaskToClrL (TupleToList argsHask) ~ argsClrUnResolved
+        , ResolveMember argsClrUnResolved (Candidates t t) ~ argsClr
         , Constructor argCount t argsClr
-        , BridgeTypes argsClr ~ argsBridge
+        , ListToTuple (BridgeTypeL argsClr) ~ argsBridge
         , Marshal argsHask argsBridge
         , Unmarshal (BridgeType t) (Object t)
         , Curry argCount (argsBridge -> (IO (BridgeType t))) (CurryT' argCount argsBridge (IO (BridgeType t)))
