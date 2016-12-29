@@ -3,6 +3,7 @@
 module Bindings where
 
 import Clr
+import Clr.Resolver
 import Foreign.C
 import Data.Int
 
@@ -22,6 +23,8 @@ instance MethodS2 (T "System.Console" 'Nothing '[]) (T "WriteLine" 'Nothing '[])
   type ResultTypeS2 (T "System.Console" 'Nothing '[]) (T "WriteLine" 'Nothing '[]) (T "System.String" 'Nothing '[]) (T "System.String" 'Nothing '[]) = 'Nothing
   rawInvokeS2 = writeLineRaw2
 
+type instance Candidates (T "System.Console" 'Nothing '[]) (T "WriteLine" 'Nothing '[]) = '[ '[ T "System.String" 'Nothing '[]], '[T "System.String" 'Nothing '[], T "System.String" 'Nothing '[]]]
+
 --
 -- Base type
 --
@@ -30,6 +33,10 @@ type instance SuperTypeOf (T "BaseType" 'Nothing '[]) = 'Just (T "System.Object"
 
 instance Constructor1 (T "BaseType" 'Nothing '[]) () where
   rawNew1 () = putStrLn "Constructed BaseType" >> return (1::Int64)
+
+type instance Candidates (T "BaseType" 'Nothing '[]) (T "BaseType" 'Nothing '[]) = '[ '[] ]
+type instance Candidates (T "BaseType" 'Nothing '[]) (T "Foo" 'Nothing '[]) = '[ '[ T "System.String" 'Nothing '[] ], '[ T "System.Int64" 'Nothing '[] ], '[ T "System.Int32" 'Nothing '[] ]]
+type instance Candidates (T "BaseType" 'Nothing '[]) (T "Bar" 'Nothing '[]) = '[ '[ T "System.String" 'Nothing '[] ], '[ T "System.Int64" 'Nothing '[] ], '[ T "System.Int32" 'Nothing '[] ]]
 
 type instance Members (T "BaseType" 'Nothing '[]) = '[(T "Foo" 'Nothing '[]), (T "Bar" 'Nothing '[])]
 
@@ -86,6 +93,9 @@ type instance SuperTypeOf (T "DerivedType" 'Nothing '[]) = 'Just (T "BaseType" '
 instance Constructor1 (T "DerivedType" 'Nothing '[]) () where
   rawNew1 () = putStrLn "Constructed DerivedType" >> return (1::Int64)
 
+type instance Candidates (T "DerivedType" 'Nothing '[]) (T "DerivedType" 'Nothing '[]) = '[ '[] ]
+type instance Candidates (T "DerivedType" 'Nothing '[]) (T "Foo" 'Nothing '[]) = '[ '[ T "System.String" 'Nothing '[] ], '[ T "System.Int64" 'Nothing '[] ], '[ T "System.Int32" 'Nothing '[] ]]
+
 type instance Members (T "DerivedType" 'Nothing '[]) = '[(T "Foo" 'Nothing '[])]
 
 instance MethodI1 (T "DerivedType" 'Nothing '[]) (T "Foo" 'Nothing '[]) (T "System.String" 'Nothing '[]) where
@@ -115,6 +125,9 @@ type instance Interfaces (T "MyGenType" 'Nothing t) = '[T "IEnumerable" 'Nothing
 
 instance Constructor1 (T "MyGenType" 'Nothing '[gt0]) () where
   rawNew1 () = putStrLn "Constructed MyGenType" >> return (1::Int64)
+
+type instance Candidates (T "MyGenType" 'Nothing '[gt0]) (T "MyGenType" 'Nothing '[gt0]) = '[ '[] ]
+type instance Candidates (T "MyGenType" 'Nothing '[gt0]) (T "Add" 'Nothing '[]) = '[ '[ gt0 ] ]
 
 type instance Members (T "MyGenType" 'Nothing '[gt0]) = '[(T "Add" 'Nothing '[])]
 
