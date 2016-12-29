@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeApplications, DataKinds #-}
+{-# LANGUAGE TypeApplications, TypeInType #-}
 
 import Clr
 import Bindings()
