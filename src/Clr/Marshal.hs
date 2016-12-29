@@ -15,7 +15,7 @@ class Marshal a b where
 instance Marshal String CString where
   marshal = withCString
 
-instance Marshal (Object t) ObjectID where
+instance Marshal (Object t) (ObjectID t) where
   marshal (Object x) f = f x
 
 instance Marshal Int32 Int32 where
@@ -29,6 +29,8 @@ instance Marshal () () where
 
 instance (Marshal a1 b1, Marshal a2 b2) => Marshal (a1, a2) (b1, b2) where
   marshal (x1,x2) f = marshal x1 (\x1'-> marshal x2 (\x2'-> f (x1', x2')))
+
+
 
 --
 -- Declares how to automatically convert from the bridge type of methods result to a high level Haskell type
@@ -50,7 +52,7 @@ instance Unmarshal CString String where
     -- free cs
     return s
 
-instance Unmarshal ObjectID (Object t) where
+instance Unmarshal (ObjectID t) (Object t) where
   unmarshal oid = return $ Object oid
 
 instance Unmarshal () () where

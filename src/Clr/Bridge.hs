@@ -19,7 +19,7 @@ import Foreign.Ptr
 --
 type family BridgeType (x::Type) :: Type where
   BridgeType () = ()
-  BridgeType a  = If (IsPrimType a) (BridgeTypePrim a) ObjectID
+  BridgeType t  = If (IsPrimType t) (BridgeTypePrim t) (ObjectID t)
 
 --
 -- Maybe on bridge types, choosing () for Nothing
