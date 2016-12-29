@@ -30,10 +30,10 @@ type family BestType' (b1::Bool) (t1::Type) (b2::Bool) (t2::Type) :: Maybe Type 
   BestType'  _     t1  _     t2 = (BestType'' t1 t2) <|> (BestType'' t2 t1)
 
 type family BestType'' (t1::Type) (t2::Type) :: Maybe Type where
-  BestType'' (T "System.SByte" '[]) t2 = If (t2 `Elem` UNumAtLeastSByte) ('Just (T "System.SByte" '[])) 'Nothing
-  BestType'' (T "System.Int16" '[]) t2 = If (t2 `Elem` UNumAtLeastInt16) ('Just (T "System.Int16" '[])) 'Nothing
-  BestType'' (T "System.Int32" '[]) t2 = If (t2 `Elem` UNumAtLeastInt32) ('Just (T "System.Int32" '[])) 'Nothing
-  BestType'' (T "System.Int64" '[]) t2 = If (t2 `Elem` UNumAtLeastInt64) ('Just (T "System.Int64" '[])) 'Nothing
+  BestType'' (T "System.SByte" 'Nothing '[]) t2 = If (t2 `Elem` UNumAtLeastSByte) ('Just (T "System.SByte" 'Nothing '[])) 'Nothing
+  BestType'' (T "System.Int16" 'Nothing '[]) t2 = If (t2 `Elem` UNumAtLeastInt16) ('Just (T "System.Int16" 'Nothing '[])) 'Nothing
+  BestType'' (T "System.Int32" 'Nothing '[]) t2 = If (t2 `Elem` UNumAtLeastInt32) ('Just (T "System.Int32" 'Nothing '[])) 'Nothing
+  BestType'' (T "System.Int64" 'Nothing '[]) t2 = If (t2 `Elem` UNumAtLeastInt64) ('Just (T "System.Int64" 'Nothing '[])) 'Nothing
   BestType''         t1             t2 = 'Nothing
 
 
@@ -45,8 +45,8 @@ type family MaybeAlt (a::Maybe k) (b::Maybe k) :: Maybe k where
 
 type instance a <|> b = MaybeAlt a b
 
-type UNumAtLeastSByte = (T "System.Byte" '[]) ': UNumAtLeastInt32
-type UNumAtLeastInt16 = (T "System.UInt16" '[]) ': UNumAtLeastInt32
-type UNumAtLeastInt32 = (T "System.UInt32" '[]) ': UNumAtLeastInt64
-type UNumAtLeastInt64 = '[ T "System.UInt64" '[] ]
+type UNumAtLeastSByte = (T "System.Byte" 'Nothing '[]) ': UNumAtLeastInt32
+type UNumAtLeastInt16 = (T "System.UInt16" 'Nothing '[]) ': UNumAtLeastInt32
+type UNumAtLeastInt32 = (T "System.UInt32" 'Nothing '[]) ': UNumAtLeastInt64
+type UNumAtLeastInt64 = '[ T "System.UInt64" 'Nothing '[] ]
 

@@ -130,9 +130,9 @@ type family ResolveArgTypes t m (args'::Type) :: [Type] where
 -- Something simple just to get the above working for now
 --
 type family UnBridgeType (t::Type) :: [Type] where
-  UnBridgeType String = '[(T "System.String" '[])]
-  UnBridgeType Int32  = '[(T "System.Int32" '[])]
-  UnBridgeType Int64  = '[(T "System.Int64" '[])]
+  UnBridgeType String = '[(T "System.String" 'Nothing '[])]
+  UnBridgeType Int32  = '[(T "System.Int32" 'Nothing '[])]
+  UnBridgeType Int64  = '[(T "System.Int64" 'Nothing '[])]
   UnBridgeType ()     = '[]
   UnBridgeType (a, b) = UnBridgeType a `Concat` UnBridgeType b
 
