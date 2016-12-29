@@ -1,4 +1,4 @@
-{-# LANGUAGE DataKinds, PolyKinds, TypeFamilies, MultiParamTypeClasses #-}
+{-# LANGUAGE TypeInType, PolyKinds, TypeFamilies, MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances, FlexibleContexts, UndecidableInstances #-}
 {-# LANGUAGE AllowAmbiguousTypes, FunctionalDependencies, TypeOperators #-}
 
@@ -60,4 +60,10 @@ type family CatMaybes (l :: [Maybe k]) :: [k] where
   CatMaybes ('Just x ': xs)  = x ': CatMaybes xs
   CatMaybes ('Nothing ': xs) = CatMaybes xs
 
+--
+-- PrependIf b x xs evaluates to xs when b is false and x : xs when b is true
+--
+type family PrependIf (b :: Bool) (x :: k) (xs :: [k]) :: [k] where
+    PrependIf 'True  x xs = x ': xs
+    PrependIf 'False x xs = xs
 
