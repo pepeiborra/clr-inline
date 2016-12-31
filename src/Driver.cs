@@ -241,15 +241,15 @@ namespace Salsa
         /// to be dereferenced to .NET object references.  Also ensures that .NET objects
         /// referred to from Haskell are kept alive.
         /// </summary>
-        static Dictionary<int, object> _inTable = new Dictionary<int, Object>();
+        static Dictionary<long, object> _inTable = new Dictionary<long, Object>();
 
-        static int _nextId = 1;
+        static long _nextId = 1;
 
         /// <summary>
         /// Registers the given object in the 'in table' and returns the object id
         /// that was assigned to it.
         /// </summary>
-        public static int RegisterObject(object o)
+        public static long RegisterObject(object o)
         {
             if (o == null)
                 return 0;
@@ -267,7 +267,7 @@ namespace Salsa
             }
         }
 
-        public static object GetObject(int oId)
+        public static object GetObject(long oId)
         {
             if (oId == 0) // 0 represents a null reference
                 return null;
@@ -296,10 +296,10 @@ namespace Salsa
         }
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void ReleaseObjectDelegate(int oId);
+        public delegate void ReleaseObjectDelegate(long oId);
         private static ReleaseObjectDelegate _ReleaseObjectDelegate = ReleaseObject;
 
-        public static void ReleaseObject(int oId)
+        public static void ReleaseObject(long oId)
         {
             lock (_inTable)
             {
@@ -400,7 +400,7 @@ namespace Salsa
 
             // Generate a dynamic method that does the following:
             //
-            //     Int32 [classType]New([args...])
+            //     Int64 [classType]New([args...])
             //     {
             //         [classType] o = new [classType]([args... using GetObject ... ]);
             //         (box o if it is a value type)
@@ -409,7 +409,7 @@ namespace Salsa
 
             // Signature of the stub method returned (as a delegate) by this function
             DelegateSignature methodSignature = new DelegateSignature(
-                typeof(Int32),
+                typeof(Int64),
                 con == null ? Type.EmptyTypes :
                               ConvertToStubTypes(Util.MapParametersToTypes(con.GetParameters())));
 
@@ -513,7 +513,7 @@ namespace Salsa
 
             // Generate a dynamic method that does the following:
             //
-            //     Int32 [delegateType]New(IntPtr funPtr)
+            //     Int64 [delegateType]New(IntPtr funPtr)
             //     {
             //         [wrapperType] wrapper = new [wrapperType](funPtr);
             //         Delegate d = new [delegateType](wrapper.Invoke);
@@ -524,7 +524,7 @@ namespace Salsa
             // method accepts an IntPtr to a Haskell function and returns an instantiated
             // .NET delegate for it)
             DelegateSignature methodSignature = new DelegateSignature(
-                typeof(Int32), new Type[] { typeof(IntPtr) });
+                typeof(Int64), new Type[] { typeof(IntPtr) });
 
             return GenerateDynamicMethod(delegateType.Name + "New", methodSignature,
                 delegate(ILGenerator ilg)
@@ -637,7 +637,7 @@ namespace Salsa
         {
             // Signature of the stub method returned (as a delegate) by this function
             DelegateSignature methodSignature = new DelegateSignature(
-                typeof(Int32), new Type[] { ConvertToStubType(typeToBox) });
+                typeof(Int64), new Type[] { ConvertToStubType(typeToBox) });
 
             return GenerateDynamicMethod("box_" + typeToBox.Name, methodSignature,
                 delegate(ILGenerator ilg)
@@ -693,7 +693,7 @@ namespace Salsa
         private static Type ConvertToStubType(Type type)
         {
             if (IsMarshaledByIndex(type))
-                return typeof(Int32);
+                return typeof(Int64);
             else
                 return type;
         }
@@ -717,7 +717,7 @@ namespace Salsa
         /// </summary>
         /// <remarks>
         /// For example, when called for the 'Button' type, code is emitted to convert an
-        /// Int32 object identifier into a Button; but when called with the 'String' type
+        /// Int64 object identifier into a Button; but when called with the 'String' type
         /// no code is emitted at all since the stub type matches the desired .NET type
         /// exactly.
         /// </remarks>
