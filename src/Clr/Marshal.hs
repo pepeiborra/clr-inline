@@ -3,13 +3,7 @@
 module Clr.Marshal where
 
 import Clr.Object
-import Clr.ListTuple
-import Data.Kind
-import Clr.Types
 import Foreign.C.String
-import Foreign.Ptr
-import Data.Int
-import Data.Type.Equality
 
 --
 -- Conversion from a high level Haskell type a a raw bridge type
@@ -20,14 +14,8 @@ class Marshal a b where
 --
 -- identity instance
 --
-instance {-# OVERLAPPING #-} Marshal a a where
+instance Marshal a a where
   marshal x f = f x
-
---
--- transitive instance
---
-instance {-# OVERLAPPABLE #-} (Marshal a b, Marshal b c) => Marshal a c where
-  marshal x f = marshal @a x (\x'-> marshal @b x' (\x''-> f x'') )
 
 --
 -- 2-tuple instance
@@ -54,28 +42,16 @@ instance (Marshal a1 b1, Marshal a2 b2, Marshal a3 b3, Marshal a4 b4, Marshal a5
   marshal (x1,x2,x3,x4,x5) f = marshal x1 $ \x1'-> marshal x2 $ \x2'-> marshal x3 $ \x3'-> marshal x4 $ \x4'-> marshal x5 $ \x5'-> f (x1', x2', x3', x4', x5')
 
 --
--- Boxing
---
-type BoxTypes = '[ T "System.Object"    'Nothing '[]
-                 , T "System.ValueType" 'Nothing '[] ]
-
-instance {-# OVERLAPPABLE #-} (obj `Elem` BoxTypes ~ 'True, Boxable prim ) => Marshal prim (ObjectID obj) where
-  marshal = box
-
-class Boxable prim where
-  box :: prim -> (ObjectID obj -> IO a) -> IO a
-
---
 -- Marshaling objects
 --
-instance {-# OVERLAPPING #-} Marshal (Object t) (ObjectID t) where
+instance Marshal (Object t) (ObjectID t) where
   marshal (Object x) f = f x
 
 --
 -- Other Marshal instances
 --
 instance Marshal String CString where
-  marshal = withCString
+  marshal x f = withCString x f
 
 --
 -- Declares how to automatically convert from the bridge type of methods result to a high level Haskell type
