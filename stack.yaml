@@ -38,6 +38,7 @@ resolver: ghc-8.0.1
 packages:
 - '../clr'
 - '../clr-host'
+- '../clr-bindings'
 - '.'
 
 # Dependency packages to be pulled from upstream that are not in the resolver
