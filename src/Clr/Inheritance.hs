@@ -10,6 +10,7 @@ import Clr.Object
 import Data.Kind
 import Data.Type.Equality
 import Data.Type.Bool
+import GHC.TypeLits
 import Unsafe.Coerce
 
 --
@@ -81,4 +82,18 @@ upCast = unsafeCoerce
 --
 unsafeDownCast :: (t' `InheritsFrom` t ~ 'True ) => Object t -> Object t'
 unsafeDownCast = unsafeCoerce
+
+--
+-- When a method m is invoked on a type t, we need to go up the hierarchy
+-- to find the type that t derives from that declared m
+--
+type family ResolveBaseType (t::Type) (m::Type) :: Type where
+  ResolveBaseType t m = ResolveBaseType' ('Just t) m
+
+type family ResolveBaseType' (t::Maybe Type) (m::Type) :: Type where
+  ResolveBaseType' 'Nothing  m = Error "No Base Type Of Nothing"
+  ResolveBaseType' ('Just t) m = If (t `HasMember` m) t (ResolveBaseType' (SuperTypeOf t) m)
+
+
+data Error (s::Symbol)
 

@@ -17,8 +17,10 @@ library
   hs-source-dirs:      src
   exposed-modules:     Clr
                      , Clr.Bridge
+                     , Clr.Constructor
                      , Clr.Curry
                      , Clr.Inheritance
+                     , Clr.InstanceMethod
                      , Clr.Interface
                      , Clr.ListTuple
                      , Clr.Marshal
@@ -26,6 +28,7 @@ library
                      , Clr.Resolver
                      , Clr.Resolver.BetterConversion
                      , Clr.Resolver.ImplicitConversions
+                     , Clr.StaticMethod
                      , Clr.Types
   build-depends:       base >= 4.7 && < 5, tuple, text
   default-language:    Haskell2010

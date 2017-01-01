@@ -111,3 +111,14 @@ type T_string  = T "System.String"  'Nothing '[]
 type T_char    = T "System.Char"    'Nothing '[]
 type T_bool    = T "System.Boolean" 'Nothing '[]
 
+--
+-- Declaration of all compile type chooseable members of a particular type
+--
+type family Members (t::Type) :: [Type]
+
+--
+-- t `HasMember` m ~ True t has declared m within its members
+--
+type family HasMember (t::Type) (m::Type) :: Bool where
+  HasMember t m = m `Elem` (Members t)
+
