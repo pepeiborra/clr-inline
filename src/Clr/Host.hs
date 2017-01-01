@@ -76,3 +76,12 @@ type GetMethodStubDelegate a = CString -> CString -> CString -> FunPtr a
 foreign import ccall "dynamic" makeGetMethodStubDelegate :: FunPtr (GetMethodStubDelegate a) -> GetMethodStubDelegate a
 
 
+-- | 'saveDynamicAssembly' saves the assembly containing the dynamically-generated
+--   wrapper stubs to disk (for debugging purposes).
+saveDynamicAssembly :: IO ()
+saveDynamicAssembly = unsafeGetPointerToMethod "SaveDynamicAssembly" >>=  makeSaveDynamicAssemblyDelegate
+
+type SaveDynamicAssemblyDelegate = IO ()
+foreign import ccall "dynamic" makeSaveDynamicAssemblyDelegate :: FunPtr SaveDynamicAssemblyDelegate -> SaveDynamicAssemblyDelegate
+
+
