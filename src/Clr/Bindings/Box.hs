@@ -2,26 +2,44 @@
 
 module Clr.Bindings.Box where
 
-import Clr.Host.Box
-
 import Clr.Marshal
 import Clr.Object
 import Clr.Types
+import Clr.Bindings.Host
 
 import Data.Int
+import Data.Text
+import Data.Text.Foreign
 import Data.Word
-import Foreign.C.String
+import Foreign.Marshal.Alloc
 import Foreign.Ptr
+import Foreign.Storable
 
+
+-- | @'getBoxStub' t@ returns a function pointer to a function that, when
+--   called, returns a boxed object reference to the given type.
+getBoxStub :: String -> IO (FunPtr f)
+getBoxStub typeName = marshal typeName $ \typeName'-> do
+  stub <- getBoxStubRaw
+  return $ stub typeName'
+
+getBoxStubRaw :: IO (GetBoxStubDelegate a)
+getBoxStubRaw = unsafeGetPointerToMethod "GetBoxStub" >>= return . makeGetBoxStubDelegate
+
+type GetBoxStubDelegate a = Ptr Word16 -> FunPtr a
+foreign import ccall "dynamic" makeGetBoxStubDelegate :: FunPtr (GetBoxStubDelegate a) -> GetBoxStubDelegate a
 
 --
--- CString
+-- Text
 --
 
-instance Marshal CString (ObjectID obj) where
-  marshal x f = boxStringStub >>= \stub-> stub x >>= f
+instance Marshal Text (ObjectID obj) where
+  marshal x f = marshal @Text @(Ptr Word16) x $ \ptr-> do
+    stub <- boxStringStub
+    obj <- stub ptr
+    f obj
 
-type BoxStringStub a = CString -> IO (ObjectID a)
+type BoxStringStub a = Ptr Word16 -> IO (ObjectID a)
 foreign import ccall "dynamic" makeBoxStringStub :: FunPtr (BoxStringStub a) -> (BoxStringStub a)
 
 boxStringStub :: IO (BoxStringStub a)
@@ -32,7 +50,7 @@ boxStringStub = getBoxStub "System.String" >>= return . makeBoxStringStub
 --
 
 instance Marshal String (ObjectID a) where
-  marshal s f = marshal @String @CString s $ \cs-> marshal @CString cs $ \obj-> f obj
+  marshal x f = marshal (pack x) f
 
 --
 -- Int8
