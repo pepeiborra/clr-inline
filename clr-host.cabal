@@ -38,28 +38,28 @@ library
   if flag(enable_dotnet) && flag(enable_mono)
     Cpp-options:         -DHAVE_DOTNET, -DHAVE_MONO
     cc-options:          -DHAVE_DOTNET, -DHAVE_MONO
-    exposed-modules:     Clr.Host, Clr.Host.Config, Clr.Host.Box, Clr.Host.DotNet, Clr.Host.Mono
+    exposed-modules:     Clr.Host, Clr.Host.Config, Clr.Host.DotNet, Clr.Host.Mono
     Extra-Libraries:     glib-2.0, mono-2.0, oleaut32, ole
   if flag(enable_dotnet) && !flag(enable_mono)
     Cpp-options:         -DHAVE_DOTNET
     cc-options:          -DHAVE_DOTNET
-    exposed-modules:     Clr.Host, Clr.Host.Config, Clr.Host.Box, Clr.Host.DotNet
+    exposed-modules:     Clr.Host, Clr.Host.Config, Clr.Host.DotNet
     Extra-Libraries:     oleaut32, ole32
   if !flag(enable_dotnet) && flag(enable_mono)
     Cpp-options:         -DHAVE_MONO
     cc-options:          -DHAVE_MONO
-    exposed-modules:     Clr.Host, Clr.Host.Config, Clr.Host.Box, Clr.Host.Mono
+    exposed-modules:     Clr.Host, Clr.Host.Config, Clr.Host.Mono
     Extra-Libraries:     glib-2.0, mono-2.0
   if !flag(enable_dotnet) && !flag(enable_mono)
     if os(windows)
       Cpp-options:         -DHAVE_DOTNET
       cc-options:          -DHAVE_DOTNET
-      exposed-modules:     Clr.Host, Clr.Host.Config, Clr.Host.Box, Clr.Host.DotNet
+      exposed-modules:     Clr.Host, Clr.Host.Config, Clr.Host.DotNet
       Extra-Libraries:     oleaut32, ole32
     else
       Cpp-options:         -DHAVE_MONO
       cc-options:          -DHAVE_MONO
-      exposed-modules:     Clr.Host, Clr.Host.Config, Clr.Host.Box, Clr.Host.Mono
+      exposed-modules:     Clr.Host, Clr.Host.Config, Clr.Host.Mono
       Extra-Libraries:     glib-2.0, mono-2.0
   if os(windows)
     build-depends:       base >= 4.7 && < 5, bytestring, file-embed, Win32

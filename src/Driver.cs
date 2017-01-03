@@ -18,7 +18,7 @@ using System.Threading;
 [assembly: AssemblyTitle("Salsa")]
 [assembly: AssemblyDescription(".NET Bridge for Haskell")]
 [assembly: AssemblyProduct("Salsa")]
-[assembly: AssemblyCopyright("Copyright © 2007-2008 Andrew Appleyard")]
+[assembly: AssemblyCopyright("Copyright Â© 2007-2008 Andrew Appleyard")]
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
 
@@ -27,8 +27,9 @@ using System.Threading;
 
 namespace Salsa
 {
-    public class UTF8Marshaler : ICustomMarshaler {
-        static UTF8Marshaler marshaler = new UTF8Marshaler();
+    public class UTF16Marshaler : ICustomMarshaler {
+        static UTF16Marshaler marshaler = new UTF16Marshaler();
+        static UnicodeEncoding encoding = new UnicodeEncoding(false, false, true);
 
         public static ICustomMarshaler GetInstance(string cookie) {
             return marshaler;
@@ -51,12 +52,12 @@ namespace Salsa
             if (ManagedObj.GetType() != typeof(string))
                 throw new ArgumentException("ManagedObj", "Can only marshal type of System.string");
 
-            byte[] array = Encoding.UTF8.GetBytes((string) ManagedObj);
-            int size = Marshal.SizeOf(typeof(byte)) * (array.Length + 1);
-
-            IntPtr ptr = Marshal.AllocHGlobal(size);
+            byte[] array = encoding.GetBytes((string) ManagedObj);
+            int size = array.Length;
+            IntPtr ptr = Marshal.AllocHGlobal(size + 4);
+            Marshal.WriteInt32(ptr, 0, size);
+            ptr = new IntPtr(ptr.ToInt64() + 4);
             Marshal.Copy(array, 0, ptr, array.Length);
-            Marshal.WriteByte(ptr, array.Length, 0);
 
             return ptr;
         }
@@ -65,14 +66,12 @@ namespace Salsa
             if (pNativeData == IntPtr.Zero)
                 return null;
 
-            int size = 0;
-            while (Marshal.ReadByte(pNativeData, size) > 0)
-                size++;
-
+            int size = Marshal.ReadInt32(pNativeData);
             byte[] array = new byte[size];
-            Marshal.Copy(pNativeData, array, 0, size);
+            IntPtr stringData = new IntPtr(pNativeData.ToInt64() + 4);
+            Marshal.Copy(stringData, array, 0, size);
 
-            return Encoding.UTF8.GetString(array);
+            return encoding.GetString(array);
         }
     }
 
@@ -675,8 +674,8 @@ namespace Salsa
         /// </summary>
         private static UnmanagedType? MarshalTypeAs(Type t)
         {
-            if (!isMono && t == typeof(string))
-                return UnmanagedType.LPWStr;
+            if (t == typeof(string))
+                return UnmanagedType.CustomMarshaler;
             else
                 return null;
         }
@@ -1077,7 +1076,7 @@ namespace Salsa
                                 typeof(MarshalAsAttribute).GetConstructor(new Type[] { typeof(UnmanagedType) }),
                                 new object[] { marshalAs.Value },
                                 new FieldInfo[] { typeof(MarshalAsAttribute).GetField("MarshalTypeRef") },
-                                new Object[] { typeof(UTF8Marshaler) }
+                                new Object[] { typeof(UTF16Marshaler) }
                             )
                         );
                     }

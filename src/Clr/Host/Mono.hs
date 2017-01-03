@@ -73,7 +73,7 @@ getDriverDataArray = unsafeUseAsCStringLen driverData $ \(p,l)-> do
     mono_value_copy_array ar 0 p l
     return ar
 
-startHostMono :: IO (FunPtr (CString -> IO (FunPtr a)))
+startHostMono :: IO (FunPtr (Ptr Word16 -> IO (FunPtr a)))
 startHostMono = do
   mono_config_parse nullPtr
   domain <- return "salsa" >>= flip withCString mono_jit_init
@@ -119,7 +119,7 @@ setupDomain = withCString "Salsa.config" $ \configFile-> do
     dom <- mono_domain_get
     mono_domain_set_config dom baseDir configFile
 
-bootDriver :: IO (FunPtr (CString -> IO (FunPtr a)))
+bootDriver :: IO (FunPtr (Ptr Word16 -> IO (FunPtr a)))
 bootDriver = do
   salsa <- getDriverImage
   method <- getMethodFromNameImage "Salsa.Driver:Boot()" salsa

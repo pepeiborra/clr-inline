@@ -61,7 +61,7 @@ start_ICLRRuntimeHost clrHost = do
 type Start_ICLRRuntimeHost = ICLRRuntimeHost -> IO HResult
 foreign import stdcall "dynamic" makeStartCLR :: FunPtr Start_ICLRRuntimeHost -> Start_ICLRRuntimeHost
 
-startHostDotNet :: IO (FunPtr (CString -> IO (FunPtr a)))
+startHostDotNet :: IO (FunPtr (Ptr Word16 -> IO (FunPtr a)))
 startHostDotNet = do
   -- Load the 'mscoree' dynamic library into the process.  This is the
   -- 'stub' library for the .NET execution engine, and is used to load an
@@ -330,7 +330,7 @@ foreign import stdcall "dynamic" makeInvokeMember_Type :: FunPtr InvokeMember_Ty
 --   memory (the binary data is originally stored in 'driverData'), and then invokes the
 --   Boot method (from the Salsa.Driver class) to obtain a function pointer for invoking
 --   the 'GetPointerToMethod' method.
-loadDriverAndBoot :: ICorRuntimeHost -> IO (FunPtr (CString -> IO (FunPtr a)))
+loadDriverAndBoot :: ICorRuntimeHost -> IO (FunPtr (Ptr Word16 -> IO (FunPtr a)))
 loadDriverAndBoot clrHost = do
   -- Obtain an _AppDomain interface pointer to the default application domain
   withInterface (getDefaultDomain_ICorRuntimeHost clrHost) $ \untypedAppDomain -> do
