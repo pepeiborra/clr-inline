@@ -3,7 +3,14 @@
 module Clr.Marshal where
 
 import Clr.Object
-import Foreign.C.String
+import Data.Int
+import Data.Text
+import Data.Text.Foreign
+import Data.Word
+import Foreign.Marshal.Alloc
+import Foreign.Ptr
+import Foreign.Storable
+
 
 --
 -- Conversion from a high level Haskell type a a raw bridge type
@@ -50,14 +57,23 @@ instance Marshal (Object t) (ObjectID t) where
 --
 -- Other Marshal instances
 --
-instance Marshal String CString where
-  marshal x f = withCString x f
+instance Marshal Text (Ptr Word16) where
+  marshal x f = do
+    let lenBytes = lengthWord16 x * 2
+    allocaBytes (lenBytes + 4) $ \(ptr::Ptr Word32)-> do
+      poke ptr (fromIntegral lenBytes)
+      let ptr' = plusPtr ptr 4 :: Ptr Word16
+      unsafeCopyToPtr x ptr'
+      f $ castPtr ptr
+
+instance Marshal String (Ptr Word16) where
+  marshal x f = marshal (pack x) f
 
 --
 -- Declares how to automatically convert from the bridge type of methods result to a high level Haskell type
 -- TODO: Can we do without this the end user can choose between String or Text for example?
 type family UnmarshalAs (x::k) :: k' where
-  UnmarshalAs   CString    = String
+  UnmarshalAs (Ptr Word16) = Text
   UnmarshalAs (ObjectID t) = (Object t)
   UnmarshalAs     a        = a
 
@@ -67,14 +83,15 @@ type family UnmarshalAs (x::k) :: k' where
 class Unmarshal a b where
   unmarshal :: a -> IO b
 
-instance Unmarshal CString String where
-  unmarshal cs = do
-    s <- peekCString cs
-    -- free cs
-    return s
-
 instance Unmarshal (ObjectID t) (Object t) where
   unmarshal oid = return $ Object oid
+
+instance Unmarshal (Ptr Word16) Text where
+  unmarshal ptr = do
+    let ptr' = castPtr ptr :: Ptr Word32
+    lenBytes <- peek ptr'
+    let ptr'' = plusPtr ptr 4 :: Ptr Word16
+    fromPtr ptr'' $ fromIntegral $ lenBytes * 2
 
 instance Unmarshal a a where
   unmarshal = return

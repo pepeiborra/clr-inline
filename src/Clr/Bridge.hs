@@ -33,18 +33,18 @@ type family BridgeTypeM (x::Maybe Type) :: Type where
 --
 type family BridgeTypePrim (x::Type)
 
-type instance BridgeTypePrim (T "System.String" 'Nothing '[])  = CString
-type instance BridgeTypePrim (T "System.Int16" 'Nothing '[])   = Int16
-type instance BridgeTypePrim (T "System.UInt16" 'Nothing '[])  = Word16
-type instance BridgeTypePrim (T "System.Int32" 'Nothing '[])   = Int32
-type instance BridgeTypePrim (T "System.UInt32" 'Nothing '[])  = Word32
-type instance BridgeTypePrim (T "System.Int64" 'Nothing '[])   = Int64
-type instance BridgeTypePrim (T "System.UInt64" 'Nothing '[])  = Word64
-type instance BridgeTypePrim (T "System.IntPtr" 'Nothing '[])  = IntPtr
+type instance BridgeTypePrim (T "System.String"  'Nothing '[]) = Ptr Word16
+type instance BridgeTypePrim (T "System.Int16"   'Nothing '[]) = Int16
+type instance BridgeTypePrim (T "System.UInt16"  'Nothing '[]) = Word16
+type instance BridgeTypePrim (T "System.Int32"   'Nothing '[]) = Int32
+type instance BridgeTypePrim (T "System.UInt32"  'Nothing '[]) = Word32
+type instance BridgeTypePrim (T "System.Int64"   'Nothing '[]) = Int64
+type instance BridgeTypePrim (T "System.UInt64"  'Nothing '[]) = Word64
+type instance BridgeTypePrim (T "System.IntPtr"  'Nothing '[]) = IntPtr
 type instance BridgeTypePrim (T "System.UIntPtr" 'Nothing '[]) = WordPtr
-type instance BridgeTypePrim (T "System.Char" 'Nothing '[])    = Char
-type instance BridgeTypePrim (T "System.Single" 'Nothing '[])  = CFloat
-type instance BridgeTypePrim (T "System.Double" 'Nothing '[])  = CDouble
+type instance BridgeTypePrim (T "System.Char"    'Nothing '[]) = Char
+type instance BridgeTypePrim (T "System.Single"  'Nothing '[]) = CFloat
+type instance BridgeTypePrim (T "System.Double"  'Nothing '[]) = CDouble
 
 --
 -- Bridge type that operates on lists
