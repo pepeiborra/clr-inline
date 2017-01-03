@@ -7,7 +7,7 @@ license:             BSD3
 license-file:        LICENSE
 author:              Tim Matthews
 maintainer:          tim.matthews7@gmail.com
-copyright:           Copyright: (c) 2016 Tim Matthews
+copyright:           Copyright: (c) 2016-2017 Tim Matthews
 category:            Development
 build-type:          Custom
 extra-source-files:  src/Driver.cs
