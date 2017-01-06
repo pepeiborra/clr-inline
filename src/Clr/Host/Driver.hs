@@ -7,5 +7,5 @@ import Data.FileEmbed
 
 {-# NOINLINE driverData #-}
 driverData :: B.ByteString
-driverData = $(embedFile "src/Driver.dll")
+driverData = $(makeRelativeToProject "src/Driver.dll" >>= embedFile)
 
