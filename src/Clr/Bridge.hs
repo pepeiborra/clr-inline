@@ -25,7 +25,7 @@ type family BridgeType (x::Type) :: Type where
 -- Maybe on bridge types, choosing () for Nothing
 --
 type family BridgeTypeM (x::Maybe Type) :: Type where
-  BridgeTypeM 'Nothing = ()
+  BridgeTypeM 'Nothing  = ()
   BridgeTypeM ('Just x) = BridgeType x
 
 --
@@ -33,18 +33,18 @@ type family BridgeTypeM (x::Maybe Type) :: Type where
 --
 type family BridgeTypePrim (x::Type)
 
-type instance BridgeTypePrim (T "System.String"  'Nothing '[]) = Ptr Word16
-type instance BridgeTypePrim (T "System.Int16"   'Nothing '[]) = Int16
-type instance BridgeTypePrim (T "System.UInt16"  'Nothing '[]) = Word16
-type instance BridgeTypePrim (T "System.Int32"   'Nothing '[]) = Int32
-type instance BridgeTypePrim (T "System.UInt32"  'Nothing '[]) = Word32
-type instance BridgeTypePrim (T "System.Int64"   'Nothing '[]) = Int64
-type instance BridgeTypePrim (T "System.UInt64"  'Nothing '[]) = Word64
-type instance BridgeTypePrim (T "System.IntPtr"  'Nothing '[]) = IntPtr
-type instance BridgeTypePrim (T "System.UIntPtr" 'Nothing '[]) = WordPtr
-type instance BridgeTypePrim (T "System.Char"    'Nothing '[]) = Char
-type instance BridgeTypePrim (T "System.Single"  'Nothing '[]) = CFloat
-type instance BridgeTypePrim (T "System.Double"  'Nothing '[]) = CDouble
+type instance BridgeTypePrim (T "System.String"  '[]) = Ptr Word16
+type instance BridgeTypePrim (T "System.Int16"   '[]) = Int16
+type instance BridgeTypePrim (T "System.UInt16"  '[]) = Word16
+type instance BridgeTypePrim (T "System.Int32"   '[]) = Int32
+type instance BridgeTypePrim (T "System.UInt32"  '[]) = Word32
+type instance BridgeTypePrim (T "System.Int64"   '[]) = Int64
+type instance BridgeTypePrim (T "System.UInt64"  '[]) = Word64
+type instance BridgeTypePrim (T "System.IntPtr"  '[]) = IntPtr
+type instance BridgeTypePrim (T "System.UIntPtr" '[]) = WordPtr
+type instance BridgeTypePrim (T "System.Char"    '[]) = Char
+type instance BridgeTypePrim (T "System.Single"  '[]) = CFloat
+type instance BridgeTypePrim (T "System.Double"  '[]) = CDouble
 
 --
 -- Bridge type that operates on lists

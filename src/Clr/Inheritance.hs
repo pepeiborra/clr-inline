@@ -39,7 +39,7 @@ type family InheritsFrom (t1 :: Type) (t2 :: Type) :: Bool where
 -- Value types are just those that inherit from System.ValueType
 --
 type family IsValueType (a::Type) :: Bool where
-  IsValueType a = a `InheritsFrom` (T "System.ValueType" 'Nothing '[])
+  IsValueType a = a `InheritsFrom` (T "System.ValueType" '[])
 
 --
 -- Reference types are those that do not inherit fom System.ValueType
@@ -50,26 +50,26 @@ type family IsRefType (a::Type) :: Bool where
 --
 -- Important SuperType declarations
 --
-type instance SuperTypeOf (T "System.Object" 'Nothing '[])    = 'Nothing
-type instance SuperTypeOf (T "System.ValueType" 'Nothing '[]) = 'Just (T "System.Object" 'Nothing '[])
+type instance SuperTypeOf (T "System.Object" '[])    = 'Nothing
+type instance SuperTypeOf (T "System.ValueType" '[]) = 'Just (T "System.Object" '[])
 
 --
 -- SuperType declarations for each prim type
 --
-type instance SuperTypeOf (T "System.String"  'Nothing '[]) = 'Just (T "System.Object" 'Nothing '[])
-type instance SuperTypeOf (T "System.SByte"   'Nothing '[]) = 'Just (T "System.ValueType" 'Nothing '[])
-type instance SuperTypeOf (T "System.Byte"    'Nothing '[]) = 'Just (T "System.ValueType" 'Nothing '[])
-type instance SuperTypeOf (T "System.Int16"   'Nothing '[]) = 'Just (T "System.ValueType" 'Nothing '[])
-type instance SuperTypeOf (T "System.UInt16"  'Nothing '[]) = 'Just (T "System.ValueType" 'Nothing '[])
-type instance SuperTypeOf (T "System.Int32"   'Nothing '[]) = 'Just (T "System.ValueType" 'Nothing '[])
-type instance SuperTypeOf (T "System.UInt32"  'Nothing '[]) = 'Just (T "System.ValueType" 'Nothing '[])
-type instance SuperTypeOf (T "System.Int64"   'Nothing '[]) = 'Just (T "System.ValueType" 'Nothing '[])
-type instance SuperTypeOf (T "System.UInt64"  'Nothing '[]) = 'Just (T "System.ValueType" 'Nothing '[])
-type instance SuperTypeOf (T "System.IntPtr"  'Nothing '[]) = 'Just (T "System.ValueType" 'Nothing '[])
-type instance SuperTypeOf (T "System.UIntPtr" 'Nothing '[]) = 'Just (T "System.ValueType" 'Nothing '[])
-type instance SuperTypeOf (T "System.Char"    'Nothing '[]) = 'Just (T "System.ValueType" 'Nothing '[])
-type instance SuperTypeOf (T "System.Single"  'Nothing '[]) = 'Just (T "System.ValueType" 'Nothing '[])
-type instance SuperTypeOf (T "System.Double"  'Nothing '[]) = 'Just (T "System.ValueType" 'Nothing '[])
+type instance SuperTypeOf (T "System.String"  '[]) = 'Just (T "System.Object"    '[])
+type instance SuperTypeOf (T "System.SByte"   '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.Byte"    '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.Int16"   '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.UInt16"  '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.Int32"   '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.UInt32"  '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.Int64"   '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.UInt64"  '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.IntPtr"  '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.UIntPtr" '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.Char"    '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.Single"  '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypeOf (T "System.Double"  '[]) = 'Just (T "System.ValueType" '[])
 
 --
 -- Casting up the hierarchy. Always safe
