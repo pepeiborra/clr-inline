@@ -6,6 +6,7 @@ module Clr
   ( invokeS
   , invokeI
   , new
+  , ClrString(..)
   , Candidates
   , module Clr.Constructor
   , module Clr.Inheritance

@@ -15,7 +15,8 @@ import Foreign.C
 import Foreign.Ptr
 
 --
--- Bridge type goes from something like "System.String" to CString
+-- BridgeType goes from the Haskell representation of a CLR type to the
+-- low level type that it is marshaled as to cross the bridge
 --
 type family BridgeType (x::Type) :: Type where
   BridgeType () = ()
@@ -33,7 +34,7 @@ type family BridgeTypeM (x::Maybe Type) :: Type where
 --
 type family BridgeTypePrim (x::Type)
 
-type instance BridgeTypePrim (T "System.String"  '[]) = Ptr Word16
+type instance BridgeTypePrim (T "System.String"  '[]) = ClrString
 type instance BridgeTypePrim (T "System.Int16"   '[]) = Int16
 type instance BridgeTypePrim (T "System.UInt16"  '[]) = Word16
 type instance BridgeTypePrim (T "System.Int32"   '[]) = Int32
@@ -59,4 +60,8 @@ type family BridgeTypeL (a::[Type]) :: [Type] where
 type family BridgeTypes (x::[Type]) :: Type where
   BridgeTypes x = ListToTuple (BridgeTypeL x)
 
+--
+-- Custom marshaled types
+--
+newtype ClrString  = ClrString (Ptr Word16)
 

@@ -10,9 +10,9 @@ import Foreign.Ptr
 --
 -- Static method
 --
-writeLineRaw1 :: Ptr Word16 -> IO ()
+writeLineRaw1 :: ClrString -> IO ()
 writeLineRaw1 cs = putStrLn "Console.WriteLine(String)"
-writeLineRaw2 :: Ptr Word16 -> Ptr Word16 -> IO ()
+writeLineRaw2 :: ClrString -> ClrString -> IO ()
 writeLineRaw2 cs1 cs2 = putStrLn "Console.WriteLine(String, String)"
 
 instance MethodS1 (T "System.Console" '[]) (T "WriteLine" '[]) (T "System.String" '[]) where
@@ -53,7 +53,7 @@ instance MethodI1 (T "BaseType" '[]) (T "Foo" '[]) (T "System.Int32" '[]) where
   type ResultTypeI1 (T "BaseType" '[]) (T "Foo" '[]) (T "System.Int32" '[]) = 'Nothing
   rawInvokeI1 = rawInvokeBaseTypeFooInt32
 
-rawInvokeBaseTypeFooStr :: ObjectID t -> Ptr Word16 -> IO ()
+rawInvokeBaseTypeFooStr :: ObjectID t -> ClrString -> IO ()
 rawInvokeBaseTypeFooStr d s = putStrLn "BaseType.Foo(String)"
 
 rawInvokeBaseTypeFooInt64 :: ObjectID t -> Int64 -> IO ()
@@ -75,7 +75,7 @@ instance MethodI1 (T "BaseType" '[]) (T "Bar" '[]) (T "System.Int32" '[]) where
   type ResultTypeI1 (T "BaseType" '[]) (T "Bar" '[]) (T "System.Int32" '[]) = 'Nothing
   rawInvokeI1 = rawInvokeBaseTypeBarInt32
 
-rawInvokeBaseTypeBarStr :: ObjectID t -> Ptr Word16 -> IO ()
+rawInvokeBaseTypeBarStr :: ObjectID t -> ClrString -> IO ()
 rawInvokeBaseTypeBarStr d s = putStrLn "BaseType.Bar(String)"
 
 rawInvokeBaseTypeBarInt64 :: ObjectID t -> Int64 -> IO ()
@@ -110,7 +110,7 @@ instance MethodI1 (T "DerivedType" '[]) (T "Foo" '[]) (T "System.Int32" '[]) whe
   type ResultTypeI1 (T "DerivedType" '[]) (T "Foo" '[]) (T "System.Int32" '[]) = 'Nothing
   rawInvokeI1 = rawInvokeDerivedTypeInt32
 
-rawInvokeDerivedTypeStr :: ObjectID t -> Ptr Word16 -> IO ()
+rawInvokeDerivedTypeStr :: ObjectID t -> ClrString -> IO ()
 rawInvokeDerivedTypeStr d s = putStrLn "DerivedType.Foo(String)"
 
 rawInvokeDerivedTypeInt64 :: ObjectID t -> Int64 -> IO ()
@@ -139,7 +139,7 @@ instance MethodI1 (T "MyGenType" '[(T "System.Int32" '[])]) (T "Add" '[]) (T "Sy
   type ResultTypeI1 (T "MyGenType" '[(T "System.Int32" '[])]) (T "Add" '[]) (T "System.Int32" '[]) = 'Nothing
   rawInvokeI1 = rawInvokeMyGenTypeAddInt
 
-rawInvokeMyGenTypeAddStr :: ObjectID t -> Ptr Word16 -> IO ()
+rawInvokeMyGenTypeAddStr :: ObjectID t -> ClrString -> IO ()
 rawInvokeMyGenTypeAddStr oid s = putStrLn "MyGenType.Add(String)"
 
 rawInvokeMyGenTypeAddInt :: ObjectID t -> Int32 -> IO ()
