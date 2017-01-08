@@ -6,10 +6,14 @@ module Clr
   ( invokeS
   , invokeI
   , new
+  , Candidates
+  , module Clr.Constructor
   , module Clr.Inheritance
+  , module Clr.InstanceMethod
   , module Clr.Interface
   , module Clr.ListTuple
   , module Clr.Object
+  , module Clr.StaticMethod
   , module Clr.Types
   ) where
 
