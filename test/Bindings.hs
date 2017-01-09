@@ -29,7 +29,7 @@ type instance Candidates (T "System.Console" '[]) (T "WriteLine" '[]) = '[ '[ T 
 -- Base type
 --
 
-type instance SuperTypeOf (T "BaseType" '[]) = 'Just (T "System.Object" '[])
+type instance SuperTypes (T "BaseType" '[]) = '[ (T "System.Object" '[]) ]
 
 instance Constructor1 (T "BaseType" '[]) () where
   rawNew1 () = putStrLn "Constructed BaseType" >> return (ObjectID 1)
@@ -88,7 +88,7 @@ rawInvokeBaseTypeBarInt32 d s = putStrLn "BaseType.Bar(Int32)"
 -- Derived type
 --
 
-type instance SuperTypeOf (T "DerivedType" '[]) = 'Just (T "BaseType" '[])
+type instance SuperTypes (T "DerivedType" '[]) = '[ (T "BaseType" '[]) ]
 
 instance Constructor1 (T "DerivedType" '[]) () where
   rawNew1 () = putStrLn "Constructed DerivedType" >> return (ObjectID 1)
@@ -119,9 +119,7 @@ rawInvokeDerivedTypeInt64 d s = putStrLn "DerivedType.Foo(Int64)"
 rawInvokeDerivedTypeInt32 :: ObjectID t -> Int32 -> IO ()
 rawInvokeDerivedTypeInt32 d s = putStrLn "DerivedType.Foo(Int32)"
 
-type instance SuperTypeOf (T "MyGenType" '[gt0]) = 'Just (T "System.Object" '[])
-
-type instance Interfaces (T "MyGenType" t) = '[T "IEnumerable" '[], T "IEnumerable" t]
+type instance SuperTypes (T "MyGenType" '[gt0]) = '[ T "System.Object" '[], T "IEnumerable" '[], T "IEnumerable" '[gt0] ]
 
 instance Constructor1 (T "MyGenType" '[gt0]) () where
   rawNew1 () = putStrLn "Constructed MyGenType" >> return (ObjectID 1)

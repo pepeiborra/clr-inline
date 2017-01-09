@@ -14,32 +14,37 @@ import GHC.TypeLits
 import Unsafe.Coerce
 
 --
--- Most types inherit from another type
+-- Most types inherit from another type. Interfaces inherit from multiple types.
 --
-type family SuperTypeOf (t::Type) :: Maybe Type
+type family SuperTypes (t::Type) :: [Type]
 
+type family HasSuper (t::Type) :: Bool where
+  HasSuper t = ((ListSize (SuperTypes t)) `CmpNat` 0) == GT
 
+type family SuperTypesL (ts::[Type]) :: [[Type]] where
+  SuperTypesL   '[]     = '[ '[] ]
+  SuperTypesL (x ': xs) = (SuperTypes x) ': (SuperTypesL xs)
 --
--- A list of all types that t inherits from
+-- A list of t plus all types that t implements or inherits from
 --
-type family SuperTypesOf (t :: Type) :: [Type] where
-  SuperTypesOf x = CatMaybes (SuperTypesOf' ('Just x))
+type family WithAllSuperTypes (t::Type) :: [Type] where
+  WithAllSuperTypes t = Concat (WithAllSuperTypes' '[t])
 
-type family SuperTypesOf' (t :: Maybe Type) :: [Maybe Type] where
-  SuperTypesOf' ('Just x) = (SuperTypeOf x) ': (SuperTypesOf' (SuperTypeOf x))
-  SuperTypesOf' 'Nothing  = '[]
-
+type family WithAllSuperTypes' (ts::[Type]) :: [[Type]] where
+  WithAllSuperTypes'    '[]    = '[]
+  WithAllSuperTypes' (x ': xs) = '[x] ': (SuperTypes x) ': (WithAllSuperTypes' (Concat (SuperTypesL (SuperTypes x)) `Append` xs))
 --
--- True if t1 is equal to or inherits from t2
+-- t1 `Implements` t2 is True when t1 is equal to t2, t1 inherits from the base type t2, or t1 implements the interface t2
 --
-type family InheritsFrom (t1 :: Type) (t2 :: Type) :: Bool where
-  InheritsFrom t1 t2 = t1 == t2 || Elem t2 (SuperTypesOf t1)
+type family Implements (t1 :: Type) (t2 :: Type) :: Bool where
+  Implements t1 t1 = 'True
+  Implements t1 t2 = t2 `Elem` (WithAllSuperTypes t1)
 
 --
 -- Value types are just those that inherit from System.ValueType
 --
 type family IsValueType (a::Type) :: Bool where
-  IsValueType a = a `InheritsFrom` (T "System.ValueType" '[])
+  IsValueType a = a `Implements` (T "System.ValueType" '[])
 
 --
 -- Reference types are those that do not inherit fom System.ValueType
@@ -50,37 +55,37 @@ type family IsRefType (a::Type) :: Bool where
 --
 -- Important SuperType declarations
 --
-type instance SuperTypeOf (T "System.Object" '[])    = 'Nothing
-type instance SuperTypeOf (T "System.ValueType" '[]) = 'Just (T "System.Object" '[])
+type instance SuperTypes (T "System.Object" '[])    = '[]
+type instance SuperTypes (T "System.ValueType" '[]) = '[ (T "System.Object" '[]) ]
 
 --
 -- SuperType declarations for each prim type
 --
-type instance SuperTypeOf (T "System.String"  '[]) = 'Just (T "System.Object"    '[])
-type instance SuperTypeOf (T "System.SByte"   '[]) = 'Just (T "System.ValueType" '[])
-type instance SuperTypeOf (T "System.Byte"    '[]) = 'Just (T "System.ValueType" '[])
-type instance SuperTypeOf (T "System.Int16"   '[]) = 'Just (T "System.ValueType" '[])
-type instance SuperTypeOf (T "System.UInt16"  '[]) = 'Just (T "System.ValueType" '[])
-type instance SuperTypeOf (T "System.Int32"   '[]) = 'Just (T "System.ValueType" '[])
-type instance SuperTypeOf (T "System.UInt32"  '[]) = 'Just (T "System.ValueType" '[])
-type instance SuperTypeOf (T "System.Int64"   '[]) = 'Just (T "System.ValueType" '[])
-type instance SuperTypeOf (T "System.UInt64"  '[]) = 'Just (T "System.ValueType" '[])
-type instance SuperTypeOf (T "System.IntPtr"  '[]) = 'Just (T "System.ValueType" '[])
-type instance SuperTypeOf (T "System.UIntPtr" '[]) = 'Just (T "System.ValueType" '[])
-type instance SuperTypeOf (T "System.Char"    '[]) = 'Just (T "System.ValueType" '[])
-type instance SuperTypeOf (T "System.Single"  '[]) = 'Just (T "System.ValueType" '[])
-type instance SuperTypeOf (T "System.Double"  '[]) = 'Just (T "System.ValueType" '[])
+type instance SuperTypes (T "System.String"  '[]) = '[ (T "System.Object"    '[]) ]
+type instance SuperTypes (T "System.SByte"   '[]) = '[ (T "System.ValueType" '[]) ]
+type instance SuperTypes (T "System.Byte"    '[]) = '[ (T "System.ValueType" '[]) ]
+type instance SuperTypes (T "System.Int16"   '[]) = '[ (T "System.ValueType" '[]) ]
+type instance SuperTypes (T "System.UInt16"  '[]) = '[ (T "System.ValueType" '[]) ]
+type instance SuperTypes (T "System.Int32"   '[]) = '[ (T "System.ValueType" '[]) ]
+type instance SuperTypes (T "System.UInt32"  '[]) = '[ (T "System.ValueType" '[]) ]
+type instance SuperTypes (T "System.Int64"   '[]) = '[ (T "System.ValueType" '[]) ]
+type instance SuperTypes (T "System.UInt64"  '[]) = '[ (T "System.ValueType" '[]) ]
+type instance SuperTypes (T "System.IntPtr"  '[]) = '[ (T "System.ValueType" '[]) ]
+type instance SuperTypes (T "System.UIntPtr" '[]) = '[ (T "System.ValueType" '[]) ]
+type instance SuperTypes (T "System.Char"    '[]) = '[ (T "System.ValueType" '[]) ]
+type instance SuperTypes (T "System.Single"  '[]) = '[ (T "System.ValueType" '[]) ]
+type instance SuperTypes (T "System.Double"  '[]) = '[ (T "System.ValueType" '[]) ]
 
 --
 -- Casting up the hierarchy. Always safe
 --
-upCast :: (t `InheritsFrom` t' ~ 'True ) => Object t -> Object t'
+upCast :: (t `Implements` t' ~ 'True ) => Object t -> Object t'
 upCast = unsafeCoerce
 
 --
 -- Casting down the hierarchy. TODO: runtime checks
 --
-unsafeDownCast :: (t' `InheritsFrom` t ~ 'True ) => Object t -> Object t'
+unsafeDownCast :: (t' `Implements` t ~ 'True ) => Object t -> Object t'
 unsafeDownCast = unsafeCoerce
 
 --
@@ -88,12 +93,10 @@ unsafeDownCast = unsafeCoerce
 -- to find the type that t derives from that declared m
 --
 type family ResolveBaseType (t::Type) (m::Type) :: Type where
-  ResolveBaseType t m = ResolveBaseType' ('Just t) m
+  ResolveBaseType t m = ResolveBaseType' (WithAllSuperTypes t) m
 
-type family ResolveBaseType' (t::Maybe Type) (m::Type) :: Type where
-  ResolveBaseType' 'Nothing  m = Error "No Base Type Of Nothing"
-  ResolveBaseType' ('Just t) m = If (t `HasMember` m) t (ResolveBaseType' (SuperTypeOf t) m)
+type family ResolveBaseType' (ts::[Type]) (m::Type) :: Type where
+  ResolveBaseType'   '[]     m = TypeError (Text "Could not find declaring base type of member " :<>: ShowType m)
+  ResolveBaseType' (t ': ts) m = If (t `HasMember` m) t (ResolveBaseType' ts m)
 
-
-data Error (s::Symbol)
 

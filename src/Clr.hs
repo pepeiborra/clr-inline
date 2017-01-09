@@ -11,7 +11,6 @@ module Clr
   , module Clr.Constructor
   , module Clr.Inheritance
   , module Clr.InstanceMethod
-  , module Clr.Interface
   , module Clr.ListTuple
   , module Clr.Object
   , module Clr.StaticMethod
@@ -23,7 +22,6 @@ import Clr.Constructor
 import Clr.Curry
 import Clr.Inheritance
 import Clr.InstanceMethod
-import Clr.Interface
 import Clr.ListTuple
 import Clr.Marshal
 import Clr.Object
@@ -62,7 +60,7 @@ invokeI :: forall ms m tBase tDerived argsClrUnResolved argsClr argsHask argCoun
             ( MakeT ms ~ m
             , TupleSize argsHask ~ argCount
             , ResolveBaseType tDerived m ~ tBase
-            , tDerived `InheritsFrom` tBase ~ 'True
+            , tDerived `Implements` tBase ~ 'True
             , HaskToClrL (TupleToList argsHask) ~ argsClrUnResolved
             , ResolveMember argsClrUnResolved (Candidates tBase m) ~ argsClr
             , MethodI argCount tBase m argsClr

@@ -5,7 +5,6 @@ module Clr.Resolver.ImplicitConversions (ImplicitConvExists) where
 import Clr.ListTuple
 import Clr.Types
 import Clr.Inheritance
-import Clr.Interface
 
 import Data.Kind
 import GHC.TypeLits
@@ -84,7 +83,7 @@ type family ImpEnumConvExists (x::Type) (y::Type) :: Bool where
 
 -- TODO: more complicated than this see 13.1.4
 type family ImpRefConvExists (x::Type) (y::Type) :: Bool where
-  ImpRefConvExists t1 t2 = t1 `Implements` t2 || t1 `InheritsFrom` t2
+  ImpRefConvExists t1 t2 = t1 `Implements` t2 || t1 `Implements` t2
 
 -- TODO: probably handled by above though
 type family ImpBoxConvExists (x::Type) (y::Type) :: Bool where

@@ -76,9 +76,16 @@ type family Elem (a :: k) (xs::[k]) :: Bool where
 --
 -- Concatenation of 2 lists
 --
-type family Concat (a::[t]) (b::[t]) :: [t] where
-  Concat    '[]    ys  = ys
-  Concat (x ': xs) ys  = x ': xs `Concat` ys
+type family Concat (a::[[t]]) :: [t] where
+  Concat   '[]     = '[]
+  Concat (x ': xs) = x `Append` (Concat xs)
+
+--
+-- Append on type level lists
+--
+type family Append (a::[t]) (b::[t]) :: [t] where
+  Append    '[]    ys  = ys
+  Append (x ': xs) ys  = x ': (xs `Append` ys)
 
 --
 -- Drops each Nothing from a list and does a fromJust on the others

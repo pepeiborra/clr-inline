@@ -21,7 +21,6 @@ library
                      , Clr.Curry
                      , Clr.Inheritance
                      , Clr.InstanceMethod
-                     , Clr.Interface
                      , Clr.ListTuple
                      , Clr.Marshal
                      , Clr.Object

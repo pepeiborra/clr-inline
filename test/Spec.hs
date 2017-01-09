@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeApplications, TypeInType #-}
+{-# LANGUAGE TypeApplications, TypeInType, TypeFamilies #-}
 
 import Clr
 import Bindings()
@@ -6,6 +6,17 @@ import Bindings()
 import Data.Int(Int32, Int64)
 
 -- not really a proper test suite but something that should compile with expected output that is manually looked at
+
+type instance SuperTypes (T "1" '[]) = '[]
+type instance SuperTypes (T "2" '[]) = '[ T "1" '[] ]
+type instance SuperTypes (T "3" '[]) = '[]
+type instance SuperTypes (T "4" '[]) = '[ T "2" '[], T "3" '[]]
+type instance SuperTypes (T "5" '[]) = '[ T "1" '[], T "3" '[]]
+type instance SuperTypes (T "6" '[]) = '[]
+type instance SuperTypes (T "7" '[]) = '[]
+type instance SuperTypes (T "8" '[]) = '[ T "6" '[], T "7" '[], T "5" '[]]
+type instance SuperTypes (T "9" '[]) = '[ T "8" '[] ]
+
 
 main :: IO ()
 main = do
