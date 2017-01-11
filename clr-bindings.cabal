@@ -17,8 +17,11 @@ library
   hs-source-dirs:      src
   exposed-modules:     Clr.Bindings
                      , Clr.Bindings.Box
+                     , Clr.Bindings.Reflection
                      , Clr.Bindings.Host
-  build-depends:       base >= 4.7 && < 5, clr, clr-host, text
+                     , Clr.Bindings.ImportGen
+                     , Clr.Bindings.IEnumerable
+  build-depends:       base >= 4.7 && < 5, clr, clr-host, text, template-haskell
   default-language:    Haskell2010
 
 test-suite clr-bindings-test

@@ -2,9 +2,9 @@
 
 module Clr.Bindings.Box where
 
+import Clr
 import Clr.Marshal
-import Clr.Object
-import Clr.Types
+
 import Clr.Bindings.Host
 
 import Data.Int
@@ -26,7 +26,7 @@ getBoxStub typeName = marshal typeName $ \typeName'-> do
 getBoxStubRaw :: IO (GetBoxStubDelegate a)
 getBoxStubRaw = unsafeGetPointerToMethod "GetBoxStub" >>= return . makeGetBoxStubDelegate
 
-type GetBoxStubDelegate a = Ptr Word16 -> FunPtr a
+type GetBoxStubDelegate a = ClrString -> FunPtr a
 foreign import ccall "dynamic" makeGetBoxStubDelegate :: FunPtr (GetBoxStubDelegate a) -> GetBoxStubDelegate a
 
 --
@@ -34,12 +34,12 @@ foreign import ccall "dynamic" makeGetBoxStubDelegate :: FunPtr (GetBoxStubDeleg
 --
 
 instance Marshal Text (ObjectID obj) where
-  marshal x f = marshal @Text @(Ptr Word16) x $ \ptr-> do
+  marshal x f = marshal @Text @ClrString x $ \ptr-> do
     stub <- boxStringStub
     obj <- stub ptr
     f obj
 
-type BoxStringStub a = Ptr Word16 -> IO (ObjectID a)
+type BoxStringStub a = ClrString -> IO (ObjectID a)
 foreign import ccall "dynamic" makeBoxStringStub :: FunPtr (BoxStringStub a) -> (BoxStringStub a)
 
 boxStringStub :: IO (BoxStringStub a)
