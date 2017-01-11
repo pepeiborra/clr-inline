@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleInstances, FlexibleContexts, ScopedTypeVariables, ExistentialQuantification #-}
 {-# LANGUAGE UndecidableInstances, TypeApplications, AllowAmbiguousTypes, TypeInType, TypeFamilyDependencies, FunctionalDependencies #-}
 
-module Clr.StaticMethod
+module Clr.Method.Static
   ( MethodS(..)
   , MethodS1(..)
   , MethodS2(..)

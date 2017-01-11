@@ -23,7 +23,7 @@ type family ResolveMember' (as::[Type]) (fa::[[Type]]) :: [Type] where
 
 type family ResolveMember'' (bestMember::[[Type]]) :: [Type] where
   ResolveMember'' (member ': '[]) = member
-  ResolveMember''    x            = TypeError (Text "Could not resolve")
+  ResolveMember''    _            = TypeError (Text "Could not resolve")
 
 type family FilterBestMembers (as::[Type]) (ms::[[Type]]) (ns::[[Type]]) :: [[Type]] where
   FilterBestMembers as ms '[]       = '[]

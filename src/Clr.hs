@@ -10,10 +10,10 @@ module Clr
   , Candidates
   , module Clr.Constructor
   , module Clr.Inheritance
-  , module Clr.InstanceMethod
   , module Clr.ListTuple
+  , module Clr.Method.Instance
+  , module Clr.Method.Static
   , module Clr.Object
-  , module Clr.StaticMethod
   , module Clr.Types
   ) where
 
@@ -21,18 +21,18 @@ import Clr.Bridge
 import Clr.Constructor
 import Clr.Curry
 import Clr.Inheritance
-import Clr.InstanceMethod
 import Clr.ListTuple
 import Clr.Marshal
+import Clr.Method.Instance
+import Clr.Method.Static
 import Clr.Object
 import Clr.Resolver
-import Clr.StaticMethod
 import Clr.Types
 
 import Data.Int
-import GHC.TypeLits
-import Data.Type.Bool
 import Data.Kind
+import Data.Type.Bool
+import GHC.TypeLits
 
 --
 -- Static method invocation
