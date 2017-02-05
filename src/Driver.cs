@@ -669,18 +669,6 @@ namespace Salsa
         private static bool isMono = Type.GetType ("Mono.Runtime") != null;
 
         /// <summary>
-        /// Returns the type of 'MarshalAs' attribute that should be attached to
-        /// parameters/results of the given type, if any.
-        /// </summary>
-        private static UnmanagedType? MarshalTypeAs(Type t)
-        {
-            if (t == typeof(string))
-                return UnmanagedType.CustomMarshaler;
-            else
-                return null;
-        }
-
-        /// <summary>
         /// Given an array of parameters (say of a constructor, or method), returns the
         /// array of types that a corresponding wrapper stub would accept.
         /// </summary>
@@ -1030,6 +1018,24 @@ namespace Salsa
                 }
             }
 
+            private void ApplyMarshalAsAttribute(Type type, int paramIndex, MethodBuilder methodBuilder)
+            {
+                if (type == null)
+                    return;
+                else if (type == typeof(string))
+                {
+                    ParameterBuilder pb = methodBuilder.DefineParameter(paramIndex, ParameterAttributes.None, null);
+                    pb.SetCustomAttribute(
+                        new CustomAttributeBuilder(
+                            typeof(MarshalAsAttribute).GetConstructor(new Type[] { typeof(UnmanagedType) }),
+                            new object[] { UnmanagedType.CustomMarshaler },
+                            new FieldInfo[] { typeof(MarshalAsAttribute).GetField("MarshalTypeRef") },
+                            new Object[] { typeof(UTF16Marshaler) }
+                        )
+                    );
+                }
+            }
+
             /// <summary>
             /// Dynamically creates (and returns the type of) a delegate class with the given
             /// name and type signature.
@@ -1061,25 +1067,13 @@ namespace Salsa
                 // For the return type and any parameter types
                 for (int i = 0; i < ParameterTypes.Length + 1; i++)
                 {
-                    UnmanagedType? marshalAs;
+                    Type currentParam;
                     if (i == 0)
-                        marshalAs = MarshalTypeAs(ReturnType);
+                        currentParam = ReturnType;
                     else
-                        marshalAs = MarshalTypeAs(ParameterTypes[i - 1]);
+                        currentParam = ParameterTypes[i - 1];
 
-                    if (marshalAs != null)
-                    {
-                        // Add a MarshalAs attribute to the return/parameter
-                        ParameterBuilder pb = methodBuilder.DefineParameter(i, ParameterAttributes.None, null);
-                        pb.SetCustomAttribute(
-                            new CustomAttributeBuilder(
-                                typeof(MarshalAsAttribute).GetConstructor(new Type[] { typeof(UnmanagedType) }),
-                                new object[] { marshalAs.Value },
-                                new FieldInfo[] { typeof(MarshalAsAttribute).GetField("MarshalTypeRef") },
-                                new Object[] { typeof(UTF16Marshaler) }
-                            )
-                        );
-                    }
+                    ApplyMarshalAsAttribute(currentParam, i, methodBuilder);
                 }
                 return typeBuilder.CreateType();
             }
