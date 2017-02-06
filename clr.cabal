@@ -24,6 +24,7 @@ library
                      , Clr.Marshal
                      , Clr.Method.Instance
                      , Clr.Method.Static
+                     , Clr.Property
                      , Clr.Object
                      , Clr.Resolver
                      , Clr.Resolver.BetterConversion
