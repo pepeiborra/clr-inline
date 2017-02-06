@@ -19,6 +19,9 @@ type Assembly   = Object T_Assembly
 type T_ClrType  = T "System.Type" '[]
 type T_ClrTypeArray = T "System.Type[]" '[]
 
+--
+-- System.Reflection.Assembly.Load
+--
 instance MethodS1 (T_Assembly) (T "Load" '[]) (T_string) where
   type ResultTypeS1 (T_Assembly) (T "Load" '[]) (T_string) = 'Just (T_Assembly)
   rawInvokeS1 x = getMethodStub "System.Reflection.Assembly, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" "Load" "System.String" >>= return . makeLoad >>= \f-> f x
@@ -29,4 +32,9 @@ type instance Candidates (T_Assembly) (T "Load" '[]) = '[ '[ T_string ] ]
 
 assemblyLoad :: T.Text -> IO Assembly
 assemblyLoad assemName = invokeS @"Load" @T_Assembly assemName
+
+--
+-- System.Reflection.Assembly.GetTypes
+--
+
 
