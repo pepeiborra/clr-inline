@@ -84,7 +84,7 @@ startHostDotNet = do
       clrHost <- getCLRHost_ICLRRuntimeInfo runtime
       start_ICLRRuntimeHost clrHost
       corHost <- getCorHost_ICLRRuntimeInfo runtime
-      setHostRefs clrHost corHost
+      setHostRefs corHost clrHost
   corHost <- getICorRuntimeHost
   loadDriverAndBoot corHost
 
