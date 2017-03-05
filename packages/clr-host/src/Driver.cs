@@ -5,6 +5,7 @@
 //
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 using System.Runtime.InteropServices;
@@ -184,8 +185,13 @@ namespace Salsa
             }
             else
             {
-                MethodInfo meth = Util.StringToType(className).GetMethod(
+                Type typ = Util.StringToType(className);
+                MethodInfo meth = typ.GetMethod(
                     methodName, Util.StringToTypes(parameterTypeNames));
+                if(meth == null) {
+                    var knownMethods = typ.GetMethods().Select(x => x.Name).ToArray();
+                    throw new ArgumentException(String.Format("Method {0}({1}) not found in type {2}({3}). Try with: {4}", methodName, parameterTypeNames, typ.Name, typ.Assembly.FullName, String.Join(",",knownMethods) ));
+                    }
                 return GenerateMethodStub(meth);
             }
         }
@@ -1082,6 +1088,22 @@ namespace Salsa
         }
 
         #endregion
+
+        /// Helper function to load an assembly from bytes
+        public static Assembly LoadAssemblyFromBytes(IntPtr ptr, int len) {
+            byte[] bytes = new byte[len];
+            Marshal.Copy(ptr,bytes,0,len);
+            Assembly res = System.Reflection.Assembly.ReflectionOnlyLoad(bytes);
+            System.Console.WriteLine(String.Format("Successfully loaded assembly {0} from bytes", res.FullName));
+            foreach(var typ in res.GetTypes()) {
+                Console.WriteLine(" * " + typ.FullName);
+                foreach(var m in typ.GetMethods()) {
+                    Console.WriteLine("     - " + m.Name);
+                }
+            }
+            return res;
+        }
+
     }
 
     /// <summary>
@@ -1190,5 +1212,6 @@ namespace Salsa
             else if (argumentIndex <= 255) ilg.Emit(OpCodes.Ldarg_S, (byte)argumentIndex);
             else ilg.Emit(OpCodes.Ldarg, (int)argumentIndex);
         }
+
     }
 }

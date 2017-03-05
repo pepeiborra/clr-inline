@@ -29,6 +29,9 @@ getFinalizerState = TH.getQ >>= \case
 setFinalizerState :: Typeable a => FinalizerState a -> Q ()
 setFinalizerState = TH.putQ
 
+getFinalizerCount :: forall a. Typeable a => Q Int
+getFinalizerCount = getFinalizerState @ a >>= return . finalizerCount
+
 incrementFinalizerCount :: forall a. Typeable a => Q ()
 incrementFinalizerCount =
     getFinalizerState @ a >>= \FinalizerState{..} ->

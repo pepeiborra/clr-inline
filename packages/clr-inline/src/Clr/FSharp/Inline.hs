@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -13,6 +15,8 @@ import Clr.FSharp.Gen
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote
 import Language.Haskell.TH.Syntax
+import Foreign
+import Text.Printf
 
 namespace = "Clr.FSharp.Inline"
 
@@ -25,41 +29,54 @@ fsharp = QuasiQuoter
 
 -- | Runs after the whole module has been loaded and is responsible for generating:
 --     - A clr assembly with all the inline code, embedding it into the module.
---     - The foreign import wrappers.
 genFSharp = do
   FinalizerState {wrappers} <- getFinalizerState @ FSharpUnit
   modName <- mangleModule <$> thisModule
   let mod = FSharpModule modName namespace wrappers
   result <- runIO $ compile mod
-  -- TODO Embed the bytecodes
-  -- TODO Add support for argument and result type inference
-  resTy <- [t|IO ()|]
-  let argTys = []
 
-  -- Generate the top level foreign import calls needed to convert the function pointers into Haskell functions
-  qAddTopDecls
-    [ ForeignD (ImportF CCall Safe "dynamic" wrapperName (foldr AppT resTy argTys))
-    | FSharpUnit{..} <- wrappers ]
+  -- Embed the bytecodes
+  embedBytecode =<< runIO(compile mod)
   return ()
 
 -- | Quasiquoter for expressions. Responsible for:
---      - Installing a finalizer to generate the bytecodes and foreign import wrappers
+--      - Installing a finalizer to generate the bytecodes
+--      - Generating the foreign import wrapper.
 --      - Splicing in the computation that loads the bytecodes, gets a function pointer through the keyhole, and calls it.
 fsharpExp :: String -> Q Exp
 fsharpExp body = do
-  name <- newName "dynamicWrapper"
+  methodName <- (\d -> "quote_" ++ show d) <$> getFinalizerCount @ FSharpUnit
   stubName <- newName "stub"
   -- TODO support for antiquotations
   let args = [] :: [Q Exp]
   let argTypes = [] :: [String]
-  pushWrapperGen genFSharp $ return (FSharpUnit (show name) body name argTypes)
-  className <- mangleModule <$> thisModule
-  [| loadBytecodes >>
-     getMethodStub $(lift className) $(lift $ show name) $(lift argTypes) >>=
-     return . $(varE stubName) >>=
-     \f -> f $(listE args)
-   |]
-
--- | This function is responsible for finding the clr assembly embedded in this module and loading it into the clr runtime
-loadBytecodes :: IO ()
-loadBytecodes = return () -- TODO
+  modName <- mangleModule <$> thisModule
+  let assemblyName = modName
+  pushWrapperGen genFSharp $ return (FSharpUnit methodName body argTypes)
+  let fullClassName :: String =
+        printf
+          "%s.%s, %s, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null"
+          namespace
+          modName
+          assemblyName
+  -- Generate the top level foreign import calls needed to convert the function pointers into Haskell functions
+  -- TODO Add support for argument and result type inference
+  resTy <- [t|IO ()|]
+  let argTys = []
+  let funTy = foldr AppT resTy argTys
+  lookupTypeName "Foreign.Ptr.FunPtr" >>= \case
+    Nothing -> error "Please import Foreing.Ptr when using F# quotations"
+    Just funPtrTy ->
+        qAddTopDecls
+          [ ForeignD
+              (ImportF
+                CCall
+                Safe
+                "dynamic"
+                stubName
+                (ArrowT `AppT` AppT (ConT funPtrTy) funTy `AppT` funTy))
+          ]
+  -- splice in the bytecode load and call to the stub
+  [|unembedBytecode >>
+    getMethodStub $(lift fullClassName) $(lift methodName) $(lift argTypes) >>=
+    return . $(varE stubName) >>= \f -> $(foldr appE [|f|] args)|]

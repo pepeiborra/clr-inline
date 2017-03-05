@@ -1,13 +1,17 @@
-{-# LANGUAGE TypeInType, FlexibleInstances, MultiParamTypeClasses, TypeFamilies, TypeApplications #-}
+{-# LANGUAGE TemplateHaskell, QuasiQuotes, TypeInType, FlexibleInstances,
+  MultiParamTypeClasses, TypeFamilies, TypeApplications #-}
 
 module Main where
 
 import Clr
+import Clr.FSharp.Inline
 import Clr.Host
 import Clr.Bindings
 
 import Data.Int(Int32, Int64)
 import Foreign.Ptr(Ptr, FunPtr)
+
+import Other
 
 instance MethodS1 (T "System.Console" '[]) (T "WriteLine" '[]) () where
   type ResultTypeS1 (T "System.Console" '[]) (T "WriteLine" '[]) () = 'Nothing
@@ -51,11 +55,17 @@ type instance Candidates (T "System.Console" '[]) (T "WriteLine" '[]) = '[ '[   
                                                                          , '[ T "System.String" '[], T "System.Object" '[]                        ]
                                                                          , '[ T "System.String" '[], T "System.Object" '[], T "System.Object" '[] ] ]
 
-main :: IO ()
-main = do
-  startClr
+main1 :: IO ()
+main1 = do
   invokeS @"WriteLine" @"System.Console" ()                                     -- Console.WriteLine()
   invokeS @"WriteLine" @"System.Console" "Hello CLR!!!"                         -- Console.WriteLine(String)
   invokeS @"WriteLine" @"System.Console" (2 :: Int32)                           -- Console.WriteLine(Int32)
   invokeS @"WriteLine" @"System.Console" ("The year is {0}", 2017::Int64)       -- Console.WriteLine(String, Object)
   invokeS @"WriteLine" @"System.Console" ("Well {0} {1}", "This", "Is Cool")    -- Console.WriteLine(String, Object, Object)
+  [fsharp| printfn "And this is %d in F#" (System.DateTime.Today.Year) |]
+
+main = do
+  startClr
+  main1
+  main2
+
