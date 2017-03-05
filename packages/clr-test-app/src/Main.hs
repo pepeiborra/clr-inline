@@ -11,13 +11,17 @@ import Foreign.Ptr(Ptr, FunPtr)
 
 instance MethodS1 (T "System.Console" '[]) (T "WriteLine" '[]) () where
   type ResultTypeS1 (T "System.Console" '[]) (T "WriteLine" '[]) () = 'Nothing
-  rawInvokeS1 x = getMethodStub "System.Console, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" "WriteLine" "" >>= return . makeWriteLineType0 >>= \f-> f
+  rawInvokeS1 x = rawInvokeMakeWriteLine
+
+rawInvokeMakeWriteLine = getMethodStub "System.Console, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" "WriteLine" "" >>= makeWriteLineType0
 
 foreign import ccall "dynamic" makeWriteLineType0 :: FunPtr (IO ()) -> IO ()
 
 instance MethodS1 (T "System.Console" '[]) (T "WriteLine" '[]) (T "System.String" '[]) where
   type ResultTypeS1 (T "System.Console" '[]) (T "WriteLine" '[]) (T "System.String" '[]) = 'Nothing
-  rawInvokeS1 x = getMethodStub "System.Console, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" "WriteLine" "System.String" >>= return . makeWriteLineType1 >>= \f-> f x
+  rawInvokeS1 x = rawInvokeMakeWriteLine1 >>= \f -> f x
+
+rawInvokeMakeWriteLine1 = getMethodStub "System.Console, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" "WriteLine" "System.String" >>= return . makeWriteLineType1
 
 foreign import ccall "dynamic" makeWriteLineType1 :: FunPtr (ClrString -> IO ()) -> (ClrString -> IO ())
 

@@ -6,6 +6,8 @@ packages:
 - packages/clr-host/
 - packages/clr-test-app/
 - packages/clr-win-linker/
+- packages/clr-inline/
+
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps: []
