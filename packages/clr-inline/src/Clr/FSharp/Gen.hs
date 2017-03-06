@@ -23,7 +23,7 @@ data FSharpModule = FSharpModule
   , moduleUnits     :: [FSharpUnit]}
 
 -- The name of the F# compiler in Mono.
--- Probably platform specific
+-- TODO support both "fsc" and "fsharpc"
 fsharp = "fsharpc"
 
 genCode :: FSharpModule -> String
