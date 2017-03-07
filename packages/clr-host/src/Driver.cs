@@ -1093,7 +1093,7 @@ namespace Salsa
         public static Assembly LoadAssemblyFromBytes(IntPtr ptr, int len) {
             byte[] bytes = new byte[len];
             Marshal.Copy(ptr,bytes,0,len);
-            Assembly res = System.Reflection.Assembly.ReflectionOnlyLoad(bytes);
+            Assembly res = System.Reflection.Assembly.Load(bytes);
             System.Console.WriteLine(String.Format("Successfully loaded assembly {0} from bytes", res.FullName));
             foreach(var typ in res.GetTypes()) {
                 Console.WriteLine(" * " + typ.FullName);
