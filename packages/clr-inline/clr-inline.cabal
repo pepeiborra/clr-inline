@@ -71,7 +71,8 @@ library
                         process,
                         template-haskell,
                         temporary,
-                        text
+                        text,
+                        transformers
   
   -- Directories containing source files.
   hs-source-dirs:      src

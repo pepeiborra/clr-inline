@@ -20,21 +20,25 @@ fsharp = "fsharpc"
 data FSharp
 
 genCode :: ClrInlinedGroup FSharp -> String
-genCode ClrInlinedGroup{..} =
+genCode ClrInlinedGroup {..} =
   unlines $
-    [printf "namespace %s" modNamespace
-    ,"open System" -- TODO imports
-    ,printf "module %s = " modName
-    ] ++ concat
-    [ printf "    let %s (%s) = " name (intercalate ", " argTypes) :
-      [ printf "        %s" l | l <- lines body ]
-    | ClrInlinedUnit{..} <- units
+  [ printf "namespace %s" modNamespace
+  , "open System" -- TODO imports
+  , printf "module %s = " modName
+  ] ++
+  concat
+    [ printf
+      "    let %s (%s) = "
+      name
+      (intercalate ", " $ zipWith (printf "%s:$s") args argTypes) :
+    [printf "        %s" l | l <- lines body]
+    | ClrInlinedUnit {..} <- units
     ]
 
 compile :: ClrInlinedGroup FSharp -> IO ClrBytecode
 compile m@ClrInlinedGroup {..} = do
     temp <- getTemporaryDirectory
-    dir <- createTempDirectory temp "inline-clr"
+    dir <- createTempDirectory temp "inline-fsharp"
     let src = dir </> modName <.> ".fs"
         tgt = dir </> modName <.> ".dll"
     writeFile src (genCode m)

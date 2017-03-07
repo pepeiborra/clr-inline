@@ -30,15 +30,15 @@ instance TH.Lift ClrBytecode where
       [| ClrBytecode
            (BS.pack $(TH.lift (BS.unpack bytecode)))
        |]
-mangleModule :: Module -> String
-mangleModule (Module (PkgName pkg) (ModName m)) =
-  printf "Inline__%s_%s" (filter isAlphaNum pkg) (map (\case '.' -> '_' ; x -> x) m)
+mangleModule :: String -> Module -> String
+mangleModule name (Module (PkgName pkg) (ModName m)) =
+  printf "Inline%s__%s_%s" name (filter isAlphaNum pkg) (map (\case '.' -> '_' ; x -> x) m)
 
 -- | TH action that embeds bytecode in the current module via a top level
 --   declaration of a StaticPtr
-embedBytecode :: ClrBytecode -> Q ()
-embedBytecode bs = do
-    ptr <- TH.newName $ "_inlinejava__bytecode"
+embedBytecode :: String -> ClrBytecode -> Q ()
+embedBytecode name bs = do
+    ptr <- TH.newName $ name ++ "_inlineclr__bytecode"
     TH.addTopDecls =<<
       sequence
         [ TH.sigD ptr [t| StaticPtr ClrBytecode |]

@@ -4,6 +4,7 @@
 module Main where
 
 import Clr
+import Clr.CSharp.Inline
 import Clr.FSharp.Inline
 import Clr.Host
 import Clr.Bindings
@@ -62,10 +63,23 @@ main1 = do
   invokeS @"WriteLine" @"System.Console" (2 :: Int32)                           -- Console.WriteLine(Int32)
   invokeS @"WriteLine" @"System.Console" ("The year is {0}", 2017::Int64)       -- Console.WriteLine(String, Object)
   invokeS @"WriteLine" @"System.Console" ("Well {0} {1}", "This", "Is Cool")    -- Console.WriteLine(String, Object, Object)
-  [fsharp| printfn "And this is %d in F#" (System.DateTime.Today.Year) |]
+
+main1Inline =
+  [csharp|
+         Console.WriteLine();
+         Console.WriteLine("Hello CLR inline !!!");
+         Console.WriteLine(2);
+         Console.WriteLine("The year is {0}", 2017);
+         Console.WriteLine("Well {0} {1}", "This", "Is Cool");
+         return;
+
+         |]
+
 
 main = do
   startClr
   main1
+  main1Inline
   main2
+  [fsharp| printfn "And this is %d in F#" (System.DateTime.Today.Year) |]
 
