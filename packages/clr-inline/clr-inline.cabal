@@ -55,6 +55,7 @@ library
   other-modules:       
                        Clr.Inline.State
                        Clr.Inline.Utils
+                       Clr.Inline.Types
                        Clr.FSharp.Gen
   
   -- LANGUAGE extensions used by modules in this package.
