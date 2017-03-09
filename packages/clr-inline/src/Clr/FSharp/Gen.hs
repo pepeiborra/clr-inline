@@ -1,8 +1,11 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 module Clr.FSharp.Gen (compile) where
 
 import           Clr.Inline.Utils
 import           Clr.Inline.Types
+import           Control.Monad
+import           Control.Monad.Trans.Writer
 import qualified Data.ByteString     as BS
 import           Data.List
 import           Data.Typeable
@@ -22,18 +25,21 @@ data FSharp
 genCode :: ClrInlinedGroup FSharp -> String
 genCode ClrInlinedGroup {..} =
   unlines $
-  [ printf "namespace %s" modNamespace
-  , "open System" -- TODO imports
-  , printf "module %s = " modName
-  ] ++
-  concat
-    [ printf
-      "    let %s (%s) = "
-      name
-      (intercalate ", " $ zipWith (printf "%s:$s") args argTypes) :
-    [printf "        %s" l | l <- lines body]
-    | ClrInlinedUnit {..} <- units
-    ]
+  execWriter $ do
+    yield $ printf "namespace %s" modNamespace
+    forM_ units $ \case
+      ClrInlinedDec body -> yield body
+      ClrInlinedUnit {} -> return ()
+    yield $ printf "module %s = " modName
+    forM_ units $ \case
+      ClrInlinedDec {} -> return ()
+      ClrInlinedUnit {..} -> do
+        yield $
+          printf
+            "    let %s (%s) = "
+            name
+            (intercalate ", " $ zipWith (printf "%s:$s") args argTypes)
+        forM_ (lines body) $ \l -> yield $ printf "        %s" l
 
 compile :: ClrInlinedGroup FSharp -> IO ClrBytecode
 compile m@ClrInlinedGroup {..} = do

@@ -64,6 +64,9 @@ main1 = do
   invokeS @"WriteLine" @"System.Console" ("The year is {0}", 2017::Int64)       -- Console.WriteLine(String, Object)
   invokeS @"WriteLine" @"System.Console" ("Well {0} {1}", "This", "Is Cool")    -- Console.WriteLine(String, Object, Object)
 
+[csharp|
+using System;|]
+
 main1Inline =
   [csharp|
          Console.WriteLine();

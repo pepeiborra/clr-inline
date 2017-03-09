@@ -9,6 +9,7 @@ import           Clr
 import           Clr.Bindings
 import           Clr.Marshal
 import           Control.Monad
+import           Control.Monad.Trans.Writer
 import           Data.ByteString            (ByteString)
 import qualified Data.ByteString            as BS
 import           Data.Char
@@ -70,3 +71,6 @@ loadBytecode bs =
     "LoadAssemblyFromBytes"
     "System.IntPtr;System.Int32" >>= \f ->
   BS.useAsCStringLen bs $ \(ptr,len) -> assemblyLoad f (castPtr ptr) len
+
+yield x = tell [x]
+yieldAll xx = tell xx

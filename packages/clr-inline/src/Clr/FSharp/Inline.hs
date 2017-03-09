@@ -20,8 +20,10 @@ fsharp = QuasiQuoter
     { quoteExp  = fsharpExp
     , quotePat  = error "Clr.FSharp.Inline: quotePat"
     , quoteType = error "Clr.FSharp.Inline: quoteType"
-    , quoteDec  = error "Clr.FSharp.Inline: quoteDec"
+    , quoteDec  = fsharpDec
     }
 
 fsharpExp :: String -> Q Exp
 fsharpExp = clrQuoteExp "fsharp" compile
+
+fsharpDec = clrQuoteDec "fsharp" compile

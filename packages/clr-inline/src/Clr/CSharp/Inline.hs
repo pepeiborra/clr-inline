@@ -27,11 +27,13 @@ csharp = QuasiQuoter
     { quoteExp  = csharpExp
     , quotePat  = error "Clr.CSharp.Inline: quotePat"
     , quoteType = error "Clr.CSharp.Inline: quoteType"
-    , quoteDec  = error "Clr.CSharp.Inline: quoteDec"
+    , quoteDec  = csharpDec
     }
 
 csharpExp :: String -> Q Exp
 csharpExp = clrQuoteExp "csharp" compile
+
+csharpDec = clrQuoteDec "csharp" compile
 
 -- The name of the C# compiler in Mono.
 -- Platform specific
@@ -39,23 +41,28 @@ csharpCompiler = "mcs"
 
 data CSharp
 
-yield x = tell [x]
-
 genCode :: ClrInlinedGroup CSharp -> String
 genCode ClrInlinedGroup {..} =
   unlines $
   execWriter $ do
     yield $ printf "namespace %s {" modNamespace
-    yield $ "using System;" -- TODO imports
+    forM_ units $ \case
+      ClrInlinedDec {..} ->
+        yield body
+      ClrInlinedUnit{} ->
+        return ()
     yield $ printf "public class %s {" modName
-    forM_ units $ \ClrInlinedUnit {..} -> do
-      yield $
-        printf
-          "    public static void %s (%s) { "
-          name
-          (intercalate ", " $ zipWith (printf "%s $s") argTypes args)
-      forM_ (lines body) $ \l -> do yield $ printf "        %s" l
-      yield "}"
+    forM_ units $ \case
+      ClrInlinedDec{} ->
+        return ()
+      ClrInlinedUnit {..} -> do
+        yield $
+          printf
+            "    public static void %s (%s) { "
+            name
+            (intercalate ", " $ zipWith (printf "%s $s") argTypes args)
+        forM_ (lines body) $ \l -> do yield $ printf "        %s" l
+        yield "}"
     yield "}}"
 
 compile :: ClrInlinedGroup CSharp -> IO ClrBytecode
