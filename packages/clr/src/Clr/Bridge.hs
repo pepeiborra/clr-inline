@@ -34,7 +34,6 @@ type family BridgeTypeM (x::Maybe Type) :: Type where
 --
 type family BridgeTypePrim (x::Type)
 
-type instance BridgeTypePrim (T "System.String"  '[]) = ClrString
 type instance BridgeTypePrim (T "System.Int16"   '[]) = Int16
 type instance BridgeTypePrim (T "System.UInt16"  '[]) = Word16
 type instance BridgeTypePrim (T "System.Int32"   '[]) = Int32
@@ -60,8 +59,5 @@ type family BridgeTypeL (a::[Type]) :: [Type] where
 type family BridgeTypes (x::[Type]) :: Type where
   BridgeTypes x = ListToTuple (BridgeTypeL x)
 
---
--- Custom marshaled types
---
 newtype ClrString  = ClrString (Ptr Word16)
 
