@@ -6,6 +6,7 @@ import Clr.Bridge
 import Clr.Object
 import Data.Coerce
 import Data.Int
+import Data.Kind
 import Data.Text
 import Data.Text.Foreign
 import Data.Word
@@ -60,10 +61,9 @@ instance {-# OVERLAPS #-} Marshal (Object t) (ObjectID t) where
 --
 -- Declares how to automatically convert from the bridge type of methods result to a high level Haskell type
 -- TODO: Can we do without this the end user can choose between String or Text for example?
-type family UnmarshalAs (x::k) :: k' where
-  UnmarshalAs ClrString    = Text
-  UnmarshalAs (ObjectID t) = (Object t)
-  UnmarshalAs     a        = a
+type family UnmarshalAs (x::Type) :: Type
+type instance UnmarshalAs (ObjectID t) = (Object t)
+type instance UnmarshalAs ()           = ()
 
 --
 -- Conversion from a raw bridge type of a methods result to a high level Haskell type

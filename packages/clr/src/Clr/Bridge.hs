@@ -59,5 +59,3 @@ type family BridgeTypeL (a::[Type]) :: [Type] where
 type family BridgeTypes (x::[Type]) :: Type where
   BridgeTypes x = ListToTuple (BridgeTypeL x)
 
-newtype ClrString  = ClrString (Ptr Word16)
-
