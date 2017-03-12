@@ -5,6 +5,7 @@ module Clr.Bindings.Reflection where
 import Clr
 
 import Clr.Host
+import Clr.Host.BStr
 
 import Clr.Bindings.Box
 import Clr.Bindings.Host
@@ -26,7 +27,7 @@ instance MethodS1 (T_Assembly) (T "Load" '[]) (T_string) where
   type ResultTypeS1 (T_Assembly) (T "Load" '[]) (T_string) = 'Just (T_Assembly)
   rawInvokeS1 x = getMethodStub "System.Reflection.Assembly, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" "Load" "System.String" >>= return . makeLoad >>= \f-> f x
 
-foreign import ccall "dynamic" makeLoad :: FunPtr (ClrString -> IO (ObjectID T_Assembly)) -> (ClrString -> IO (ObjectID T_Assembly))
+foreign import ccall "dynamic" makeLoad :: FunPtr (BStr -> IO (ObjectID T_Assembly)) -> (BStr -> IO (ObjectID T_Assembly))
 
 type instance Candidates (T_Assembly) (T "Load" '[]) = '[ '[ T_string ] ]
 
