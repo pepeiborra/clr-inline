@@ -31,7 +31,6 @@ library
   default-language:    Haskell2010
   other-modules:       Clr.Host.Driver
                      , Clr.Host.BStr.DotNet
-                     , Clr.Host.BStr.Mono
                      , Clr.Host.BStr.Type
                      , Clr.Host.DotNet.Common
                      , Clr.Host.DotNet.Guid
@@ -41,6 +40,7 @@ library
     Cpp-options:         -DHAVE_DOTNET, -DHAVE_MONO
     cc-options:          -DHAVE_DOTNET, -DHAVE_MONO
     exposed-modules:     Clr.Host, Clr.Host.Config, Clr.Host.BStr, Clr.Host.DotNet, Clr.Host.Mono
+    other-modules:       Clr.Host.BStr.Mono
     Extra-Libraries:     glib-2.0, mono-2.0, oleaut32, ole
   if flag(enable_dotnet) && !flag(enable_mono)
     Cpp-options:         -DHAVE_DOTNET
@@ -51,6 +51,7 @@ library
     Cpp-options:         -DHAVE_MONO
     cc-options:          -DHAVE_MONO
     exposed-modules:     Clr.Host, Clr.Host.Config, Clr.Host.BStr, Clr.Host.Mono
+    other-modules:       Clr.Host.BStr.Mono
     Extra-Libraries:     glib-2.0, mono-2.0
   if !flag(enable_dotnet) && !flag(enable_mono)
     if os(windows)
@@ -62,6 +63,7 @@ library
       Cpp-options:         -DHAVE_MONO
       cc-options:          -DHAVE_MONO
       exposed-modules:     Clr.Host, Clr.Host.Config, Clr.Host.BStr, Clr.Host.Mono
+      other-modules:       Clr.Host.BStr.Mono
       Extra-Libraries:     glib-2.0, mono-2.0
   if os(windows)
     build-depends:       base >= 4.7 && < 5, bytestring, file-embed, Win32
