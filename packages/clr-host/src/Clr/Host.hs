@@ -21,7 +21,6 @@ foreign import ccall "clrHost.c getPointerToMethod_get" getPtrToMethod_get :: IO
 
 startClr :: IO ()
 startClr = do
-  putStrLn "startClr"
   ClrHostConfig hostType <- getClrHostConfig
   getPtrToMethod <- case hostType of
 #ifdef HAVE_MONO

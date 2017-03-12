@@ -19,7 +19,8 @@ import System.IO.Unsafe (unsafePerformIO)
 import qualified Data.ByteString as S
 import Text.Printf
 
-import Clr.Host.DotNet.BStr
+import Clr.Host.BStr.DotNet
+import Clr.Host.BStr.Type
 import Clr.Host.DotNet.Common
 import Clr.Host.DotNet.Guid
 import Clr.Host.DotNet.SafeArray
@@ -80,7 +81,7 @@ startHostDotNet = do
     []           -> error "No runtime versions found"
     (runtime:xs) -> do
       version <- getVersionString_ICLRRuntimeInfo runtime
-      putStrLn $ "attempting to bind to runtime version " ++ version
+      --putStrLn $ "attempting to bind to runtime version " ++ version
       clrHost <- getCLRHost_ICLRRuntimeInfo runtime
       start_ICLRRuntimeHost clrHost
       corHost <- getCorHost_ICLRRuntimeInfo runtime

@@ -28,7 +28,7 @@ instance MethodS1 (T "System.Console" '[]) (T "WriteLine" '[]) (T "System.String
 
 rawInvokeMakeWriteLine1 = getMethodStub "System.Console, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" "WriteLine" "System.String" >>= return . makeWriteLineType1
 
-foreign import ccall "dynamic" makeWriteLineType1 :: FunPtr (ClrString -> IO ()) -> (ClrString -> IO ())
+foreign import ccall "dynamic" makeWriteLineType1 :: FunPtr (BStr -> IO ()) -> (BStr -> IO ())
 
 instance MethodS1 (T "System.Console" '[]) (T "WriteLine" '[]) (T "System.Int32" '[]) where
   type ResultTypeS1 (T "System.Console" '[]) (T "WriteLine" '[]) (T "System.Int32" '[]) = 'Nothing
@@ -40,13 +40,13 @@ instance MethodS2 (T "System.Console" '[]) (T "WriteLine" '[]) (T "System.String
   type ResultTypeS2 (T "System.Console" '[]) (T "WriteLine" '[]) (T "System.String" '[]) (T "System.Object" '[]) = 'Nothing
   rawInvokeS2 x y = getMethodStub "System.Console, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" "WriteLine" "System.String;System.Object" >>= return . makeWriteLineType3 >>= \f-> f x y
 
-foreign import ccall "dynamic" makeWriteLineType3 :: FunPtr (ClrString -> (ObjectID a) -> IO ()) -> (ClrString -> (ObjectID a) -> IO ())
+foreign import ccall "dynamic" makeWriteLineType3 :: FunPtr (BStr -> (ObjectID a) -> IO ()) -> (BStr -> (ObjectID a) -> IO ())
 
 instance MethodS3 (T "System.Console" '[]) (T "WriteLine" '[]) (T "System.String" '[]) (T "System.Object" '[]) (T "System.Object" '[]) where
   type ResultTypeS3 (T "System.Console" '[]) (T "WriteLine" '[]) (T "System.String" '[]) (T "System.Object" '[]) (T "System.Object" '[]) = 'Nothing
   rawInvokeS3 x y z = getMethodStub "System.Console, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" "WriteLine" "System.String;System.Object;System.Object" >>= return . makeWriteLineType4 >>= \f-> f x y z
 
-foreign import ccall "dynamic" makeWriteLineType4 :: FunPtr (ClrString -> (ObjectID a) -> (ObjectID b) -> IO ()) -> (ClrString -> (ObjectID a) -> (ObjectID b) -> IO ())
+foreign import ccall "dynamic" makeWriteLineType4 :: FunPtr (BStr -> (ObjectID a) -> (ObjectID b) -> IO ()) -> (BStr -> (ObjectID a) -> (ObjectID b) -> IO ())
 
 
 
