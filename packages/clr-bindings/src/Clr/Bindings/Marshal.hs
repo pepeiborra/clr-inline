@@ -8,14 +8,13 @@ import Clr.Marshal
 
 import Clr.Host.BStr
 
-import Control.Exception(finally)
 import Data.Text
 import Data.Text.Foreign
 
 instance Marshal Text BStr where
   marshal x f = do
     bstr <- useAsPtr x (\p-> \l-> allocBStr p l)
-    finally (f bstr) (freeBStr bstr)
+    f bstr
 
 instance Marshal String BStr where
   marshal x f = marshal (pack x) f
