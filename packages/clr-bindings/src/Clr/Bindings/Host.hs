@@ -6,6 +6,9 @@ import Clr
 import Clr.Marshal
 
 import Clr.Host
+import Clr.Host.BStr
+
+import Clr.Bindings.Marshal
 
 import Data.Coerce
 import Data.Word
@@ -16,7 +19,7 @@ import Foreign.Ptr
 --  if the type of the resulting function pointer matches that of the method given.
 unsafeGetPointerToMethod :: String -> IO (FunPtr a)
 unsafeGetPointerToMethod methodName = do
-  result <- marshal methodName $ \(methodName'::ClrString) -> getPointerToMethodRaw >>= \f-> f $ coerce methodName'
+  result <- marshal methodName $ \(methodName'::BStr) -> getPointerToMethodRaw >>= \f-> f $ coerce methodName'
   if result == nullFunPtr
     then error $ "Unable to execute Salsa.dll method '" ++ methodName ++ "'."
     else return result
@@ -41,6 +44,6 @@ getMethodStub className methodName parameterTypeNames = do
 getMethodStubRaw :: IO (GetMethodStubDelegate a)
 getMethodStubRaw = unsafeGetPointerToMethod "GetMethodStub" >>= return . makeGetMethodStubDelegate
 
-type GetMethodStubDelegate a = ClrString -> ClrString -> ClrString -> FunPtr a
+type GetMethodStubDelegate a = BStr -> BStr -> BStr -> FunPtr a
 foreign import ccall "dynamic" makeGetMethodStubDelegate :: FunPtr (GetMethodStubDelegate a) -> GetMethodStubDelegate a
 

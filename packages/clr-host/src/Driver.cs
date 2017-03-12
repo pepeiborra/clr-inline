@@ -1028,9 +1028,7 @@ namespace Salsa
                     pb.SetCustomAttribute(
                         new CustomAttributeBuilder(
                             typeof(MarshalAsAttribute).GetConstructor(new Type[] { typeof(UnmanagedType) }),
-                            new object[] { UnmanagedType.CustomMarshaler },
-                            new FieldInfo[] { typeof(MarshalAsAttribute).GetField("MarshalTypeRef") },
-                            new Object[] { typeof(UTF16Marshaler) }
+                            new object[] { UnmanagedType.BStr }
                         )
                     );
                 }
