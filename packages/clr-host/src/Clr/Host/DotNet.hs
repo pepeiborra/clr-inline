@@ -81,7 +81,7 @@ startHostDotNet = do
     []           -> error "No runtime versions found"
     (runtime:xs) -> do
       version <- getVersionString_ICLRRuntimeInfo runtime
-      putStrLn $ "attempting to bind to runtime version " ++ version
+      --putStrLn $ "attempting to bind to runtime version " ++ version
       clrHost <- getCLRHost_ICLRRuntimeInfo runtime
       start_ICLRRuntimeHost clrHost
       corHost <- getCorHost_ICLRRuntimeInfo runtime
