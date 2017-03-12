@@ -4,9 +4,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TypeApplications    #-}
-module Clr.CSharp.Inline (csharp, FunPtr, getMethodStub) where
+module Clr.CSharp.Inline (csharp, csharp', FunPtr, getMethodStub) where
 
 import           Clr.Bindings
+import           Clr.Inline.Config
 import           Clr.Inline.Types
 import           Clr.Inline.Utils
 import           Control.Monad
@@ -23,21 +24,18 @@ import           System.IO.Temp
 import           System.Process
 import           Text.Printf
 
-csharp = QuasiQuoter
-    { quoteExp  = csharpExp
+csharp = csharp' defaultInlineConfig
+
+csharp' cfg = QuasiQuoter
+    { quoteExp  = csharpExp cfg
     , quotePat  = error "Clr.CSharp.Inline: quotePat"
     , quoteType = error "Clr.CSharp.Inline: quoteType"
-    , quoteDec  = csharpDec
+    , quoteDec  = csharpDec cfg
     }
 
-csharpExp :: String -> Q Exp
-csharpExp = clrQuoteExp "csharp" compile
-
-csharpDec = clrQuoteDec "csharp" compile
-
--- The name of the C# compiler in Mono.
--- Platform specific
-csharpCompiler = "mcs"
+csharpExp :: ClrInlineConfig -> String -> Q Exp
+csharpExp cfg = clrQuoteExp "csharp" $ compile cfg
+csharpDec cfg = clrQuoteDec "csharp" $ compile cfg
 
 data CSharp
 
@@ -65,14 +63,14 @@ genCode ClrInlinedGroup {..} =
         yield "}"
     yield "}}"
 
-compile :: ClrInlinedGroup CSharp -> IO ClrBytecode
-compile m@ClrInlinedGroup {..} = do
+compile :: ClrInlineConfig -> ClrInlinedGroup CSharp -> IO ClrBytecode
+compile Config{..} m@ClrInlinedGroup {..} = do
     temp <- getTemporaryDirectory
     dir <- createTempDirectory temp "inline-csharp"
     let src = dir </> modName <.> ".cs"
         tgt = dir </> modName <.> ".dll"
     writeFile src (genCode m)
     putStrLn $ "Generated " ++ tgt
-    callProcess csharpCompiler ["-target:library", "-out:"++tgt, src]
+    callCommand $ unwords [configCSharpPath, "-target:library", "-out:"++tgt, src]
     bcode <- BS.readFile tgt
     return $ ClrBytecode bcode

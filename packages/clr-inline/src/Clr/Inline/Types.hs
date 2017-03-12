@@ -61,7 +61,7 @@ clrQuoteExp name clrCompile body = do
   modName <- mangleModule name <$> thisModule
   let assemblyName = modName
   pushWrapperGen (clrGenerator name modName clrCompile) $
-    return (ClrInlinedUnit (show methodName) body (map show args) argTypes :: ClrInlinedUnit language)
+    return (ClrInlinedUnit (show methodName) (normaliseLineEndings body) (map show args) argTypes :: ClrInlinedUnit language)
   let fullClassName :: String =
         printf
           "%s.%s, %s, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null"
@@ -96,5 +96,5 @@ clrQuoteDec :: forall language . Typeable language => String -> (ClrInlinedGroup
 clrQuoteDec name clrCompile body = do
   modName <- mangleModule name <$> thisModule
   pushWrapperGen (clrGenerator name modName clrCompile) $
-    return (ClrInlinedDec body :: ClrInlinedUnit language)
+    return (ClrInlinedDec (normaliseLineEndings body) :: ClrInlinedUnit language)
   return mempty

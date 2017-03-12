@@ -50,6 +50,7 @@ library
   -- Modules exported by the library.
   exposed-modules:     Clr.CSharp.Inline
                        Clr.FSharp.Inline
+                       Clr.Inline.Config
   
   -- Modules included in this library but not exported.
   other-modules:       
@@ -65,6 +66,7 @@ library
   build-depends:        base >=4.9 && <4.10,
                         bytestring,
                         clr,
+                        clr-host,
                         clr-bindings,
                         directory,
                         filepath,

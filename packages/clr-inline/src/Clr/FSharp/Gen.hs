@@ -2,6 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 module Clr.FSharp.Gen (compile) where
 
+import           Clr.Inline.Config
 import           Clr.Inline.Utils
 import           Clr.Inline.Types
 import           Control.Monad
@@ -15,10 +16,6 @@ import           System.FilePath     ((<.>), (</>))
 import           System.IO.Temp
 import           System.Process
 import           Text.Printf
-
--- The name of the F# compiler in Mono.
--- TODO support both "fsc" and "fsharpc"
-fsharp = "fsharpc"
 
 data FSharp
 
@@ -41,14 +38,14 @@ genCode ClrInlinedGroup {..} =
             (intercalate ", " $ zipWith (printf "%s:$s") args argTypes)
         forM_ (lines body) $ \l -> yield $ printf "        %s" l
 
-compile :: ClrInlinedGroup FSharp -> IO ClrBytecode
-compile m@ClrInlinedGroup {..} = do
+compile :: ClrInlineConfig -> ClrInlinedGroup FSharp -> IO ClrBytecode
+compile Config{..} m@ClrInlinedGroup {..} = do
     temp <- getTemporaryDirectory
     dir <- createTempDirectory temp "inline-fsharp"
     let src = dir </> modName <.> ".fs"
         tgt = dir </> modName <.> ".dll"
     writeFile src (genCode m)
     putStrLn $ "Generated " ++ tgt
-    callProcess fsharp ["--target:library", "--out:"++tgt, src]
+    callCommand $ unwords [configFSharpPath, "--target:library", "--out:"++tgt, src]
     bcode <- BS.readFile tgt
     return $ ClrBytecode bcode

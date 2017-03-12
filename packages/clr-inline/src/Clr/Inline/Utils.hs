@@ -6,7 +6,7 @@
 module Clr.Inline.Utils where
 
 import           Clr
-import           Clr.Bindings
+import           Clr.Bindings.Host
 import           Clr.Marshal
 import           Control.Monad
 import           Control.Monad.Trans.Writer
@@ -66,11 +66,16 @@ foreign import ccall "dynamic" assemblyLoad :: FunPtr (Ptr Int -> Int -> IO()) -
 -- | Idempotent function that loads the bytecodes embedded in the static table for this module
 loadBytecode :: ByteString -> IO ()
 loadBytecode bs =
-  getMethodStub
-    "Salsa.Driver, Driver, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null"
-    "LoadAssemblyFromBytes"
-    "System.IntPtr;System.Int32" >>= \f ->
+  unsafeGetPointerToMethod "LoadAssemblyFromBytes" >>= \f ->
   BS.useAsCStringLen bs $ \(ptr,len) -> assemblyLoad f (castPtr ptr) len
 
 yield x = tell [x]
 yieldAll xx = tell xx
+
+-- | Fix different systems silly line ending conventions
+--   https://ghc.haskell.org/trac/ghc/ticket/11215
+normaliseLineEndings :: String -> String
+normaliseLineEndings [] = []
+normaliseLineEndings ('\r':'\n':s) = '\n' : normaliseLineEndings s -- windows
+normaliseLineEndings ('\r':s)      = '\n' : normaliseLineEndings s -- old OS X
+normaliseLineEndings (  c :s)      =   c  : normaliseLineEndings s
