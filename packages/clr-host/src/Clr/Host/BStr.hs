@@ -13,7 +13,7 @@ import Clr.Host.Config
 import Clr.Host.BStr.Type
 
 #ifdef HAVE_MONO
-import Clr.Host.BStr.Mono(mono_ptr_to_bstr, mono_free_bstr)
+import Clr.Host.BStr.Mono(mono_ptr_to_bstr_hask, mono_free_bstr)
 #endif
 
 #ifdef HAVE_DOTNET
@@ -28,7 +28,7 @@ allocBStr p l = do
   ClrHostConfig hostType <- getClrHostConfig
   case hostType of
 #ifdef HAVE_MONO
-    ClrHostMono   -> mono_ptr_to_bstr p (fromIntegral l)
+    ClrHostMono   -> mono_ptr_to_bstr_hask p (fromIntegral l)
 #else
     ClrHostMono   -> error "not built with Mono support enabled"
 #endif
