@@ -6,6 +6,10 @@ module Clr
   ( invokeS
   , invokeI
   , new
+  , getPropI
+  , setPropI
+  , getPropS
+  , setPropS
   , Candidates
   , module Clr.Constructor
   , module Clr.Inheritance
