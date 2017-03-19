@@ -75,9 +75,9 @@ main = do
   invokeS @"WriteLine" @"System.Console" (2 :: Int32)                           -- Console.WriteLine(Int32)
   invokeS @"WriteLine" @"System.Console" ("The year is {0}", 2017::Int64)       -- Console.WriteLine(String, Object)
   invokeS @"WriteLine" @"System.Console" ("Well {0} {1}", "This", "Is Cool")    -- Console.WriteLine(String, Object, Object)
-  list <- new @'("System.Collections.Generic.List", "System.String") ()
+  list <- new @'("System.Collections.Generic.List", "System.String") ()         -- generics
   invokeI @"Add" list "foo"
   invokeI @"Add" list "bar"
-  runEffect $ toProducer list >-> stdoutLn
+  runEffect $ toProducer list >-> stdoutLn                                      -- IEnumerable implementors can be converted to Producers (pipes package)
   return ()
 
