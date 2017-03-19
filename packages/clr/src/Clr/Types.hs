@@ -42,6 +42,7 @@ type family MakeT (x::k) :: Type where
 -- These are the types that have their own bridge type, everything else is an object reference.
 --
 type PrimTypes = '[ T "System.String"  '[]
+                  , T "System.Boolean" '[]
                   , T "System.SByte"   '[]
                   , T "System.Byte"    '[]
                   , T "System.Int16"   '[]
@@ -69,6 +70,7 @@ type instance HaskToClr String  = T "System.String"  '[]
 type instance HaskToClr T.Text  = T "System.String"  '[]
 type instance HaskToClr TL.Text = T "System.String"  '[]
 
+type instance HaskToClr Bool    = T "System.Boolean" '[]
 type instance HaskToClr Int8    = T "System.SByte"   '[]
 type instance HaskToClr Word8   = T "System.Byte"    '[]
 type instance HaskToClr Int16   = T "System.Int16"   '[]

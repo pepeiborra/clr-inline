@@ -34,6 +34,8 @@ type family BridgeTypeM (x::Maybe Type) :: Type where
 --
 type family BridgeTypePrim (x::Type)
 
+type instance BridgeTypePrim (T "System.SByte"   '[]) = Int8
+type instance BridgeTypePrim (T "System.Byte"    '[]) = Word8
 type instance BridgeTypePrim (T "System.Int16"   '[]) = Int16
 type instance BridgeTypePrim (T "System.UInt16"  '[]) = Word16
 type instance BridgeTypePrim (T "System.Int32"   '[]) = Int32
@@ -45,6 +47,7 @@ type instance BridgeTypePrim (T "System.UIntPtr" '[]) = WordPtr
 type instance BridgeTypePrim (T "System.Char"    '[]) = Char
 type instance BridgeTypePrim (T "System.Single"  '[]) = CFloat
 type instance BridgeTypePrim (T "System.Double"  '[]) = CDouble
+type instance BridgeTypePrim (T "System.Boolean" '[]) = Bool
 
 --
 -- Bridge type that operates on lists
