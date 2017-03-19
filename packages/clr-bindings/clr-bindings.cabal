@@ -22,7 +22,7 @@ library
                      , Clr.Bindings.ImportGen
                      , Clr.Bindings.IEnumerable
                      , Clr.Bindings.Marshal
-  build-depends:       base >= 4.7 && < 5, clr, clr-host, text, template-haskell
+  build-depends:       base >= 4.7 && < 5, clr, clr-host, text, template-haskell, pipes
   default-language:    Haskell2010
 
 test-suite clr-bindings-test

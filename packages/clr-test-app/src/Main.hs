@@ -5,9 +5,13 @@ module Main where
 import Clr
 import Clr.Host
 import Clr.Bindings
+import Clr.Bindings.IEnumerable
 
 import Data.Int(Int32, Int64)
 import Foreign.Ptr(Ptr, FunPtr)
+
+import Pipes
+import Pipes.Prelude
 
 instance MethodS1 (T "System.Console" '[]) (T "WriteLine" '[]) () where
   type ResultTypeS1 (T "System.Console" '[]) (T "WriteLine" '[]) () = 'Nothing
@@ -39,13 +43,29 @@ instance MethodS3 (T "System.Console" '[]) (T "WriteLine" '[]) (T "System.String
 
 foreign import ccall "dynamic" makeWriteLineType4 :: FunPtr (BStr -> (ObjectID a) -> (ObjectID b) -> IO ()) -> (BStr -> (ObjectID a) -> (ObjectID b) -> IO ())
 
-
-
 type instance Candidates (T "System.Console" '[]) (T "WriteLine" '[]) = '[ '[                                                                     ]
                                                                          , '[ T "System.String" '[]                                               ]
                                                                          , '[ T "System.Int32"  '[]                                               ]
                                                                          , '[ T "System.String" '[], T "System.Object" '[]                        ]
                                                                          , '[ T "System.String" '[], T "System.Object" '[], T "System.Object" '[] ] ]
+
+type instance Candidates (T "System.Collections.Generic.List" '[t]) (T "System.Collections.Generic.List" '[t]) = '[ '[] ]
+
+instance Constructor1 (T "System.Collections.Generic.List" '[t]) () where
+  rawNew1 () = getMethodStub "System.Collections.Generic.List`1[System.String], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" ".ctor" "" >>= return . makeListCTor >>= \f-> f
+
+foreign import ccall "dynamic" makeListCTor :: FunPtr (IO (ObjectID a)) -> IO (ObjectID a)
+
+type instance SuperTypes (T "System.Collections.Generic.List" '[t]) = '[ T "System.Collections.Generic.IEnumerable" '[t] ]
+
+type instance Members (T "System.Collections.Generic.List" '[t]) = '[ T "Add" '[] ]
+type instance Candidates (T "System.Collections.Generic.List" '[t]) (T "Add" '[]) = '[ '[t] ]
+
+instance MethodI1 (T "System.Collections.Generic.List" '[T "System.String" '[]]) (T "Add" '[]) (T "System.String" '[]) where
+  type ResultTypeI1 (T "System.Collections.Generic.List" '[T "System.String" '[]]) (T "Add" '[]) (T "System.String" '[]) = 'Nothing
+  rawInvokeI1 l s = getMethodStub "System.Collections.Generic.List`1[System.String], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" "Add" "System.String" >>= return . makeListAdd >>= \f-> f l s
+
+foreign import ccall "dynamic" makeListAdd :: FunPtr (ObjectID a -> BStr -> IO ()) -> (ObjectID a -> BStr -> IO ())
 
 main :: IO ()
 main = do
@@ -55,3 +75,9 @@ main = do
   invokeS @"WriteLine" @"System.Console" (2 :: Int32)                           -- Console.WriteLine(Int32)
   invokeS @"WriteLine" @"System.Console" ("The year is {0}", 2017::Int64)       -- Console.WriteLine(String, Object)
   invokeS @"WriteLine" @"System.Console" ("Well {0} {1}", "This", "Is Cool")    -- Console.WriteLine(String, Object, Object)
+  list <- new @'("System.Collections.Generic.List", "System.String") ()
+  invokeI @"Add" list "foo"
+  invokeI @"Add" list "bar"
+  runEffect $ toProducer list >-> stdoutLn
+  return ()
+

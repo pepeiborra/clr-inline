@@ -46,6 +46,12 @@ extra-deps:
 - OneTuple-0.2.1
 - tuple-0.3.0.2
 - text-1.2.2.1
+- pipes-4.3.2
+- exceptions-0.8.3
+- mmorph-1.0.9
+- mtl-2.2.1
+- stm-2.4.4.1
+- transformers-compat-0.5.1.4
 
 # Override default flag values for local packages and extra-deps
 flags: {}
