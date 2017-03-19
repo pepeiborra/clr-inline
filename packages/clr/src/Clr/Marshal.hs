@@ -4,12 +4,14 @@ module Clr.Marshal where
 
 import Clr.Bridge
 import Clr.Object
+
 import Data.Coerce
 import Data.Int
 import Data.Kind
 import Data.Text
 import Data.Text.Foreign
 import Data.Word
+import Foreign.C
 import Foreign.Marshal.Alloc
 import Foreign.Ptr
 import Foreign.Storable
@@ -64,6 +66,17 @@ instance {-# OVERLAPS #-} Marshal (Object t) (ObjectID t) where
 type family UnmarshalAs (x::Type) :: Type
 type instance UnmarshalAs (ObjectID t) = (Object t)
 type instance UnmarshalAs ()           = ()
+type instance UnmarshalAs Bool         = Bool
+type instance UnmarshalAs Word8        = Word8
+type instance UnmarshalAs Word16       = Word16
+type instance UnmarshalAs Word32       = Word32
+type instance UnmarshalAs Word64       = Word64
+type instance UnmarshalAs Int8         = Int8
+type instance UnmarshalAs Int16        = Int16
+type instance UnmarshalAs Int32        = Int32
+type instance UnmarshalAs Int64        = Int64
+type instance UnmarshalAs CFloat       = Float
+type instance UnmarshalAs CDouble      = Double
 
 --
 -- Conversion from a raw bridge type of a methods result to a high level Haskell type
