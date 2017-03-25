@@ -38,6 +38,18 @@ type family MakeT (x::k) :: Type where
   MakeT '(name, g1, g2, g3, g4, g5, g6, g7, g8, g9, g10) = T name '[MakeT g1, MakeT g2, MakeT g3, MakeT g4, MakeT g5, MakeT g6, MakeT g7, MakeT g8, MakeT g9, MakeT g10]
 
 --
+-- Retrieve the name component of a CLR type representation T
+--
+type family T_GetName (t::Type) :: Symbol where
+  T_GetName (T name gt) = name
+
+--
+-- Retrieve the generic type param component of a CLR type representation T
+--
+type family T_GetGenT (t::Type) :: [Type] where
+  T_GetGenT (T name gt) = gt
+
+--
 -- Prim types are all values types plus Sytem.String.
 -- These are the types that have their own bridge type, everything else is an object reference.
 --
