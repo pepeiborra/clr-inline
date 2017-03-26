@@ -2,12 +2,12 @@ name:                clr-win-linker
 version:             0.1.0.0
 -- synopsis:
 -- description:
-homepage:            https://github.com/githubuser/clr-win-linker#readme
+homepage:            https://gitlab.com/tim-m89/clr-haskell/tree/master/utils/clr-win-linker
 license:             BSD3
 license-file:        LICENSE
-author:              Author name here
-maintainer:          example@example.com
-copyright:           2017 Author name here
+author:              Tim Matthews
+maintainer:          tim.matthews7@gmail.com
+copyright:           2017 Tim Matthews
 category:            Web
 build-type:          Simple
 cabal-version:       >=1.10

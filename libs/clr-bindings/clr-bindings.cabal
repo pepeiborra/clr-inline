@@ -2,12 +2,12 @@ name:                clr-bindings
 version:             0.1.0.0
 synopsis:            Initial project template from stack
 description:         Please see README.md
-homepage:            https://gitlab.com/tim-m89/clr-bindings#readme
+homepage:            https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-bindings
 license:             BSD3
 license-file:        LICENSE
 author:              Tim Matthews
 maintainer:          tim.matthews7@gmail.com
-copyright:           Copyright: (c) 2017 Tim Matthews
+copyright:           2017 Tim Matthews
 category:            Development
 build-type:          Simple
 extra-source-files:  README.md

@@ -2,12 +2,12 @@ name:                clr-host
 version:             0.1.0.0
 synopsis:            Initial project template from stack
 description:         Please see README.md
-homepage:            https://gitlab.com/tim-m89/clr-host
+homepage:            https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-host
 license:             BSD3
 license-file:        LICENSE
 author:              Tim Matthews
 maintainer:          tim.matthews7@gmail.com
-copyright:           Copyright: (c) 2016-2017 Tim Matthews
+copyright:           2016-2017 Tim Matthews
 category:            Development
 build-type:          Custom
 extra-source-files:  src/Driver.cs

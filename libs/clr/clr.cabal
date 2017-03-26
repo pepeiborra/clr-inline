@@ -2,7 +2,7 @@ name:                clr
 version:             0.1.0.0
 synopsis:            Haskell <-> CLR bridge
 description:         Please see README.md
-homepage:            https://gitlab.com/tim-m89/clr
+homepage:            https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr
 license:             BSD3
 license-file:        LICENSE
 author:              Tim Matthews
