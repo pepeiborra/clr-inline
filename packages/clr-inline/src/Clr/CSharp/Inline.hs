@@ -64,13 +64,23 @@ genCode ClrInlinedGroup {..} =
     yield "}}"
 
 compile :: ClrInlineConfig -> ClrInlinedGroup CSharp -> IO ClrBytecode
-compile Config{..} m@ClrInlinedGroup {..} = do
+compile ClrInlineConfig{..} m@ClrInlinedGroup {..} = do
     temp <- getTemporaryDirectory
     dir <- createTempDirectory temp "inline-csharp"
     let src = dir </> modName <.> ".cs"
         tgt = dir </> modName <.> ".dll"
     writeFile src (genCode m)
     putStrLn $ "Generated " ++ tgt
-    callCommand $ unwords [configCSharpPath, "-target:library", "-out:"++tgt, src]
+    callCommand $
+      unwords $
+      execWriter $ do
+        yield configCSharpPath
+        yield "-target:library"
+        yield $ "-out:" ++ tgt
+        when configDebugSymbols $ yield "-debug"
+        forM_ configExtraIncludeDirs $ \dir -> yield $ "-lib:" ++ dir
+        forM_ configDependencies $ \name -> yield $ "-reference:" ++ name
+        yieldAll configCustomCompilerFlags
+        yield src
     bcode <- BS.readFile tgt
     return $ ClrBytecode bcode

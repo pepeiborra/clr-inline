@@ -39,13 +39,23 @@ genCode ClrInlinedGroup {..} =
         forM_ (lines body) $ \l -> yield $ printf "        %s" l
 
 compile :: ClrInlineConfig -> ClrInlinedGroup FSharp -> IO ClrBytecode
-compile Config{..} m@ClrInlinedGroup {..} = do
-    temp <- getTemporaryDirectory
-    dir <- createTempDirectory temp "inline-fsharp"
-    let src = dir </> modName <.> ".fs"
-        tgt = dir </> modName <.> ".dll"
-    writeFile src (genCode m)
-    putStrLn $ "Generated " ++ tgt
-    callCommand $ unwords [configFSharpPath, "--target:library", "--out:"++tgt, src]
-    bcode <- BS.readFile tgt
-    return $ ClrBytecode bcode
+compile config@ClrInlineConfig {..} m@ClrInlinedGroup {..} = do
+  temp <- getTemporaryDirectory
+  dir <- createTempDirectory temp "inline-fsharp"
+  let src = dir </> modName <.> ".fs"
+      tgt = dir </> modName <.> ".dll"
+  writeFile src (genCode m)
+  putStrLn $ "Generated " ++ tgt
+  callCommand $
+    unwords $
+    execWriter $ do
+      yield configFSharpPath
+      yield "--target:library"
+      yield $ "--out:" ++ tgt
+      when configDebugSymbols $ yield "--debug:embedded"
+      forM_ configExtraIncludeDirs $ \dir -> yield $ "--lib:" ++ dir
+      forM_ configDependencies $ \name -> yield $ "--reference:" ++ name
+      yieldAll configCustomCompilerFlags
+      yield src
+  bcode <- BS.readFile tgt
+  return $ ClrBytecode bcode
