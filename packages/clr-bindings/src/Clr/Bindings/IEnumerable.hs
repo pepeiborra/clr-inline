@@ -30,7 +30,7 @@ type instance SuperTypes (T_IEnumerable t) = '[ T "System.Object" '[] ]
 instance MethodI1 (T_IEnumerable t) (T "GetEnumerator" '[]) () where
   type ResultTypeI1 (T_IEnumerable t) (T "GetEnumerator" '[]) () = 'Just (T_IEnumerator t)
   -- TODO: System.String is currently hardcoded below
-  rawInvokeI1 ienumerable () = getMethodStub "System.Collections.Generic.IEnumerable`1[System.String], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" "GetEnumerator" "" >>= return . makeGetEnumerator >>= \f-> f ienumerable
+  rawInvokeI1 ienumerable () = getMethodStub "System.Collections.Generic.IEnumerable`1[System.String]" "GetEnumerator" "" >>= return . makeGetEnumerator >>= \f-> f ienumerable
 
 foreign import ccall "dynamic" makeGetEnumerator :: FunPtr (ObjectID a -> IO (ObjectID b)) -> (ObjectID a -> IO (ObjectID b))
 
@@ -58,7 +58,7 @@ instance PropertyI (T_IEnumerator t) T_Current where
 
 instance PropertyGetI (T_IEnumerator (T "System.String" '[])) T_Current where
   -- TODO: System.String is currently hardcoded above & below
-  rawGetPropI ienumerator = getMethodStub "System.Collections.Generic.IEnumerator`1[System.String], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" "get_Current" "" >>= return . makeEnumeratorCurrent >>= \f-> f ienumerator
+  rawGetPropI ienumerator = getMethodStub "System.Collections.Generic.IEnumerator`1[System.String]" "get_Current" "" >>= return . makeEnumeratorCurrent >>= \f-> f ienumerator
 
 type instance Members (T_IEnumerator t) = '[ T_Current, T_MoveNext ]
 
@@ -78,7 +78,7 @@ type instance Candidates (T_IEnumerator t) T_MoveNext = '[ '[] ]
 
 instance MethodI1 (T_IEnumerator t) T_MoveNext () where
   type ResultTypeI1 (T_IEnumerator t) T_MoveNext () = 'Just (T "System.Boolean" '[])
-  rawInvokeI1 ienumerator () = getMethodStub "System.Collections.IEnumerator, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" "MoveNext" "" >>= return . makeEnumeratorMoveNext >>= \f-> f ienumerator
+  rawInvokeI1 ienumerator () = getMethodStub "System.Collections.IEnumerator" "MoveNext" "" >>= return . makeEnumeratorMoveNext >>= \f-> f ienumerator
 
 foreign import ccall "dynamic" makeEnumeratorMoveNext :: FunPtr (ObjectID (T_IEnumerator elem) -> IO Bool) -> (ObjectID (T_IEnumerator elem) -> IO Bool) 
 
