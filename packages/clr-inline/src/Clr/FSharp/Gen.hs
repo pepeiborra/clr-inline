@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
-module Clr.FSharp.Gen (compile) where
+module Clr.FSharp.Gen (name, compile) where
 
 import           Clr.Inline.Config
 import           Clr.Inline.Utils
@@ -18,6 +18,7 @@ import           System.Process
 import           Text.Printf
 
 data FSharp
+name = "fsharp"
 
 genCode :: ClrInlinedGroup FSharp -> String
 genCode ClrInlinedGroup {..} =
@@ -34,8 +35,8 @@ genCode ClrInlinedGroup {..} =
         yield $
           printf
             "    let %s (%s) = "
-            name
-            (intercalate ", " $ zipWith (printf "%s:$s") args argTypes)
+            (getMethodName name unitId)
+            (intercalate ", " $ zipWith (printf "%s:$s") args argClrTypes)
         forM_ (lines body) $ \l -> yield $ printf "        %s" l
 
 compile :: ClrInlineConfig -> ClrInlinedGroup FSharp -> IO ClrBytecode

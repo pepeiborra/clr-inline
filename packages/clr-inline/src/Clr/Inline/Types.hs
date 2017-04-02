@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -8,6 +9,7 @@ module Clr.Inline.Types where
 
 import Clr.Inline.State
 import Clr.Inline.Utils
+import Control.Monad
 import Data.ByteString (ByteString)
 import Data.Typeable
 import Language.Haskell.TH
@@ -15,10 +17,13 @@ import Language.Haskell.TH.Syntax
 import Text.Printf
 
 data ClrInlinedUnit language
-  = ClrInlinedUnit { name :: String
+  = ClrInlinedUnit { unitId :: Int
                   ,  body :: String
                   ,  args :: [String]
-                  ,  argTypes :: [String]}
+                  ,  argTypes    :: [Type]
+                  ,  argClrTypes :: [String]
+                  ,  stubName    :: Name
+                  ,  returnType  :: Type}
   | ClrInlinedDec { body :: String}
 
 data ClrInlinedGroup language = ClrInlinedGroup
@@ -28,6 +33,30 @@ data ClrInlinedGroup language = ClrInlinedGroup
   }
 
 namespace = "Clr.Inline"
+getStubName, getMethodName :: String -> Int -> String
+getStubName name count = printf "%s_stub_%d" name count
+getMethodName name count = printf "%s_quote_%d" name count
+getFullClassName modName =
+  printf
+    "%s.%s, %s, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null"
+    namespace
+    modName
+    modName
+    :: String
+
+generateFFIStub ClrInlinedUnit{..} = do
+      let funTy = foldr AppT returnType argTypes
+      lookupTypeName "Foreign.Ptr.FunPtr" >>= \case
+        Nothing -> error "Please import Foreing.Ptr when using F# quotations"
+        Just funPtrTy ->
+          return $
+             ForeignD
+                (ImportF
+                  CCall
+                  Safe
+                  "dynamic"
+                  stubName
+                  (ArrowT `AppT` AppT (ConT funPtrTy) funTy `AppT` funTy))
 
 -- | Runs after the whole module has been loaded and is responsible for generating:
 --     - A clr assembly with all the inline code, embedding it into the module.
@@ -37,11 +66,17 @@ clrGenerator
 clrGenerator name modName compile = do
   FinalizerState {wrappers} <- getFinalizerState
   let mod = ClrInlinedGroup modName namespace wrappers
-  result <- runIO $ compile mod
+  resultTypes <- runIO $ compile mod
 
   -- Embed the bytecodes
   embedBytecode name =<< runIO(compile mod)
-  return ()
+
+  -- generate the stub wrappers
+  -- TODO Add support for argument and result type inference
+  mapM (generateFFIStub) wrappers >>= qAddTopDecls
+
+unliftClrType :: Type -> String
+unliftClrType = undefined
 
 -- | Quasiquoter for expressions. Responsible for:
 --      - Installing a finalizer to generate the bytecodes
@@ -50,44 +85,37 @@ clrGenerator name modName compile = do
 clrQuoteExp
   :: forall language.
      Typeable language
-  => String -> (ClrInlinedGroup language -> IO ClrBytecode) -> String -> Q Exp
-clrQuoteExp name clrCompile body = do
+  => String -> TypeQ -> (ClrInlinedGroup language -> IO ClrBytecode) -> String -> Q Exp
+-- TODO support for return type inference
+clrQuoteExp name returnType clrCompile body = do
   count <- getFinalizerCount @(ClrInlinedGroup language)
-  methodName <- newName $ printf "%s_quote_%d" name count
-  stubName <- newName $ printf "%s_stub_%d" name count
   -- TODO support for antiquotations
   let args = [] :: [Exp]
-  let argTypes = [] :: [String]
+  let argTypes = [] :: [Type]
   modName <- mangleModule name <$> thisModule
-  let assemblyName = modName
-  pushWrapperGen (clrGenerator name modName clrCompile) $
-    return (ClrInlinedUnit (show methodName) (normaliseLineEndings body) (map show args) argTypes :: ClrInlinedUnit language)
-  let fullClassName :: String =
-        printf
-          "%s.%s, %s, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null"
-          namespace
-          modName
-          assemblyName
-  -- Generate the top level foreign import calls needed to convert the function pointers into Haskell functions
-  -- TODO Add support for argument and result type inference
-  resTy <- [t|IO ()|]
-  let argTys = []
-  let funTy = foldr AppT resTy argTys
-  lookupTypeName "Foreign.Ptr.FunPtr" >>= \case
-    Nothing -> error "Please import Foreing.Ptr when using F# quotations"
-    Just funPtrTy ->
-      qAddTopDecls
-        [ ForeignD
-            (ImportF
-               CCall
-               Safe
-               "dynamic"
-               stubName
-               (ArrowT `AppT` AppT (ConT funPtrTy) funTy `AppT` funTy))
-        ]
+  stubName <- newName $ getStubName name count
+  let methodName = getMethodName name count
+  let fullClassName = getFullClassName modName
+  let argClrTypes = map unliftClrType argTypes
+  resTy <- [t| IO $(returnType) |]
+  let inlinedUnit :: ClrInlinedUnit language =
+        ClrInlinedUnit
+          count
+          (normaliseLineEndings body)
+          (map show args)
+          argTypes
+          argClrTypes
+          stubName
+          resTy
+  pushWrapperGen (clrGenerator name modName clrCompile) $ return inlinedUnit
+
+  --
   -- splice in the bytecode load and call to the stub
   [|unembedBytecode >>
-    getMethodStub $(lift fullClassName) $(lift $ show methodName) $(lift argTypes) >>=
+    getMethodStub
+      $(lift fullClassName)
+      $(lift methodName)
+      argClrTypes >>=
     return . $(varE stubName) >>= \f -> $(foldr appE [|f|] (map return args))|]
 
 -- | Quasi quoter for declaration in the clr language.

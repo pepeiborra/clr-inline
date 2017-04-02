@@ -14,17 +14,19 @@ import           Control.Monad
 import           Control.Monad.Trans.Writer
 import qualified Data.ByteString            as BS
 import           Data.List
+import           Data.Maybe
 import           Foreign
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Quote
 import           Language.Haskell.TH.Syntax
 import           System.Directory
-import           System.FilePath     ((<.>), (</>))
+import           System.FilePath            ((<.>), (</>))
 import           System.IO.Temp
 import           System.Process
 import           Text.Printf
 
 csharp = csharp' defaultInlineConfig
+name = "csharp"
 
 csharp' cfg = QuasiQuoter
     { quoteExp  = csharpExp cfg
@@ -34,8 +36,13 @@ csharp' cfg = QuasiQuoter
     }
 
 csharpExp :: ClrInlineConfig -> String -> Q Exp
-csharpExp cfg = clrQuoteExp "csharp" $ compile cfg
-csharpDec cfg = clrQuoteDec "csharp" $ compile cfg
+csharpExp cfg =
+  clrQuoteExp
+    name
+    (fromMaybe (error "return type inference not supported yet") $
+     configForceReturnType cfg)
+    (compile cfg)
+csharpDec cfg = clrQuoteDec name $ compile cfg
 
 data CSharp
 
@@ -57,8 +64,8 @@ genCode ClrInlinedGroup {..} =
         yield $
           printf
             "    public static void %s (%s) { "
-            name
-            (intercalate ", " $ zipWith (printf "%s $s") argTypes args)
+            (getMethodName name unitId)
+            (intercalate ", " $ zipWith (printf "%s $s") argClrTypes args)
         forM_ (lines body) $ \l -> do yield $ printf "        %s" l
         yield "}"
     yield "}}"

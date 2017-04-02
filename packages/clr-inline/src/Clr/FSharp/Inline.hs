@@ -1,23 +1,26 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE NamedFieldPuns      #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module Clr.FSharp.Inline (fsharp, fsharp', getMethodStub, FunPtr) where
 
-import Clr.Bindings
-import Clr.Inline.Config
-import Clr.Inline.Types
-import Clr.FSharp.Gen
-import Language.Haskell.TH
-import Language.Haskell.TH.Quote
-import Language.Haskell.TH.Syntax
-import Foreign
+import           Clr.Bindings
+import           Clr.FSharp.Gen
+import           Clr.Inline.Config
+import           Clr.Inline.Types
+import           Data.Maybe
+import           Foreign
+import           Language.Haskell.TH
+import           Language.Haskell.TH.Quote
+import           Language.Haskell.TH.Syntax
 
+fsharp :: QuasiQuoter
 fsharp = fsharp' defaultInlineConfig
 
+fsharp' :: ClrInlineConfig -> QuasiQuoter
 fsharp' cfg = QuasiQuoter
     { quoteExp  = fsharpExp cfg
     , quotePat  = error "Clr.FSharp.Inline: quotePat"
@@ -26,5 +29,11 @@ fsharp' cfg = QuasiQuoter
     }
 
 fsharpExp :: ClrInlineConfig -> String -> Q Exp
-fsharpExp = clrQuoteExp "fsharp" . compile
-fsharpDec = clrQuoteDec "fsharp" . compile
+fsharpExp cfg =
+  clrQuoteExp
+    name
+    (fromMaybe (error "return type inference not supported yet") $
+     configForceReturnType cfg)
+    (compile cfg)
+fsharpDec :: ClrInlineConfig -> String -> Q [Dec]
+fsharpDec = clrQuoteDec name . compile
