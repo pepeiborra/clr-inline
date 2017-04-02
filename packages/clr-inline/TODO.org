@@ -1,0 +1,51 @@
+* Inline F#
+** Model for CLR types
+*** Requirements
+**** Marshalling
+     Marshalling is mostly a non problem if we can reuse the Marshall type class defined in clr-bindings
+**** Translation to fully qualified CLR names (including assembly name)
+     Symbols can be used to store these names at the type level, but might have to introduce some sugar due to verbosity.
+     Not sure about translation of generic types and array types.
+*** Option 1: use the clr-bindings / clr model
+    - Perhaps wrapping in metadata newtypes.
+*** Option 2: roll our own
+    Do we need singletons ?
+** Result types
+*** DONE Required for generating the FFI wrapper.
+    CLOSED: [2017-04-02 Sun 18:04]
+    Move the FFI wrapper generation to the finalizer
+*** Cannot be extracted from the Haskell source
+    This is because TH does not let us access user provided type annotations on the TH quotation (or does it?)
+*** Can be extracted from the F# compiler using, e.g. signature files.
+**** TODO Parser for .sig files (return types only)
+*** Can also be extracted from generated metadata, i.e. type class instances
+*** DONE Can be user provided via an optional config parameter
+    CLOSED: [2017-04-02 Sun 18:01]
+    This is done, but it is very inconvenient to use, 
+    since quasiquoter invocations cannot contain any arguments or type apps
+** Argument types
+*** Required for generating the FFI wrapper
+    The FFI wrapper must align with the types produced by the clr-host keyhole.
+*** Required for generating the getMethodStub call
+    The getMethodStub call must contain the full CLR names for all the argument types.
+*** Required for generating the F# code
+    Despite F# type inference, we want to annotate argument types to avoid runtime errors when the F# types and the Haskell types don't match.
+*** Can be extracted from the Haskell source
+    Depending on how much type information we retain in the Haskell side.
+**** TODO Translator from Haskell CLR types to F# types
+*** Can be provided via antiquotation annotations
+    The only motivation for this would be early prototyping
+*** Two options.
+**** Box everything
+     In this approach all the reference types are boxed to Object. Our generated F# snippets manually box and unbox them.
+     This gives up CLR type checking on the FFI boundary and can result in runtime errors.
+     However could be a first step in the way of initial prototyping.
+**** Precise types driven by Haskell side.
+     In this approach we retain all the obtained type information (via return types and symbols) on the Haskell side,
+     and use it to annotate the arguments in the generated F# snippets.
+     The F# compiler will be able to type check the snippets.
+**** +Precise types driven by F# side.+
+     Similar to the above, but without annotating the arguments in the generated F#.
+     Instead, we recover the type information inferred by the F# compiler and use it 
+     to type our FFI wrapper. 
+     This doesn't work: the GHC type checker would need to know when two CLR types are compatible.
