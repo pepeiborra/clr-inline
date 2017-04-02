@@ -8,8 +8,11 @@
      Not sure about translation of generic types and array types.
 *** Option 1: use the clr-bindings / clr model
     - Perhaps wrapping in metadata newtypes.
-*** Option 2: roll our own
-    Do we need singletons ?
+*** TODO Option 2: roll our own representation of CLR types
+    Do we need singletons ? Yes.
+    We need a term level representation of CLR types for our parser.
+    And a type level representation for use in typing CLR values.
+    I think this means we cannot reuse the clr-bindings representation, because it lacks the term level.
 ** Result types
 *** DONE Required for generating the FFI wrapper.
     CLOSED: [2017-04-02 Sun 18:04]
