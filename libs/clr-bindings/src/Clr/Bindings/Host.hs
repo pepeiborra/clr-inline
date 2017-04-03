@@ -47,3 +47,4 @@ getMethodStubRaw = unsafeGetPointerToMethod "GetMethodStub" >>= return . makeGet
 type GetMethodStubDelegate a = BStr -> BStr -> BStr -> FunPtr a
 foreign import ccall "dynamic" makeGetMethodStubDelegate :: FunPtr (GetMethodStubDelegate a) -> GetMethodStubDelegate a
 
+

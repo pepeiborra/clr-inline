@@ -8,6 +8,7 @@ module Clr.Bindings.IEnumerable where
 import Clr
 import Clr.Bridge
 import Clr.Marshal
+import Clr.TypeString
 
 import Clr.Host
 import Clr.Host.BStr
@@ -23,46 +24,67 @@ import GHC.TypeLits
 import Pipes
 
 type T_IEnumerable t = T "System.Collections.Generic.IEnumerable" '[t]
+type T_IEnumerable'  = T "System.Collections.IEnumerable" '[]
 type T_IEnumerator t = T "System.Collections.Generic.IEnumerator" '[t]
+type T_IEnumerator'  = T "System.Collections.IEnumerator" '[]
 
-type instance SuperTypes (T_IEnumerable t) = '[ T "System.Object" '[] ]
+type T_Current       = T "Current" '[]
+type T_MoveNext      = T "MoveNext" '[]
+type T_GetEnumerator = T "GetEnumerator" '[]
 
-instance MethodI1 (T_IEnumerable t) (T "GetEnumerator" '[]) () where
-  type ResultTypeI1 (T_IEnumerable t) (T "GetEnumerator" '[]) () = 'Just (T_IEnumerator t)
-  -- TODO: System.String is currently hardcoded below
-  rawInvokeI1 ienumerable () = getMethodStub "System.Collections.Generic.IEnumerable`1[System.String]" "GetEnumerator" "" >>= return . makeGetEnumerator >>= \f-> f ienumerable
+type instance Members (T_IEnumerable t) = '[ T_GetEnumerator ]
+type instance Members (T_IEnumerator t) = '[ T_Current ]
+type instance Members  T_IEnumerator'   = '[ T_Current, T_MoveNext ]
 
-foreign import ccall "dynamic" makeGetEnumerator :: FunPtr (ObjectID a -> IO (ObjectID b)) -> (ObjectID a -> IO (ObjectID b))
+type instance Candidates (T_IEnumerable t) T_GetEnumerator = '[ '[] ]
+type instance Candidates  T_IEnumerator'   T_MoveNext      = '[ '[] ]
 
-type instance Members (T_IEnumerable t) = '[ T "GetEnumerator" '[] ]
+type instance SuperTypes (T_IEnumerable t) = '[ T_IEnumerable', T_object ]
+type instance SuperTypes (T_IEnumerator t) = '[ T_IEnumerator', T_object ]
 
-type instance Candidates (T_IEnumerable t) (T "GetEnumerator" '[]) = '[ '[] ]
+foreign import ccall "dynamic" makeGetEnumerator      :: FunPtr (ObjectID a -> IO (ObjectID b)) -> (ObjectID a -> IO (ObjectID b))
+foreign import ccall "dynamic" makeEnumeratorMoveNext :: FunPtr (ObjectID (T_IEnumerator') -> IO Bool) -> (ObjectID (T_IEnumerator') -> IO Bool)
 
-getEnumerator :: forall t elem . ((t `Implements` (T_IEnumerable elem)) ~ 'True, IEnumElemT t ~ elem) => Object t -> IO (Object (T_IEnumerator elem))
-getEnumerator x = getEnumerator' $ upCast x
-  where getEnumerator' :: Object (T_IEnumerable elem) -> IO (Object (T_IEnumerator elem))
-        getEnumerator' x = invokeI @"GetEnumerator" x ()
+foreign import ccall "dynamic" makeEnumeratorCurrentBStr  :: FunPtr (ObjectID (T_IEnumerator elem) -> IO BStr) -> (ObjectID (T_IEnumerator elem) -> IO BStr)
+foreign import ccall "dynamic" makeEnumeratorCurrentBool  :: FunPtr (ObjectID (T_IEnumerator elem) -> IO Bool) -> (ObjectID (T_IEnumerator elem) -> IO Bool)
+-- TODO: makeEnumCurrent_ for every other prim type
+foreign import ccall "dynamic" makeEnumeratorCurrentObj   :: FunPtr (ObjectID (T_IEnumerator elem) -> IO (ObjectID elem)) -> (ObjectID (T_IEnumerator elem) -> IO (ObjectID elem))
+
+instance (TString t) => MethodI1 (T_IEnumerable t) (T_GetEnumerator) () where
+  type ResultTypeI1 (T_IEnumerable t) (T_GetEnumerator) () = 'Just (T_IEnumerator t)
+  rawInvokeI1 ienumerable () = getMethodStub (tString @(T_IEnumerable t)) (tString @T_GetEnumerator) (tString @()) >>= return . makeGetEnumerator >>= \f-> f ienumerable
+
+instance MethodI1 T_IEnumerator' T_MoveNext () where
+  type ResultTypeI1 T_IEnumerator' T_MoveNext () = 'Just T_bool
+  rawInvokeI1 ienumerator () = getMethodStub (tString @T_IEnumerator') (tString @T_MoveNext) (tString @()) >>= return . makeEnumeratorMoveNext >>= \f-> f ienumerator
+
+instance PropertyI (T_IEnumerator t) T_Current where
+  type PropertyTypeI (T_IEnumerator t) T_Current = t
+
+instance {-# OVERLAPS #-} PropertyGetI (T_IEnumerator T_string) T_Current where
+  rawGetPropI ienumerator = getMethodStub (tString @(T_IEnumerator T_string)) (tStringGet @T_Current) (tString @()) >>= return . makeEnumeratorCurrentBStr >>= \f-> f ienumerator
+
+instance {-# OVERLAPS #-} PropertyGetI (T_IEnumerator T_bool) T_Current where
+  rawGetPropI ienumerator = getMethodStub (tString @(T_IEnumerator T_bool)) (tStringGet @T_Current) (tString @()) >>= return . makeEnumeratorCurrentBool >>= \f-> f ienumerator
+--
+-- TODO: PropertyGetI for every other prim type
+--
+instance {-# OVERLAPS #-} (IsPrimType (T name gt) ~ 'False, KnownSymbol name, TString gt) => PropertyGetI (T_IEnumerator (T name gt)) T_Current where
+  rawGetPropI ienumerator = getMethodStub (tString @(T_IEnumerator (T name gt))) (tStringGet @T_Current) (tString @()) >>= return . makeEnumeratorCurrentObj >>= \f-> f ienumerator
+
 
 type family IEnumElemT (x::Type) :: Type where
   IEnumElemT t = IEnumElemT' (WithAllSuperTypes t)
 
 type family IEnumElemT' (x::[Type]) :: Type where
-  IEnumElemT'        '[]                                                   = TypeError (Text "Not an IEnumerable")
+  IEnumElemT'        '[]                                                   = TypeError (Text "Not an instance of System.Collections.Generic.IEnumerable")
   IEnumElemT' ((T "System.Collections.Generic.IEnumerable" '[elem]) ': xs) = elem
   IEnumElemT'     (x ': xs)                                                = IEnumElemT' xs
 
-type T_Current = T "Current" '[]
-
-instance PropertyI (T_IEnumerator t) T_Current where
-  type PropertyTypeI (T_IEnumerator t) T_Current = t
-
-instance PropertyGetI (T_IEnumerator (T "System.String" '[])) T_Current where
-  -- TODO: System.String is currently hardcoded above & below
-  rawGetPropI ienumerator = getMethodStub "System.Collections.Generic.IEnumerator`1[System.String]" "get_Current" "" >>= return . makeEnumeratorCurrent >>= \f-> f ienumerator
-
-type instance Members (T_IEnumerator t) = '[ T_Current, T_MoveNext ]
-
-foreign import ccall "dynamic" makeEnumeratorCurrent :: FunPtr (ObjectID (T_IEnumerator elem) -> IO BStr) -> (ObjectID (T_IEnumerator elem) -> IO BStr)
+getEnumerator :: forall t elem . ((t `Implements` (T_IEnumerable elem)) ~ 'True, IEnumElemT t ~ elem, TString elem) => Object t -> IO (Object (T_IEnumerator elem))
+getEnumerator x = getEnumerator' $ upCast x
+  where getEnumerator' :: Object (T_IEnumerable elem) -> IO (Object (T_IEnumerator elem))
+        getEnumerator' x = invokeI @T_GetEnumerator x ()
 
 ienumCurrent :: forall elem propertyBridge propertyHask .
   ( PropertyGetI (T_IEnumerator elem) T_Current
@@ -72,22 +94,13 @@ ienumCurrent :: forall elem propertyBridge propertyHask .
   ) => Object (T_IEnumerator elem) -> IO propertyHask
 ienumCurrent ienum = getPropI @T_Current ienum
 
-type T_MoveNext = T "MoveNext" '[]
-
-type instance Candidates (T_IEnumerator t) T_MoveNext = '[ '[] ]
-
-instance MethodI1 (T_IEnumerator t) T_MoveNext () where
-  type ResultTypeI1 (T_IEnumerator t) T_MoveNext () = 'Just (T "System.Boolean" '[])
-  rawInvokeI1 ienumerator () = getMethodStub "System.Collections.IEnumerator" "MoveNext" "" >>= return . makeEnumeratorMoveNext >>= \f-> f ienumerator
-
-foreign import ccall "dynamic" makeEnumeratorMoveNext :: FunPtr (ObjectID (T_IEnumerator elem) -> IO Bool) -> (ObjectID (T_IEnumerator elem) -> IO Bool) 
-
 ienumMoveNext :: forall elem . Object (T_IEnumerator elem) -> IO Bool
 ienumMoveNext ienum = invokeI @T_MoveNext ienum ()
 
 toProducer :: forall t elem elemBridge elemHask .
   ( (t `Implements` (T_IEnumerable elem)) ~ 'True
   , IEnumElemT t ~ elem
+  , TString elem
   , PropertyGetI (T_IEnumerator elem) T_Current
   , BridgeType (PropertyTypeI (T_IEnumerator elem) T_Current) ~ elemBridge
   , UnmarshalAs elemBridge ~ elemHask

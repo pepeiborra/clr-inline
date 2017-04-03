@@ -74,14 +74,14 @@ type family Elem (a :: k) (xs::[k]) :: Bool where
   Elem a (x ': xs) = a == x || (Elem a xs)
 
 --
--- Concatenation of 2 lists
+-- Concatenate a type level list of lists
 --
 type family Concat (a::[[t]]) :: [t] where
   Concat   '[]     = '[]
   Concat (x ': xs) = x `Append` (Concat xs)
 
 --
--- Append on type level lists
+-- Append 2 type level lists
 --
 type family Append (a::[t]) (b::[t]) :: [t] where
   Append    '[]    ys  = ys

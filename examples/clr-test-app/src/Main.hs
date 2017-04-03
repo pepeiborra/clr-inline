@@ -4,6 +4,7 @@ module Main where
 
 import Clr
 import Clr.Host
+
 import Clr.Bindings
 import Clr.Bindings.IEnumerable
 
@@ -56,7 +57,7 @@ instance Constructor1 (T "System.Collections.Generic.List" '[t]) () where
 
 foreign import ccall "dynamic" makeListCTor :: FunPtr (IO (ObjectID a)) -> IO (ObjectID a)
 
-type instance SuperTypes (T "System.Collections.Generic.List" '[t]) = '[ T "System.Collections.Generic.IEnumerable" '[t] ]
+type instance SuperTypes (T "System.Collections.Generic.List" '[t]) = '[ T "System.Collections.Generic.IEnumerable" '[t], T "System.Collections.IEnumerable" '[], T "System.Object" '[] ]
 
 type instance Members (T "System.Collections.Generic.List" '[t]) = '[ T "Add" '[] ]
 type instance Candidates (T "System.Collections.Generic.List" '[t]) (T "Add" '[]) = '[ '[t] ]
@@ -78,6 +79,7 @@ main = do
   list <- new @'("System.Collections.Generic.List", "System.String") ()         -- generics
   invokeI @"Add" list "foo"
   invokeI @"Add" list "bar"
-  runEffect $ toProducer list >-> stdoutLn                                      -- IEnumerable implementors can be converted to Producers (pipes package)
+  let prodList = toProducer list                                                -- IEnumerable implementors can be converted to Producers (pipes package)
+  runEffect $ prodList >-> stdoutLn
   return ()
 
