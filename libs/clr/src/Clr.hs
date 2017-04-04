@@ -126,8 +126,9 @@ setPropI obj x = marshal @(Object tBase) @(BridgeType tBase) @() (upCast obj) (\
 --
 -- Static properties
 --
-getPropS :: forall ms m t propertyBridge propertyHask .
+getPropS :: forall ms ts m t propertyBridge propertyHask .
             ( MakeT ms ~ m
+            , MakeT ts ~ t
             , PropertyS t m
             , PropertyGetS t m
             , BridgeType (PropertyTypeS t m) ~ propertyBridge
@@ -136,8 +137,9 @@ getPropS :: forall ms m t propertyBridge propertyHask .
             ) => IO propertyHask
 getPropS = rawGetPropS @t @m >>= unmarshal
 
-setPropS :: forall ms m t propertyBridge propertyHask .
+setPropS :: forall ms ts m t propertyBridge propertyHask .
             ( MakeT ms ~ m
+            , MakeT ts ~ t
             , PropertyS t m
             , PropertySetS t m
             , BridgeType (PropertyTypeS t m) ~ propertyBridge
