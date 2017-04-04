@@ -22,6 +22,7 @@ import Foreign.Ptr
 import GHC.TypeLits
 
 import Pipes
+import qualified Pipes.Prelude
 
 type T_IEnumerable t = T "System.Collections.Generic.IEnumerable" '[t]
 type T_IEnumerable'  = T "System.Collections.IEnumerable" '[]
@@ -123,4 +124,15 @@ toProducer' ienumerator = do
     yield cur
     toProducer' ienumerator
   else return ()
+
+toListM :: forall t elem elemBridge elemHask .
+  ( (t `Implements` (T_IEnumerable elem)) ~ 'True
+  , IEnumElemT t ~ elem
+  , TString elem
+  , PropertyGetI (T_IEnumerator elem) T_Current
+  , BridgeType (PropertyTypeI (T_IEnumerator elem) T_Current) ~ elemBridge
+  , UnmarshalAs elemBridge ~ elemHask
+  , Unmarshal elemBridge elemHask
+  ) => Object t -> IO [elemHask]
+toListM ienumerable = Pipes.Prelude.toListM $ toProducer ienumerable
 
