@@ -73,7 +73,7 @@ clrGenerator name modName compile = do
 
   -- generate the stub wrappers
   -- TODO Add support for argument and result type inference
-  mapM (generateFFIStub) wrappers >>= qAddTopDecls
+--  mapM (generateFFIStub) wrappers >>= qAddTopDecls
 
 unliftClrType :: Type -> String
 unliftClrType = undefined
@@ -108,6 +108,8 @@ clrQuoteExp name returnType clrCompile body = do
           stubName
           resTy
   pushWrapperGen (clrGenerator name modName clrCompile) $ return inlinedUnit
+
+  generateFFIStub inlinedUnit >>= qAddTopDecls . (:[])
 
   --
   -- splice in the bytecode load and call to the stub
