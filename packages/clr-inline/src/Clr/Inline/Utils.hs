@@ -1,81 +1,62 @@
+{-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE StaticPointers #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE ViewPatterns        #-}
 module Clr.Inline.Utils where
 
-import           Clr
-import           Clr.Bindings.Host
-import           Clr.Marshal
 import           Control.Monad
 import           Control.Monad.Trans.Writer
-import           Data.ByteString            (ByteString)
-import qualified Data.ByteString            as BS
 import           Data.Char
-import           Data.Maybe
-import           Foreign
-import           GHC.StaticPtr
+import           Data.List.Extra
 import           Language.Haskell.TH        as TH
 import           Language.Haskell.TH.Syntax as TH
-import           System.IO.Unsafe
 import           Text.Printf
 
--- | A wrapper for clr bytecode.
-newtype ClrBytecode = ClrBytecode
-  { bytecode :: ByteString
-  }
-
-instance TH.Lift ClrBytecode where
-  lift ClrBytecode{..} =
-      [| ClrBytecode
-           (BS.pack $(TH.lift (BS.unpack bytecode)))
-       |]
 mangleModule :: String -> Module -> String
 mangleModule name (Module (PkgName pkg) (ModName m)) =
   printf "Inline%s__%s_%s" name (filter isAlphaNum pkg) (map (\case '.' -> '_' ; x -> x) m)
 
--- | TH action that embeds bytecode in the current module via a top level
---   declaration of a StaticPtr
-embedBytecode :: String -> ClrBytecode -> Q ()
-embedBytecode name bs = do
-    ptr <- TH.newName $ name ++ "_inlineclr__bytecode"
-    TH.addTopDecls =<<
-      sequence
-        [ TH.sigD ptr [t| StaticPtr ClrBytecode |]
-        , TH.valD (TH.varP ptr) (TH.normalB [| static $(TH.lift bs) |]) []
-        ]
 
--- | Idempotent action that reads the embedded bytecodes in a module
---   by querying the table of static pointers
-unembedBytecode :: IO ()
-unembedBytecode = doit `seq` return ()
-  where
-    {-# NOINLINE doit #-}
-    doit = unsafePerformIO $ do
-      keys <- staticPtrKeys
-      forM_ keys $ \key -> do
-        unsafeLookupStaticPtr key >>= \case
-          Just (sptr :: StaticPtr ClrBytecode) -> do
-            let ClrBytecode bytes = deRefStaticPtr sptr
-            loadBytecode bytes
-          _ -> return ()
-
-foreign import ccall "dynamic" assemblyLoad :: FunPtr (Ptr Int -> Int -> IO()) -> (Ptr Int -> Int -> IO ())
-
--- | Idempotent function that loads the bytecodes embedded in the static table for this module
-loadBytecode :: ByteString -> IO ()
-loadBytecode bs =
-  unsafeGetPointerToMethod "LoadAssemblyFromBytes" >>= \f ->
-  BS.useAsCStringLen bs $ \(ptr,len) -> assemblyLoad f (castPtr ptr) len
-
+yield :: Monad m => t -> WriterT [t] m ()
 yield x = tell [x]
+yieldAll :: Monad m => w -> WriterT w m ()
 yieldAll xx = tell xx
 
 -- | Fix different systems silly line ending conventions
 --   https://ghc.haskell.org/trac/ghc/ticket/11215
 normaliseLineEndings :: String -> String
-normaliseLineEndings [] = []
+normaliseLineEndings []            = []
 normaliseLineEndings ('\r':'\n':s) = '\n' : normaliseLineEndings s -- windows
 normaliseLineEndings ('\r':s)      = '\n' : normaliseLineEndings s -- old OS X
 normaliseLineEndings (  c :s)      =   c  : normaliseLineEndings s
+
+initAndLast :: String -> Maybe (String, Char)
+initAndLast = loopInitAndLast id where
+  loopInitAndLast _   [ ]    = Nothing
+  loopInitAndLast acc [x]    = Just (acc "", x)
+  loopInitAndLast acc (x:xx) = loopInitAndLast (acc . (x:)) xx
+
+-- | Parses expressions of the form "ty{e}" and returns (e,ty)
+parseBody :: String -> Either String (String, TypeQ)
+parseBody (trim -> e) = do
+  let (typeString, exp') = span ('{' /=) e
+  (exp,last) <- maybe (Left "Expected {") Right $ initAndLast (drop 1 exp')
+  unless (last == '}') $ Left $ "Expected }: " ++ [last]
+  typ <- maybe (Left $ "Cannot parse type " ++ typeString) Right $ parseType typeString
+  return (exp,typ)
+
+-- | Rudimentary parser for stringy Haskell types
+parseType :: String -> Maybe TypeQ
+parseType (map toLower . trim -> s) =
+  case s of
+    "string" -> Just [t|String|]
+    "int"    -> Just [t|Int|]
+    "double" -> Just [t|Double|]
+    "float"  -> Just [t|Float|]
+    "char"   -> Just [t|Char|]
+    "word"   -> Just [t|Word|]
+    "bool"   -> Just [t|Bool|]
+    -- TODO add a parser for reference types
+    _        -> Nothing

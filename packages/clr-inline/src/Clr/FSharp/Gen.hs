@@ -6,8 +6,9 @@
 module Clr.FSharp.Gen (name, compile) where
 
 import           Clr.Inline.Config
-import           Clr.Inline.Types
+import           Clr.Inline.Quoter
 import           Clr.Inline.Utils
+import           Clr.Inline.Utils.Embed
 import           Control.Monad
 import           Control.Monad.Trans.Writer
 import qualified Data.ByteString                 as BS

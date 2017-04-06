@@ -10,7 +10,7 @@ module Clr.FSharp.Inline (fsharp, fsharp', getMethodStub, FunPtr) where
 import           Clr.Bindings
 import           Clr.FSharp.Gen
 import           Clr.Inline.Config
-import           Clr.Inline.Types
+import           Clr.Inline.Quoter
 import           Data.Maybe
 import           Foreign
 import           Language.Haskell.TH
@@ -32,8 +32,7 @@ fsharpExp :: ClrInlineConfig -> String -> Q Exp
 fsharpExp cfg =
   clrQuoteExp
     name
-    (fromMaybe (error "return type inference not supported yet") $
-     configForceReturnType cfg)
+    (configForceReturnType cfg)
     (compile cfg)
 fsharpDec :: ClrInlineConfig -> String -> Q [Dec]
 fsharpDec = clrQuoteDec name . compile

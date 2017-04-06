@@ -15,8 +15,8 @@ data ClrInlineConfig = ClrInlineConfig
   , configForceReturnType :: Maybe TypeQ
   }
 
-defaultMonoConfig = ClrInlineConfig "fsharpc" "mcs" [] [] False [] (Just [t|()|])
-defaultDotNetConfig  = ClrInlineConfig "fsc" "csc" [] [] False [] (Just [t|()|])
+defaultMonoConfig = ClrInlineConfig "fsharpc" "mcs" [] [] False [] Nothing
+defaultDotNetConfig  = ClrInlineConfig "fsc" "csc" [] [] False [] Nothing
 defaultInlineConfig = case defaultHostConfig of
                   ClrHostConfig ClrHostMono -> defaultMonoConfig
                   ClrHostConfig ClrHostDotNet -> defaultDotNetConfig

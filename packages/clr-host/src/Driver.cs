@@ -1094,13 +1094,6 @@ namespace Salsa
             byte[] bytes = new byte[len];
             Marshal.Copy(ptr,bytes,0,len);
             Assembly res = System.Reflection.Assembly.Load(bytes, null, System.Security.SecurityContextSource.CurrentAppDomain);
-            System.Console.WriteLine(String.Format("Successfully loaded assembly {0} in {1} AppDomain", res.FullName, System.AppDomain.CurrentDomain.FriendlyName));
-            foreach(var typ in res.GetTypes()) {
-                Console.WriteLine(" * " + typ.FullName);
-                foreach(var m in typ.GetMethods()) {
-                    Console.WriteLine("     - " + m.Name);
-                }
-            }
             LoadedAssemblies.Add(res.GetName().FullName, res);
             return res;
         }
@@ -1118,7 +1111,6 @@ namespace Salsa
         }
         public static Type StringToType(string s)
         {
-            System.Console.WriteLine("Type.GetType in {0} AppDomain.", System.AppDomain.CurrentDomain.FriendlyName);
             Type t = Type.GetType(s);
             t = t ?? Type.GetType(s,(assName => GetLoadedAssembly(assName)), ((ass, tn, ci) => ass.GetType(tn,ci)), true);
             return t;

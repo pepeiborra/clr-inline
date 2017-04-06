@@ -7,5 +7,13 @@ import Foreign.Ptr
 [fsharp|
 open System |]
 
-main2 =
-  [fsharp| printfn "And this is an inline F# call from another module (%d)" DateTime.Today.Year |]
+main2 = do
+  i <- [fsharp|int{DateTime.Today.Year} |]
+  b <- [fsharp| bool { 2>4}|]
+  f <- [fsharp| float{ 0.5} |]
+  d <- [fsharp| double{ 0.5} |]
+  -- string is a work in progress
+  print i
+  print b
+  print f
+  print d

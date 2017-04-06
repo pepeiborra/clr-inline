@@ -8,8 +8,9 @@ module Clr.CSharp.Inline (csharp, csharp', FunPtr, getMethodStub) where
 
 import           Clr.Bindings
 import           Clr.Inline.Config
-import           Clr.Inline.Types
+import           Clr.Inline.Quoter
 import           Clr.Inline.Utils
+import           Clr.Inline.Utils.Embed
 import           Control.Monad
 import           Control.Monad.Trans.Writer
 import qualified Data.ByteString            as BS
@@ -39,8 +40,7 @@ csharpExp :: ClrInlineConfig -> String -> Q Exp
 csharpExp cfg =
   clrQuoteExp
     name
-    (fromMaybe (error "return type inference not supported yet") $
-     configForceReturnType cfg)
+    (configForceReturnType cfg)
     (compile cfg)
 csharpDec cfg = clrQuoteDec name $ compile cfg
 
