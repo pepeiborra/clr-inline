@@ -12,6 +12,7 @@ import Clr.Inline.Utils
 import Control.Monad
 import Data.ByteString (ByteString)
 import Data.Typeable
+import Foreign.Ptr
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 import Text.Printf
@@ -44,19 +45,12 @@ getFullClassName modName =
     modName
     :: String
 
-generateFFIStub ClrInlinedUnit{..} = do
-      let funTy = foldr AppT returnType argTypes
-      lookupTypeName "Foreign.Ptr.FunPtr" >>= \case
-        Nothing -> error "Please import Foreing.Ptr when using F# quotations"
-        Just funPtrTy ->
-          return $
-             ForeignD
-                (ImportF
-                  CCall
-                  Safe
-                  "dynamic"
-                  stubName
-                  (ArrowT `AppT` AppT (ConT funPtrTy) funTy `AppT` funTy))
+generateFFIStub ClrInlinedUnit {..} = do
+  let funTy = return $ foldr AppT returnType argTypes
+      -- This is what we'd like to write:
+      -- [d| foreign import ccall "dynamic" $stubName :: $([t|FunPtr $funTy -> $funTy|]) |]
+      -- Unfort. splicing names into foreign import decl is not supported, so we have to write:
+  ForeignD <$> ImportF CCall Safe "dynamic" stubName <$> [t|FunPtr $funTy -> $funTy|]
 
 -- | Runs after the whole module has been loaded and is responsible for generating:
 --     - A clr assembly with all the inline code, embedding it into the module.
