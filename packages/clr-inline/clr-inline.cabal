@@ -40,7 +40,7 @@ build-type:          Simple
 
 -- Extra files to be distributed with the package, such as examples or a 
 -- README.
-extra-source-files:  ChangeLog.md
+extra-source-files:  ChangeLog.md, src/introspect.fs
 
 -- Constraint on the version of Cabal needed to build this package.
 cabal-version:       >=1.10
@@ -66,10 +66,11 @@ library
   build-depends:        base >=4.9 && <4.10,
                         bytestring,
                         clr,
-                        clr-host,
                         clr-bindings,
+                        clr-host,
                         directory,
                         filepath,
+                        here,
                         process,
                         template-haskell,
                         temporary,

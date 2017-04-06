@@ -1,18 +1,23 @@
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE TemplateHaskell   #-}
 module Clr.FSharp.Gen (name, compile) where
 
 import           Clr.Inline.Config
-import           Clr.Inline.Utils
 import           Clr.Inline.Types
+import           Clr.Inline.Utils
 import           Control.Monad
 import           Control.Monad.Trans.Writer
-import qualified Data.ByteString     as BS
+import qualified Data.ByteString                 as BS
+import           Data.ByteString.Char8           (ByteString)
 import           Data.List
+import           Data.String.Here.Uninterpolated
 import           Data.Typeable
 import           Language.Haskell.TH
 import           System.Directory
-import           System.FilePath     ((<.>), (</>))
+import           System.FilePath                 ((<.>), (</>))
 import           System.IO.Temp
 import           System.Process
 import           Text.Printf
@@ -60,3 +65,6 @@ compile config@ClrInlineConfig {..} m@ClrInlinedGroup {..} = do
       yield src
   bcode <- BS.readFile tgt
   return $ ClrBytecode bcode
+
+body :: ByteString
+body = [hereFile|src/introspect.fs|]
