@@ -54,6 +54,7 @@ generateFFIStub ClrInlinedUnit {..} = do
   -- This is what we'd like to write:
   -- [d| foreign import ccall "dynamic" $stubName :: $([t|FunPtr $funTy -> $funTy|]) |]
   -- Unfort. splicing names into foreign import decl is not supported, so we have to write:
+  -- TODO Convert every type to its Marshalled counterpart
   ForeignD <$> ImportF CCall Safe "dynamic" stubName <$> [t|FunPtr $funTy -> $funTy|]
 
 -- | Runs after the whole module has been loaded and is responsible for generating:
@@ -120,6 +121,7 @@ clrQuoteExp name returnType clrCompile body = do
       $(lift fullClassName)
       $(lift methodName)
       argClrTypes >>=
+   -- TODO Unmarshalling the return value
     return . $(varE stubName) >>= \f -> $(foldr appE [|f|] (map return args))|]
 
 -- | Quasi quoter for declaration in the clr language.

@@ -10,6 +10,7 @@ import           Control.Monad
 import           Control.Monad.Trans.Writer
 import           Data.Char
 import           Data.List.Extra
+import           Data.Text                  (Text)
 import           Language.Haskell.TH        as TH
 import           Language.Haskell.TH.Syntax as TH
 import           Text.Printf
@@ -52,6 +53,7 @@ parseType :: String -> Maybe TypeQ
 parseType (map toLower . trim -> s) =
   case s of
     "string" -> Just [t|String|]
+    "text"   -> Just [t|Text|]
     "int"    -> Just [t|Int|]
     "double" -> Just [t|Double|]
     "float"  -> Just [t|Float|]
