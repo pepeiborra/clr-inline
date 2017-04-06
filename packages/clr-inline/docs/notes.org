@@ -73,10 +73,16 @@
 ** Roadmap
 *** Return of value types from CLR to Haskell via quoted types
     Together with implicit? marshalling
-*** Returning of reference types via quoted types
+*** Returning of boxed reference types via quoted types
+    That is, the ability to return Object to Haskell land.
 *** Antiquoation of Haskell values via Object boxes
     The generated F# code will take care of the unboxing.
+    That is, the ability to send back previously returned Objects.
 *** Return type inference via F# reflection
     This will require a new datatype modelling CLR types at value and type level.
+    By using either introspection or signature files to read CLR types
+    and store them in Haskell land to track reference types.
 *** Well typed antiquotation of Haskell values
     This will rely on the model above to correctly identify CLR methods.
+    At this point our F# code generator can stop doing boxing/unboxing
+    since we will be able to fully address it by name&types.
