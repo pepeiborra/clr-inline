@@ -25,7 +25,14 @@
 **** TODO Parser for .sig files (return types only)
 *** Can be extracted from the generated F# program using reflection and a little driver.
     This option seems the most flexible one, as we can choose what to output.
+    The downside is that we have to run the compiler once for every snippet, instead of once per module.
 *** Can also be extracted from generated metadata, i.e. type class instances
+*** Can also be extracted from the quoted code
+    This is the approach taken by inline C with snippets of the form:
+      double { 
+         ... 
+         }
+    It's a bit uglier, but low cost
 *** DONE Can be user provided via an optional config parameter
     CLOSED: [2017-04-02 Sun 18:01]
     This is done, but it is very inconvenient to use, 
