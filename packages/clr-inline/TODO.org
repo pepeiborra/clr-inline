@@ -3,9 +3,10 @@
 *** Requirements
 **** Marshalling
      Marshalling is mostly a non problem if we can reuse the Marshall type class defined in clr-bindings
-**** Translation to fully qualified CLR names (including assembly name)
+**** Translation to fully qualified CLR names
      Symbols can be used to store these names at the type level, but might have to introduce some sugar due to verbosity.
-     Not sure about translation of generic types and array types.
+**** Support for array types
+**** Support for generic types
 *** Option 1: use the clr-bindings / clr model
     - Perhaps wrapping in metadata newtypes.
 *** TODO Option 2: roll our own representation of CLR types
@@ -20,7 +21,10 @@
 *** Cannot be extracted from the Haskell source
     This is because TH does not let us access user provided type annotations on the TH quotation (or does it?)
 *** Can be extracted from the F# compiler using, e.g. signature files.
+    Do signature names contain fully qualified names ?
 **** TODO Parser for .sig files (return types only)
+*** Can be extracted from the generated F# program using reflection and a little driver.
+    This option seems the most flexible one, as we can choose what to output.
 *** Can also be extracted from generated metadata, i.e. type class instances
 *** DONE Can be user provided via an optional config parameter
     CLOSED: [2017-04-02 Sun 18:01]
