@@ -18,21 +18,28 @@
 *** DONE Required for generating the FFI wrapper.
     CLOSED: [2017-04-02 Sun 18:04]
     Move the FFI wrapper generation to the finalizer
+    This didn't work, as the FFI wrapper must be in scope when splicing the invoke call.
 *** Cannot be extracted from the Haskell source
-    This is because TH does not let us access user provided type annotations on the TH quotation (or does it?)
+    TH does not give us access to user provided type annotations on the TH quotation
 *** Can be extracted from the F# compiler using, e.g. signature files.
     Do signature names contain fully qualified names ?
+    The answer is mostly yes (except for locally defined types)
 **** TODO Parser for .sig files (return types only)
 *** Can be extracted from the generated F# program using reflection and a little driver.
     This option seems the most flexible one, as we can choose what to output.
     The downside is that we have to run the compiler once for every snippet, instead of once per module.
+    Update: we have to run the compiler per snippet either way,
+    since the FFI stubs must be generated together with the invoke call.
 *** Can also be extracted from generated metadata, i.e. type class instances
-*** Can also be extracted from the quoted code
+    This is the option that Salsa uses currently, but it wouldn't help us,
+    we cannot expect the user to enter this metadata for every inlined snippet.
+*** DONE Can also be extracted from the quoted code
+    CLOSED: [2017-04-06 Thu 22:41]
     This is the approach taken by inline C with snippets of the form:
       double { 
          ... 
          }
-    It's a bit uglier, but low cost
+    It's a bit uglier, but low cost. This is done and working well.
 *** DONE Can be user provided via an optional config parameter
     CLOSED: [2017-04-02 Sun 18:01]
     This is done, but it is very inconvenient to use, 
@@ -63,3 +70,13 @@
      Instead, we recover the type information inferred by the F# compiler and use it 
      to type our FFI wrapper. 
      This doesn't work: the GHC type checker would need to know when two CLR types are compatible.
+** Roadmap
+*** Return of value types from CLR to Haskell via quoted types
+    Together with implicit? marshalling
+*** Returning of reference types via quoted types
+*** Antiquoation of Haskell values via Object boxes
+    The generated F# code will take care of the unboxing.
+*** Return type inference via F# reflection
+    This will require a new datatype modelling CLR types at value and type level.
+*** Well typed antiquotation of Haskell values
+    This will rely on the model above to correctly identify CLR methods.
