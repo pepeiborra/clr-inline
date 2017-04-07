@@ -28,54 +28,6 @@ using System.Threading;
 
 namespace Salsa
 {
-    public class UTF16Marshaler : ICustomMarshaler {
-        static UTF16Marshaler marshaler = new UTF16Marshaler();
-        static UnicodeEncoding encoding = new UnicodeEncoding(false, false, true);
-
-        public static ICustomMarshaler GetInstance(string cookie) {
-            return marshaler;
-        }
-
-        public void CleanUpManagedData(object ManagedObj) {
-        }
-
-        public void CleanUpNativeData(IntPtr pNativeData) {
-            Marshal.FreeHGlobal(pNativeData);
-        }
-
-        public int GetNativeDataSize() {
-            return -1;
-        }
-
-        public IntPtr MarshalManagedToNative(object ManagedObj) {
-            if (ManagedObj == null)
-                return IntPtr.Zero;
-            if (ManagedObj.GetType() != typeof(string))
-                throw new ArgumentException("ManagedObj", "Can only marshal type of System.string");
-
-            byte[] array = encoding.GetBytes((string) ManagedObj);
-            int size = array.Length;
-            IntPtr ptr = Marshal.AllocHGlobal(size + 4);
-            Marshal.WriteInt32(ptr, 0, size);
-            ptr = new IntPtr(ptr.ToInt64() + 4);
-            Marshal.Copy(array, 0, ptr, array.Length);
-
-            return ptr;
-        }
-
-        public object MarshalNativeToManaged(IntPtr pNativeData) {
-            if (pNativeData == IntPtr.Zero)
-                return null;
-
-            int size = Marshal.ReadInt32(pNativeData);
-            byte[] array = new byte[size];
-            IntPtr stringData = new IntPtr(pNativeData.ToInt64() + 4);
-            Marshal.Copy(stringData, array, 0, size);
-
-            return encoding.GetString(array);
-        }
-    }
-
     public class Driver
     {
         internal static AssemblyBuilder _assemblyBuilder;
