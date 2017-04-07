@@ -1,70 +1,78 @@
-{-# LANGUAGE TypeInType, FlexibleInstances, MultiParamTypeClasses, TypeFamilies, TypeApplications #-}
+{-# LANGUAGE TypeInType, FlexibleInstances, MultiParamTypeClasses, TypeFamilies, TypeApplications, ScopedTypeVariables #-}
 
 module Main where
 
 import Clr
 import Clr.Host
+import Clr.TypeString
 
 import Clr.Bindings
 import Clr.Bindings.IEnumerable
+import Clr.Bindings.Reflection
 
 import Data.Int(Int32, Int64)
 import Foreign.Ptr(Ptr, FunPtr)
 
 import Pipes
-import Pipes.Prelude
+import Pipes.Prelude(stdoutLn)
 
-instance MethodS1 (T "System.Console" '[]) (T "WriteLine" '[]) () where
-  type ResultTypeS1 (T "System.Console" '[]) (T "WriteLine" '[]) () = 'Nothing
-  rawInvokeS1 x = getMethodStub "System.Console" "WriteLine" "" >>= return . makeWriteLineType0 >>= \f-> f
+type T_Console   = T "System.Console" '[]
+type T_List t    = T "System.Collections.Generic.List" '[t]
+
+type T_Add       = T "Add" '[]
+type T_WriteLine = T "WriteLine" '[]
+
+type instance SuperTypes (T_List t) = '[ T_IEnumerable t, T_IEnumerable', T_object ]
+
+type instance Members (T_List t) = '[ T_Add ]
+
+type instance Candidates (T_List t) T_Add      = '[ '[t] ]
+type instance Candidates T_Console T_WriteLine = '[ '[                              ]
+                                                  , '[ T_string                     ]
+                                                  , '[ T_int                        ]
+                                                  , '[ T_string, T_object           ]
+                                                  , '[ T_string, T_object, T_object ] ]
+type instance Candidates (T_List t) (T_List t) = '[ '[] ]
+
+
+instance MethodS1 T_Console T_WriteLine () where
+  type ResultTypeS1 T_Console T_WriteLine () = 'Nothing
+  rawInvokeS1 x = getMethodStub (tString @T_Console) (tString @T_WriteLine) "" >>= return . makeWriteLineType0 >>= \f-> f
 
 foreign import ccall "dynamic" makeWriteLineType0 :: FunPtr (IO ()) -> IO ()
 
-instance MethodS1 (T "System.Console" '[]) (T "WriteLine" '[]) (T "System.String" '[]) where
-  type ResultTypeS1 (T "System.Console" '[]) (T "WriteLine" '[]) (T "System.String" '[]) = 'Nothing
-  rawInvokeS1 x = getMethodStub "System.Console" "WriteLine" "System.String" >>= return . makeWriteLineType1 >>= \f-> f x
+instance MethodS1 T_Console T_WriteLine T_string where
+  type ResultTypeS1 T_Console T_WriteLine T_string = 'Nothing
+  rawInvokeS1 x = getMethodStub (tString @T_Console) (tString @T_WriteLine) (tString @T_string) >>= return . makeWriteLineType1 >>= \f-> f x
 
 foreign import ccall "dynamic" makeWriteLineType1 :: FunPtr (BStr -> IO ()) -> (BStr -> IO ())
 
-instance MethodS1 (T "System.Console" '[]) (T "WriteLine" '[]) (T "System.Int32" '[]) where
-  type ResultTypeS1 (T "System.Console" '[]) (T "WriteLine" '[]) (T "System.Int32" '[]) = 'Nothing
-  rawInvokeS1 x = getMethodStub "System.Console" "WriteLine" "System.Int32" >>= return . makeWriteLineType2 >>= \f-> f x
+instance MethodS1 T_Console T_WriteLine T_int where
+  type ResultTypeS1 T_Console T_WriteLine T_int = 'Nothing
+  rawInvokeS1 x = getMethodStub (tString @T_Console) (tString @T_WriteLine) (tString @T_int) >>= return . makeWriteLineType2 >>= \f-> f x
 
 foreign import ccall "dynamic" makeWriteLineType2 :: FunPtr (Int32 -> IO ()) -> (Int32 -> IO ())
 
-instance MethodS2 (T "System.Console" '[]) (T "WriteLine" '[]) (T "System.String" '[]) (T "System.Object" '[]) where
-  type ResultTypeS2 (T "System.Console" '[]) (T "WriteLine" '[]) (T "System.String" '[]) (T "System.Object" '[]) = 'Nothing
-  rawInvokeS2 x y = getMethodStub "System.Console" "WriteLine" "System.String;System.Object" >>= return . makeWriteLineType3 >>= \f-> f x y
+instance MethodS2 T_Console T_WriteLine T_string T_object where
+  type ResultTypeS2 T_Console T_WriteLine T_string T_object = 'Nothing
+  rawInvokeS2 x y = getMethodStub (tString @T_Console) (tString @T_WriteLine) (tString @T_string ++ ";" ++ tString @T_object) >>= return . makeWriteLineType3 >>= \f-> f x y
 
 foreign import ccall "dynamic" makeWriteLineType3 :: FunPtr (BStr -> (ObjectID a) -> IO ()) -> (BStr -> (ObjectID a) -> IO ())
 
-instance MethodS3 (T "System.Console" '[]) (T "WriteLine" '[]) (T "System.String" '[]) (T "System.Object" '[]) (T "System.Object" '[]) where
-  type ResultTypeS3 (T "System.Console" '[]) (T "WriteLine" '[]) (T "System.String" '[]) (T "System.Object" '[]) (T "System.Object" '[]) = 'Nothing
-  rawInvokeS3 x y z = getMethodStub "System.Console" "WriteLine" "System.String;System.Object;System.Object" >>= return . makeWriteLineType4 >>= \f-> f x y z
+instance MethodS3 T_Console T_WriteLine T_string (T_object) (T_object) where
+  type ResultTypeS3 T_Console T_WriteLine T_string (T_object) (T_object) = 'Nothing
+  rawInvokeS3 x y z = getMethodStub (tString @T_Console) (tString @T_WriteLine) (tString @T_string ++ ";" ++ tString @T_object ++ ";" ++ tString @T_object) >>= return . makeWriteLineType4 >>= \f-> f x y z
 
 foreign import ccall "dynamic" makeWriteLineType4 :: FunPtr (BStr -> (ObjectID a) -> (ObjectID b) -> IO ()) -> (BStr -> (ObjectID a) -> (ObjectID b) -> IO ())
 
-type instance Candidates (T "System.Console" '[]) (T "WriteLine" '[]) = '[ '[                                                                     ]
-                                                                         , '[ T "System.String" '[]                                               ]
-                                                                         , '[ T "System.Int32"  '[]                                               ]
-                                                                         , '[ T "System.String" '[], T "System.Object" '[]                        ]
-                                                                         , '[ T "System.String" '[], T "System.Object" '[], T "System.Object" '[] ] ]
-
-type instance Candidates (T "System.Collections.Generic.List" '[t]) (T "System.Collections.Generic.List" '[t]) = '[ '[] ]
-
-instance Constructor1 (T "System.Collections.Generic.List" '[t]) () where
-  rawNew1 () = getMethodStub "System.Collections.Generic.List`1[System.String]" ".ctor" "" >>= return . makeListCTor >>= \f-> f
+instance (TString t) => Constructor1 (T_List t) () where
+  rawNew1 () = getMethodStub (tString @(T_List t)) ".ctor" (tString @())  >>= return . makeListCTor >>= \f-> f
 
 foreign import ccall "dynamic" makeListCTor :: FunPtr (IO (ObjectID a)) -> IO (ObjectID a)
 
-type instance SuperTypes (T "System.Collections.Generic.List" '[t]) = '[ T "System.Collections.Generic.IEnumerable" '[t], T "System.Collections.IEnumerable" '[], T "System.Object" '[] ]
-
-type instance Members (T "System.Collections.Generic.List" '[t]) = '[ T "Add" '[] ]
-type instance Candidates (T "System.Collections.Generic.List" '[t]) (T "Add" '[]) = '[ '[t] ]
-
-instance MethodI1 (T "System.Collections.Generic.List" '[T "System.String" '[]]) (T "Add" '[]) (T "System.String" '[]) where
-  type ResultTypeI1 (T "System.Collections.Generic.List" '[T "System.String" '[]]) (T "Add" '[]) (T "System.String" '[]) = 'Nothing
-  rawInvokeI1 l s = getMethodStub "System.Collections.Generic.List`1[System.String]" "Add" "System.String" >>= return . makeListAdd >>= \f-> f l s
+instance MethodI1 (T_List T_string) T_Add T_string where
+  type ResultTypeI1 (T_List T_string) T_Add T_string = 'Nothing
+  rawInvokeI1 l s = getMethodStub (tString @(T_List T_string)) (tString @T_Add) (tString @T_string) >>= return . makeListAdd >>= \f-> f l s
 
 foreign import ccall "dynamic" makeListAdd :: FunPtr (ObjectID a -> BStr -> IO ()) -> (ObjectID a -> BStr -> IO ())
 
