@@ -5,6 +5,7 @@
 //
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 using System.Runtime.InteropServices;
@@ -178,14 +179,19 @@ namespace Salsa
         {
             if (methodName == ".ctor")
             {
-                ConstructorInfo con = Util.StringToType(className).GetConstructor(
-                    Util.StringToTypes(parameterTypeNames));
+                ConstructorInfo con = StringToType(className).GetConstructor(
+                    StringToTypes(parameterTypeNames));
                 return GenerateConstructorStub(con);
             }
             else
             {
-                MethodInfo meth = Util.StringToType(className).GetMethod(
-                    methodName, Util.StringToTypes(parameterTypeNames));
+                Type typ = StringToType(className);
+                MethodInfo meth = typ.GetMethod(
+                    methodName, StringToTypes(parameterTypeNames));
+                if(meth == null) {
+                    var knownMethods = typ.GetMethods().Select(x => x.Name).ToArray();
+                    throw new ArgumentException(String.Format("Method {0}({1}) not found in type {2}({3}). Try with: {4}", methodName, parameterTypeNames, typ.Name, typ.Assembly.FullName, String.Join(",",knownMethods) ));
+                    }
                 return GenerateMethodStub(meth);
             }
         }
@@ -197,7 +203,7 @@ namespace Salsa
         /// </summary>
         public static IntPtr GetDelegateConstructorStub(string delegateTypeName)
         {
-            Type delegateType = Util.StringToType(delegateTypeName);
+            Type delegateType = StringToType(delegateTypeName);
             return GenerateDelegateConstructorStub(delegateType);
         }
 
@@ -207,7 +213,7 @@ namespace Salsa
         /// </summary>
         public static IntPtr GetFieldGetStub(string className, string fieldName)
         {
-            FieldInfo field = Util.StringToType(className).GetField(fieldName);
+            FieldInfo field = StringToType(className).GetField(fieldName);
             return GenerateFieldGetStub(field);
         }
 
@@ -217,7 +223,7 @@ namespace Salsa
         /// </summary>
         public static IntPtr GetFieldSetStub(string className, string fieldName)
         {
-            FieldInfo field = Util.StringToType(className).GetField(fieldName);
+            FieldInfo field = StringToType(className).GetField(fieldName);
             return GenerateFieldSetStub(field);
         }
 
@@ -227,7 +233,7 @@ namespace Salsa
         /// </summary>
         public static IntPtr GetBoxStub(string typeName)
         {
-            Type typeToBox = Util.StringToType(typeName);
+            Type typeToBox = StringToType(typeName);
             return GenerateBoxStub(typeToBox);
         }
 
@@ -1080,6 +1086,42 @@ namespace Salsa
         }
 
         #endregion
+
+        private static Dictionary<String, Assembly> LoadedAssemblies = new Dictionary<String, Assembly>();
+
+        /// Helper function to load an assembly from bytes
+        public static Assembly LoadAssemblyFromBytes(IntPtr ptr, int len) {
+            byte[] bytes = new byte[len];
+            Marshal.Copy(ptr,bytes,0,len);
+            Assembly res = System.Reflection.Assembly.Load(bytes, null, System.Security.SecurityContextSource.CurrentAppDomain);
+            LoadedAssemblies.Add(res.GetName().FullName, res);
+            return res;
+        }
+
+        private static Assembly GetLoadedAssembly(AssemblyName assName)  {
+            Assembly a;
+            if (LoadedAssemblies.TryGetValue(assName.FullName, out a))
+                return a;
+            else{
+                System.Console.WriteLine("About to crash. Attach debugger or press Enter");
+                System.Console.ReadLine();
+                System.Diagnostics.Debugger.Break();
+                throw new ArgumentException("GetLoadedAssembly: " + assName.FullName, "Known assemblies: " + String.Join(",", LoadedAssemblies.Select(kv => kv.Key)));
+            }
+        }
+        public static Type StringToType(string s)
+        {
+            Type t = Type.GetType(s);
+            t = t ?? Type.GetType(s,(assName => GetLoadedAssembly(assName)), ((ass, tn, ci) => ass.GetType(tn,ci)), true);
+            return t;
+        }
+
+        public static Type[] StringToTypes(string s)
+        {
+            return Util.MapArray<string, Type>(delegate(string t)
+                                               { return StringToType(t); },
+                                               s.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
+        }
     }
 
     /// <summary>
@@ -1131,17 +1173,6 @@ namespace Salsa
 
     internal static class Util
     {
-        public static Type StringToType(string s)
-        {
-            return Type.GetType(s, true);
-        }
-
-        public static Type[] StringToTypes(string s)
-        {
-            return Util.MapArray<string, Type>(delegate(string t)
-                { return StringToType(t); },
-                s.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
-        }
 
         public static T[] ConcatArray<T>(T[] a, T[] b)
         {
@@ -1188,5 +1219,6 @@ namespace Salsa
             else if (argumentIndex <= 255) ilg.Emit(OpCodes.Ldarg_S, (byte)argumentIndex);
             else ilg.Emit(OpCodes.Ldarg, (int)argumentIndex);
         }
+
     }
 }
