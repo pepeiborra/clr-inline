@@ -18,7 +18,7 @@ import qualified Data.Text as T
 
 type T_Assembly      = T "System.Reflection.Assembly" '[]
 type T_AssemblyArray = T "System.Reflection.Assembly[]" '[]
-type T_AppDomain     = T "System.Reflection.AppDomain" '[]
+type T_AppDomain     = T "System.AppDomain" '[]
 type T_Type          = T "System.Type" '[]
 type T_TypeArray     = T "System.Type[]" '[]
 
