@@ -8,9 +8,9 @@ import Clr.TypeString
 import Clr.Host
 import Clr.Host.BStr
 
-import Clr.Bindings.Box
 import Clr.Bindings.Host
 import Clr.Bindings.IEnumerable
+import Clr.Bindings.Object
 
 import Foreign.Ptr
 import Data.Word

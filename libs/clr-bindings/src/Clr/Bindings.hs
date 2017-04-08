@@ -15,6 +15,7 @@ import Clr.Host.BStr
 import Clr.Bindings.Box
 import Clr.Bindings.Host
 import Clr.Bindings.Marshal
+import Clr.Bindings.Object
 
 import Data.Word
 import Foreign.Ptr

@@ -89,5 +89,9 @@ main = do
   invokeI @"Add" list "bar"
   let prodList = toProducer list                                                -- IEnumerable implementors can be converted to Producers (pipes package)
   runEffect $ prodList >-> stdoutLn
+  putStrLn "These are all the assemblies currently loaded:"
+  assems <- assembliesLoaded                                                    -- Reflection
+  assemNames <- mapM (\assem-> invokeI @"ToString" assem ()) assems
+  mapM_ (\assemName-> putStrLn $ "\t" ++ assemName) assemNames
   return ()
 
