@@ -57,6 +57,7 @@ compile config@ClrInlineConfig {..} m@ClrInlinedGroup {..} = do
     unwords $
     execWriter $ do
       yield configFSharpPath
+      yield "--nologo"
       yield "--target:library"
       yield $ "--out:" ++ tgt
       when configDebugSymbols $ yield "--debug:embedded"
