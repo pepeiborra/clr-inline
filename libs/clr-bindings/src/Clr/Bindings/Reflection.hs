@@ -12,8 +12,9 @@ import Clr.Bindings.Host
 import Clr.Bindings.IEnumerable
 import Clr.Bindings.Object
 
-import Foreign.Ptr
+import Control.Monad(filterM)
 import Data.Word
+import Foreign.Ptr
 import qualified Data.Text as T
 
 type T_Assembly      = T "System.Reflection.Assembly" '[]
@@ -78,8 +79,16 @@ currentDomain = getPropS @T_CurrentDomain @T_AppDomain
 assemblyLoad :: T.Text -> IO (Object T_Assembly)
 assemblyLoad assemName = invokeS @T_Load @T_Assembly assemName
 
+assemIsDynamicDriverInternal :: Object T_Assembly -> IO Bool
+assemIsDynamicDriverInternal assem = invokeI @T_ToString assem () >>= \assemName-> return $ assemName == "DynamicAssembly, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null"
+
 assembliesLoaded :: IO [Object T_Assembly]
 assembliesLoaded = do
+  assems <- assembliesLoaded'
+  filterM (\assem-> assemIsDynamicDriverInternal assem >>= return . not) assems
+
+assembliesLoaded' :: IO [Object T_Assembly]
+assembliesLoaded'  = do
   domain <- currentDomain
   assems <- invokeI @T_GetAssemblies domain ()
   toListM assems
