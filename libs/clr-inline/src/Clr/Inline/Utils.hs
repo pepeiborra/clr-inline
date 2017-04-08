@@ -6,11 +6,13 @@
 {-# LANGUAGE ViewPatterns        #-}
 module Clr.Inline.Utils where
 
+import           Clr.Host.BStr
 import           Control.Monad
 import           Control.Monad.Trans.Writer
 import           Data.Char
+import           Data.Int
 import           Data.List.Extra
-import           Data.Text                  (Text)
+import           Data.Word
 import           Language.Haskell.TH        as TH
 import           Language.Haskell.TH.Syntax as TH
 import           Text.Printf
@@ -52,13 +54,12 @@ parseBody (trim -> e) = do
 parseType :: String -> Maybe TypeQ
 parseType (map toLower . trim -> s) =
   case s of
-    "string" -> Just [t|String|]
-    "text"   -> Just [t|Text|]
-    "int"    -> Just [t|Int|]
+    "string" -> Just [t|BStr|]
     "double" -> Just [t|Double|]
-    "float"  -> Just [t|Float|]
-    "char"   -> Just [t|Char|]
-    "word"   -> Just [t|Word|]
+    "float"  -> Just [t|Double|]
     "bool"   -> Just [t|Bool|]
+    -- TODO 32 bits support
+    "int"    -> Just [t|Int64|]
+    "word"   -> Just [t|Word64|]
     -- TODO add a parser for reference types
     _        -> Nothing

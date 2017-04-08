@@ -5,17 +5,22 @@
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TypeApplications    #-}
 
-module Clr.FSharp.Inline (fsharp, fsharp', getMethodStub, FunPtr) where
+module Clr.FSharp.Inline
+  ( fsharp
+  , fsharp'
+  , getMethodStub
+  , FunPtr
+  , BStr(..)
+  , unmarshalAuto
+  ) where
 
 import           Clr.Bindings
 import           Clr.FSharp.Gen
 import           Clr.Inline.Config
 import           Clr.Inline.Quoter
-import           Data.Maybe
 import           Foreign
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Quote
-import           Language.Haskell.TH.Syntax
 
 fsharp :: QuasiQuoter
 fsharp = fsharp' defaultInlineConfig
@@ -34,5 +39,6 @@ fsharpExp cfg =
     name
     (configForceReturnType cfg)
     (compile cfg)
+
 fsharpDec :: ClrInlineConfig -> String -> Q [Dec]
 fsharpDec = clrQuoteDec name . compile

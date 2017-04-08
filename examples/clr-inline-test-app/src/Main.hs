@@ -5,6 +5,7 @@ module Main where
 import Clr.Host
 import Clr.CSharp.Inline
 import Clr.FSharp.Inline
+import Test.Hspec
 
 [csharp|
 using System;|]
@@ -25,12 +26,15 @@ main = do
          |]
   [fsharp| printfn "And this is %d in F#" (System.DateTime.Today.Year) |]
 
-  i <- [fsharp|int{DateTime.Today.Year} |]
+  i <- [fsharp| int{DateTime(2017,01,01).Year} |]
   b <- [fsharp| bool { 2>4}|]
   f <- [fsharp| float{ 0.5} |]
-  d <- [fsharp| double{ 0.5} |]
-  -- string is a work in progress
-  print i
-  print b
-  print f
-  print d
+  d <- [fsharp| double{ -0.6} |]
+  s <- [fsharp| string{"Hello"}|]
+  w <- [fsharp| word{2}|]
+  i `shouldBe` 2017
+  b `shouldBe` False
+  f `shouldBe` 0.5
+  d `shouldBe` -0.6
+  s `shouldBe` "Hello"
+  w `shouldBe` 2

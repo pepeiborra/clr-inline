@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 
 {-# LANGUAGE RecordWildCards #-}
@@ -9,6 +10,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Clr.Inline.Quoter where
 
+import Clr.Marshal
 import Clr.Inline.State
 import Clr.Inline.Utils
 import Clr.Inline.Utils.Embed
@@ -116,13 +118,12 @@ clrQuoteExp name returnType clrCompile body = do
 
   --
   -- splice in the bytecode load and call to the stub
-  [|unembedBytecode >>
-    getMethodStub
-      $(lift fullClassName)
-      $(lift methodName)
-      argClrTypes >>=
-   -- TODO Unmarshalling the return value
-    return . $(varE stubName) >>= \f -> $(foldr appE [|f|] (map return args))|]
+  [|do unembedBytecode
+       stub <- getMethodStub $(lift fullClassName) $(lift methodName) argClrTypes
+       stub_f <- $(varE stubName) stub
+       let result = $(foldr appE [|stub_f|] (map return args))
+       unmarshalAuto result
+   |]
 
 -- | Quasi quoter for declaration in the clr language.
 --   Does not splice anything onto the Haskell source.
@@ -132,3 +133,6 @@ clrQuoteDec name clrCompile body = do
   pushWrapperGen (clrGenerator name modName clrCompile) $
     return (ClrInlinedDec (normaliseLineEndings body) :: ClrInlinedUnit language)
   return mempty
+
+unmarshalAuto :: Unmarshal a (UnmarshalAs a) => a -> IO(UnmarshalAs a)
+unmarshalAuto = unmarshal
