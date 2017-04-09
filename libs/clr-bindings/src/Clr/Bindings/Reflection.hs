@@ -11,6 +11,7 @@ import Clr.Host.BStr
 import Clr.Bindings.Host
 import Clr.Bindings.IEnumerable
 import Clr.Bindings.Object
+import Clr.Bindings.Stubs
 
 import Control.Monad(filterM)
 import Data.Word
@@ -55,17 +56,17 @@ instance PropertyS T_AppDomain T_CurrentDomain where
 instance PropertyGetS T_AppDomain T_CurrentDomain where
   rawGetPropS = getMethodStub (tString @T_AppDomain) (tStringGet @T_CurrentDomain) (tString @()) >>= return . makeAppDomainCurrentDomain >>= \f-> f
 
-instance MethodI1 T_AppDomain T_GetAssemblies () where
-  type ResultTypeI1 T_AppDomain T_GetAssemblies () = 'Just T_AssemblyArray
-  rawInvokeI1 appDom () = getMethodStub (tString @T_AppDomain) (tString @T_GetAssemblies) (tString @()) >>= return . makeAppDomainGetAssemblies >>= \f-> f appDom
+instance MethodI1' T_AppDomain T_GetAssemblies () where
+  type ResultTypeI1' T_AppDomain T_GetAssemblies () = 'Just T_AssemblyArray
+  makerFuncI1 = makeAppDomainGetAssemblies
 
-instance MethodI1 T_Assembly T_GetTypes () where
-  type ResultTypeI1 T_Assembly T_GetTypes () = 'Just T_TypeArray
-  rawInvokeI1 assem () = getMethodStub (tString @T_Assembly) (tString @T_GetTypes) (tString @()) >>= return . makeAssemblyGetTypes >>= \f-> f assem
+instance MethodI1' T_Assembly T_GetTypes () where
+  type ResultTypeI1' T_Assembly T_GetTypes () = 'Just T_TypeArray
+  makerFuncI1 = makeAssemblyGetTypes
 
-instance MethodS1 T_Assembly T_Load T_string where
-  type ResultTypeS1 T_Assembly T_Load T_string = 'Just T_Assembly
-  rawInvokeS1 x = getMethodStub (tString @T_Assembly) (tString @T_Load) (tString @T_string) >>= return . makeAssemblyLoad >>= \f-> f x
+instance MethodS1' T_Assembly T_Load T_string where
+  type ResultTypeS1' T_Assembly T_Load T_string = 'Just T_Assembly
+  makerFuncS1 = makeAssemblyLoad
 
 instance PropertyI T_Type T_FullName where
   type PropertyTypeI T_Type T_FullName = T_string
