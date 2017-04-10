@@ -51,11 +51,13 @@ library
   exposed-modules:     Clr.CSharp.Inline
                        Clr.FSharp.Inline
                        Clr.Inline.Config
+                       Clr.Inline.Types
   
   -- Modules included in this library but not exported.
   other-modules:       
                        Clr.Inline.State
                        Clr.Inline.Utils
+                       Clr.Inline.Utils.Args
                        Clr.Inline.Utils.Embed
                        Clr.Inline.Quoter
                        Clr.FSharp.Gen
@@ -69,10 +71,12 @@ library
                         clr,
                         clr-bindings,
                         clr-host,
+                        containers,
                         directory,
                         extra,
                         filepath,
                         here,
+                        lens,
                         process,
                         template-haskell,
                         temporary,

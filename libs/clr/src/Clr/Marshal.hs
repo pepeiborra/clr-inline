@@ -75,6 +75,7 @@ type instance UnmarshalAs Int8         = Int8
 type instance UnmarshalAs Int16        = Int16
 type instance UnmarshalAs Int32        = Int32
 type instance UnmarshalAs Int64        = Int64
+type instance UnmarshalAs Int          = Int
 type instance UnmarshalAs CFloat       = Float
 type instance UnmarshalAs CDouble      = Double
 type instance UnmarshalAs Float        = Float

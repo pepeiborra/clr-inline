@@ -6,13 +6,11 @@
 {-# LANGUAGE ViewPatterns        #-}
 module Clr.Inline.Utils where
 
-import           Clr.Host.BStr
+import           Clr.Inline.Types
 import           Control.Monad
 import           Control.Monad.Trans.Writer
 import           Data.Char
-import           Data.Int
 import           Data.List.Extra
-import           Data.Word
 import           Language.Haskell.TH        as TH
 import           Language.Haskell.TH.Syntax as TH
 import           Text.Printf
@@ -47,19 +45,6 @@ parseBody (trim -> e) = do
   let (typeString, exp') = span ('{' /=) e
   (exp,last) <- maybe (Left "Expected {") Right $ initAndLast (drop 1 exp')
   unless (last == '}') $ Left $ "Expected }: " ++ [last]
-  typ <- maybe (Left $ "Cannot parse type " ++ typeString) Right $ parseType typeString
+  typ <- maybe (Left $ "Cannot parse type " ++ typeString) (Right . fst) $ toTHType typeString
   return (exp,typ)
 
--- | Rudimentary parser for stringy Haskell types
-parseType :: String -> Maybe TypeQ
-parseType (map toLower . trim -> s) =
-  case s of
-    "string" -> Just [t|BStr|]
-    "double" -> Just [t|Double|]
-    "float"  -> Just [t|Double|]
-    "bool"   -> Just [t|Bool|]
-    -- TODO 32 bits support
-    "int"    -> Just [t|Int64|]
-    "word"   -> Just [t|Word64|]
-    -- TODO add a parser for reference types
-    _        -> Nothing
