@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE RecordWildCards     #-}
@@ -11,24 +12,27 @@ import           Clr.Inline.Config
 import           Clr.Inline.Quoter
 import           Clr.Inline.Utils
 import           Clr.Inline.Utils.Embed
+import           Clr.Inline.Types
 import           Control.Monad
 import           Control.Monad.Trans.Writer
 import qualified Data.ByteString            as BS
 import           Data.List
-import           Data.Maybe
+import qualified Data.Map as Map
 import           Foreign
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Quote
-import           Language.Haskell.TH.Syntax
 import           System.Directory
 import           System.FilePath            ((<.>), (</>))
 import           System.IO.Temp
 import           System.Process
 import           Text.Printf
 
+csharp :: QuasiQuoter
 csharp = csharp' defaultInlineConfig
+name :: [Char]
 name = "csharp"
 
+csharp' :: ClrInlineConfig -> QuasiQuoter
 csharp' cfg = QuasiQuoter
     { quoteExp  = csharpExp cfg
     , quotePat  = error "Clr.CSharp.Inline: quotePat"
@@ -42,6 +46,7 @@ csharpExp cfg =
     name
     (configForceReturnType cfg)
     (compile cfg)
+csharpDec :: ClrInlineConfig -> String -> Q [Dec]
 csharpDec cfg = clrQuoteDec name $ compile cfg
 
 data CSharp
@@ -65,7 +70,7 @@ genCode ClrInlinedGroup {..} =
           printf
             "    public static void %s (%s) { "
             (getMethodName name unitId)
-            (intercalate ", " $ zipWith (printf "%s $s") argClrTypes args)
+            (intercalate ", " [printf "%s:%s" a t | (a, ClrType t) <- Map.toList args])
         forM_ (lines body) $ \l -> do yield $ printf "        %s" l
         yield "}"
     yield "}}"
@@ -77,7 +82,6 @@ compile ClrInlineConfig{..} m@ClrInlinedGroup {..} = do
     let src = dir </> modName <.> ".cs"
         tgt = dir </> modName <.> ".dll"
     writeFile src (genCode m)
-    putStrLn $ "Generated " ++ tgt
     callCommand $
       unwords $
       execWriter $ do
