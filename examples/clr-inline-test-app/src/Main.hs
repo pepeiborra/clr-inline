@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Main where
@@ -43,14 +44,12 @@ main = do
   s <- [fsharp| string{"Hello"}|]
   t <- [fsharp| text{"Hello text"}|]
   w <- [fsharp| word{2}|]
-  o <- [fsharp| object{ DateTime(2017,04,10)} |]
+  o <- [fsharp| DateTime{ DateTime(2017,04,10)} |]
 
   [fsharp| printfn "%s" $h_s:string |]
   [fsharp| printfn "%s" $h_t:text|]
 
-  -- requires better types on the F# side
-  --  (which in turn requires better types on the H side)
-  -- d <- [fsharp| ($o:Object).Day |]
+  day <- [fsharp| int{($o:DateTime).Day} |]
 
   i `shouldBe` 2017
   h_i' `shouldBe` h_i * 2
@@ -60,3 +59,4 @@ main = do
   s `shouldBe` "Hello"
   t `shouldBe` Text.pack "Hello text"
   w `shouldBe` 2
+  day `shouldBe` 10

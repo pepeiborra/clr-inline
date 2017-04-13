@@ -45,6 +45,6 @@ parseBody (trim -> e) = do
   let (typeString, exp') = span ('{' /=) e
   (exp,last) <- maybe (Left "Expected {") Right $ initAndLast (drop 1 exp')
   unless (last == '}') $ Left $ "Expected }: " ++ [last]
-  typ <- maybe (Left $ "Cannot parse type " ++ typeString) (Right . fst) $ toTHType typeString
+  let typ = fst $ toTHType typeString
   return (exp,typ)
 

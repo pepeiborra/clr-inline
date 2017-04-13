@@ -131,7 +131,7 @@ clrQuoteExp name returnType clrCompile body = do
           (Just ty, Right (body', _)) -> (body', ty)
   let (antis, parsedBody') = extractArgs toClrArg parsedBody
   resTy <- [t|IO $(resTy)|]
-  argsTyped <- traverse (\x -> maybe (error $ "Cannot parse type: " ++ x) snd (toTHType x)) antis
+  argsTyped <- traverse (snd . toTHType) antis
   let inlinedUnit :: ClrInlinedUnit language Type =
         ClrInlinedUnit
           count
