@@ -5,9 +5,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TypeApplications    #-}
-module Clr.CSharp.Inline (csharp, csharp', FunPtr, getMethodStub) where
+module Clr.CSharp.Inline (csharp, csharp', FunPtr, getMethodStubRaw, BStr(..)) where
 
 import           Clr.Bindings
+import           Clr.Bindings.Host
 import           Clr.Inline.Config
 import           Clr.Inline.Quoter
 import           Clr.Inline.Utils

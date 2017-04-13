@@ -10,6 +10,7 @@
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 module Clr.Inline.Quoter where
 
+import Clr.Host.BStr
 import Clr.Marshal
 import Clr.Inline.State
 import Clr.Inline.Types
@@ -17,7 +18,6 @@ import Clr.Inline.Utils
 import Clr.Inline.Utils.Args
 import Clr.Inline.Utils.Embed
 import Control.Lens
-import Data.List
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
@@ -81,15 +81,14 @@ generateFFIStub ClrInlinedUnit {..} = do
   ffiStub <- ForeignD . ImportF CCall Safe "dynamic" stubName <$> [t|FunPtr $funTy -> $funTy|]
   return [ffiStub]
 
-generateClrCall :: ClrInlinedUnit t Type -> ExpQ
+generateClrCall :: ClrInlinedUnit t a -> ExpQ
 generateClrCall ClrInlinedUnit{..} = do
   let argExps =
         [ [| marshal $(varE =<< getValueName a)|]
         | a <- Map.keys args
         ]
-  let argClrTypes = intercalate ";" $ getClrType . toClrTypeOrFail <$> Map.elems args
   [| do unembedBytecode
-        stub <- getMethodStub $(lift fullClassName) $(lift methodName) argClrTypes
+        stub <- marshal $(lift fullClassName) $ \c -> marshal $(lift methodName) $ \m -> getMethodStubRaw >>= \f -> return $ f c m (BStr nullPtr)
         let stub_f = $(varE stubName) stub
         result <- $(foldr appE [|stub_f|] (argExps))
         unmarshalAuto result
