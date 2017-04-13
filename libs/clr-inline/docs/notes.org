@@ -21,16 +21,16 @@
     This didn't work, as the FFI wrapper must be in scope when splicing the invoke call.
 *** Cannot be extracted from the Haskell source
     TH does not give us access to user provided type annotations on the TH quotation
-*** Can be extracted from the F# compiler using, e.g. signature files.
+*** +Can be extracted from the F# compiler using, e.g. signature files.+
     Do signature names contain fully qualified names ?
     The answer is mostly yes (except for locally defined types)
-**** TODO Parser for .sig files (return types only)
-*** Can be extracted from the generated F# program using reflection and a little driver.
+*** +Can be extracted from the generated F# program using reflection and a little driver.+
     This option seems the most flexible one, as we can choose what to output.
     The downside is that we have to run the compiler once for every snippet, instead of once per module.
     Update: we have to run the compiler per snippet either way,
     since the FFI stubs must be generated together with the invoke call.
-*** Can also be extracted from generated metadata, i.e. type class instances
+    But note that the types become available only at TH finalizer time, as this is when the F# code is generated
+*** +Can also be extracted from generated metadata, i.e. type class instances+
     This is the option that Salsa uses currently, but it wouldn't help us,
     we cannot expect the user to enter this metadata for every inlined snippet.
 *** DONE Can also be extracted from the quoted code
@@ -51,38 +51,48 @@
     The getMethodStub call must contain the full CLR names for all the argument types.
 *** Required for generating the F# code
     Despite F# type inference, we want to annotate argument types to avoid runtime errors when the F# types and the Haskell types don't match.
-*** Can be extracted from the Haskell source
+*** +Can be extracted from the Haskell source+
     Depending on how much type information we retain in the Haskell side.
+    But note that this is only available at finalizer time, and we need the types in the call site in order to generate the foreign wrapper decl.
 **** TODO Translator from Haskell CLR types to F# types
-*** Can be provided via antiquotation annotations
-    The only motivation for this would be early prototyping
+*** DONE Can be provided via antiquotation annotations
+    CLOSED: [2017-04-13 Thu 21:36]
+    This is done now and it is good enough for version 0.1
 *** Two options.
-**** Box everything
+**** +Box everything+
      In this approach all the reference types are boxed to Object. Our generated F# snippets manually box and unbox them.
      This gives up CLR type checking on the FFI boundary and can result in runtime errors.
      However could be a first step in the way of initial prototyping.
-**** Precise types driven by Haskell side.
+**** DONE Precise types driven by Haskell side.
+     CLOSED: [2017-04-13 Thu 21:36]
      In this approach we retain all the obtained type information (via return types and symbols) on the Haskell side,
      and use it to annotate the arguments in the generated F# snippets.
      The F# compiler will be able to type check the snippets.
+     This is the approach we are taking currently.
 **** +Precise types driven by F# side.+
      Similar to the above, but without annotating the arguments in the generated F#.
      Instead, we recover the type information inferred by the F# compiler and use it 
      to type our FFI wrapper. 
      This doesn't work: the GHC type checker would need to know when two CLR types are compatible.
 ** Roadmap
-*** Return of value types from CLR to Haskell via quoted types
+*** DONE Return of value types from CLR to Haskell via quoted types
+    CLOSED: [2017-04-13 Thu 21:38]
     Together with implicit? marshalling
-*** Returning of boxed reference types via quoted types
-    That is, the ability to return Object to Haskell land.
-*** Antiquoation of Haskell values via Object boxes
-    The generated F# code will take care of the unboxing.
-    That is, the ability to send back previously returned Objects.
-*** Return type inference via F# reflection
-    This will require a new datatype modelling CLR types at value and type level.
-    By using either introspection or signature files to read CLR types
-    and store them in Haskell land to track reference types.
-*** Well typed antiquotation of Haskell values
-    This will rely on the model above to correctly identify CLR methods.
-    At this point our F# code generator can stop doing boxing/unboxing
-    since we will be able to fully address it by name&types.
+*** DONE Returning of reference types via quoted types
+    CLOSED: [2017-04-13 Thu 21:39]
+    Reference types are stored by name on the Haskell side.
+*** DONE Antiquoation of Haskell values 
+    CLOSED: [2017-04-13 Thu 21:39]
+    Referene types are stored by name on the Haskell side.
+    They are sent fully typed to the F# side.
+*** Support for arrays .
+    First we'll need special notation because the [|1;2|] syntax clashes with TH.
+    Then our types parser will need to parse F# array type notation and translate it to CLR.
+*** Support for generic types.
+    As above, this will hopefully just involve converting F# notation to CLR.
+*** Inference of antiquote types
+    This will require a new approach to invoking CLR methods that doesnt require a foreign wrapper,
+    and instead takes the type information from the argument values. 
+    This is the approach used by the jvm package via the JValue type. 
+*** Inference of return types
+    This will probably be driven by the F# side.
