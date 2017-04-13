@@ -14,7 +14,9 @@ import Test.Hspec
 using System;|]
 
 [fsharp|
-open System |]
+open System
+open System.Collections.Generic
+|]
 
 main :: IO ()
 main = do
@@ -50,6 +52,12 @@ main = do
   [fsharp| printfn "%s" $h_t:text|]
 
   day <- [fsharp| int{($o:DateTime).Day} |]
+
+  array <- [fsharp| DateTime[]{
+                      [ DateTime.Today; DateTime.Now ] |> Array.ofList }
+                    |]
+  print =<< [fsharp| int{ ($array:DateTime[]).[0].Hour}|]
+  print =<< [fsharp| int{ ($array:DateTime[]).[1].Hour}|]
 
   i `shouldBe` 2017
   h_i' `shouldBe` h_i * 2

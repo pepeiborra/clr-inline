@@ -83,11 +83,10 @@
     Reference types are stored by name on the Haskell side.
 *** DONE Antiquoation of Haskell values 
     CLOSED: [2017-04-13 Thu 21:39]
-    Referene types are stored by name on the Haskell side.
+    Reference types are stored by name on the Haskell side.
     They are sent fully typed to the F# side.
 *** Support for arrays .
-    First we'll need special notation because the [|1;2|] syntax clashes with TH.
-    Then our types parser will need to parse F# array type notation and translate it to CLR.
+    We just need special notation because the [|1;2|] syntax clashes with TH.
 *** Support for generic types.
     As above, this will hopefully just involve converting F# notation to CLR.
 *** Inference of antiquote types
