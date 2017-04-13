@@ -11,8 +11,6 @@ data Token =
   | Antiquote String String
   deriving Show
 
-makePrisms ''Token
-
 tokenized :: Iso' String [Token]
 tokenized = iso (tokenize (Other [])) (untokenize)
   where
