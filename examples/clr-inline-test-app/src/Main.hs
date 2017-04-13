@@ -36,7 +36,7 @@ main = do
   let h_t = Text.pack h_s
 
   i <- [fsharp| int{DateTime(2017,01,01).Year} |]
-  h_i'   <- [fsharp| int { $h_i:int + 0}|]
+  h_i'   <- [fsharp| int { $h_i:int + $h_i}|]
   h_i32' <- [fsharp| int32 { $h_i32:int32 + 0}|]
   h_i64' <- [fsharp| int64 { $h_i64:int64 + 0L}|]
   d <- [fsharp| double{ 2.0 * $h_d:double} |]
@@ -53,10 +53,10 @@ main = do
   -- d <- [fsharp| ($o:Object).Day |]
 
   i `shouldBe` 2017
-  h_i' `shouldBe` h_i
+  h_i' `shouldBe` h_i * 2
   h_i32' `shouldBe` h_i32
   h_i64' `shouldBe` h_i64
-  d `shouldBe` h_d*2
+  d `shouldBe` h_d * 2
   s `shouldBe` "Hello"
   t `shouldBe` Text.pack "Hello text"
   w `shouldBe` 2
