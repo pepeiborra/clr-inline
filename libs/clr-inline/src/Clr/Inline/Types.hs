@@ -33,7 +33,6 @@ instance {-# INCOHERENT #-} Unmarshal (Object n) (Object n) where
   unmarshal o@(Object id) = do
     addFinalizer o $ do
       let f = unsafeDupablePerformIO (unsafeGetPointerToMethod "ReleaseObject")
-      putStrLn $ "Free object " ++ show id
       releaseObject f id
     return o
 
