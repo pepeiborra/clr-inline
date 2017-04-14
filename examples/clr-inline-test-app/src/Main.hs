@@ -4,10 +4,12 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Main where
 
+import Control.Concurrent
 import Clr.Inline
 import Data.Int
 import Data.Text as Text (pack)
 import Test.Hspec
+import System.Mem
 
 [csharp|
 using System;|]
@@ -74,6 +76,8 @@ main = do
   array  <- [fsharp| DateTime[]{
                       [~| DateTime.Today; DateTime.Now |~]
                       }|]
+  performGC
+  threadDelay 1000000
   print =<< [fsharp| int{ ($array:DateTime[]).[0].Hour}|]
   print =<< [fsharp| int{ ($array:DateTime[]).[1].Hour}|]
 
@@ -91,3 +95,6 @@ main = do
   t `shouldBe` Text.pack "Hello text"
   w `shouldBe` 2
   day `shouldBe` 10
+
+  performGC
+  threadDelay 1000000

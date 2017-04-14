@@ -8,6 +8,7 @@
 module Clr.Inline.Types where
 
 import           Clr.Bindings.Marshal ()
+import           Clr.Bindings.Host
 import           Clr.Host.BStr
 import           Clr.Marshal
 import           Data.Char
@@ -15,13 +16,26 @@ import           Data.Int
 import           Data.List.Extra
 import           Data.Text            (Text)
 import           Data.Word
-import GHC.TypeLits
+import           Foreign
+import           GHC.TypeLits
 import           Language.Haskell.TH
+import           System.IO.Unsafe
+import           System.Mem.Weak
 
 newtype Object (name::Symbol) = Object Int64
 
+foreign import ccall "dynamic" releaseObject :: FunPtr (Int64 -> IO ()) -> (Int64 -> IO ())
 
 type instance UnmarshalAs (Object n) = (Object n)
+
+-- | Slightly dodgy instance that adds a finalizer to release the CLR object
+instance {-# INCOHERENT #-} Unmarshal (Object n) (Object n) where
+  unmarshal o@(Object id) = do
+    addFinalizer o $ do
+      let f = unsafeDupablePerformIO (unsafeGetPointerToMethod "ReleaseObject")
+      putStrLn $ "Free object " ++ show id
+      releaseObject f id
+    return o
 
 newtype ClrType = ClrType {getClrType :: String}
 
