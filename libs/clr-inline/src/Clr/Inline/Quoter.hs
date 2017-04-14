@@ -25,6 +25,7 @@ import Data.Typeable
 import Foreign.Ptr
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
+import System.IO.Unsafe
 import Text.Printf
 
 data ClrInlinedUnit language argType
@@ -89,11 +90,15 @@ generateClrCall ClrInlinedUnit{..} = do
         [ [| marshal $(varE =<< getValueName a)|]
         | a <- Map.keys args
         ]
+  let roll m f = [|$m . ($f .)|]
   [| do unembedBytecode
-        stub <- marshal $(lift fullClassName) $ \c -> marshal $(lift methodName) $ \m -> getMethodStubRaw >>= \f -> return $ f c m (BStr nullPtr)
+        stub <- marshal $(lift fullClassName) $ \c ->
+          marshal $(lift methodName) $ \m ->
+          getMethodStubRaw >>= \f ->
+          return $ f c m (BStr nullPtr)
         let stub_f = $(varE stubName) stub
-        result <- $(foldr appE [|stub_f|] (argExps))
-        unmarshalAuto result
+        result <- $(foldr roll [|id|] (argExps)) stub_f
+        unmarshalAuto (result)
     |]
 
 -- | Runs after the whole module has been loaded and is responsible for generating:
