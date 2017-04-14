@@ -28,13 +28,14 @@ import Language.Haskell.TH.Syntax
 import Text.Printf
 
 data ClrInlinedUnit language argType
-  = ClrInlinedUnit { unitId :: Int
-                  ,  body :: String
-                  ,  args :: Map String argType
-                  ,  stubName :: Name
+  = ClrInlinedUnit{  unitId        :: Int
+                  ,  body          :: String
+                  ,  args          :: Map String argType
+                  ,  stubName      :: Name
                   ,  fullClassName :: String
-                  ,  methodName :: String
-                  ,  returnType  :: Type }
+                  ,  methodName    :: String
+                  ,  returnType    :: String
+                  }
   | ClrInlinedDec { body :: String}
 
 makeLensesFor [("args","_args")] ''ClrInlinedUnit
@@ -73,7 +74,8 @@ getValueName a = fromMaybe (error $ "Identifier not in scope: " ++ a) <$> lookup
 
 generateFFIStub :: ClrInlinedUnit t Type -> Q [Dec]
 generateFFIStub ClrInlinedUnit {..} = do
-  let funTy = return $ foldr (\t u -> ArrowT `AppT` t `AppT` u) returnType (Map.elems args)
+  resTy <- [t| IO $(fst $ toTHType returnType)|]
+  let funTy = return $ foldr (\t u -> ArrowT `AppT` t `AppT` u) resTy (Map.elems args)
   -- This is what we'd like to write:
   -- [d| foreign import ccall "dynamic" $stubName :: $([t|FunPtr $funTy -> $funTy|]) |]
   -- Unfort. splicing names into foreign import decl is not supported, so we have to write:
@@ -116,21 +118,15 @@ clrGenerator name modName compile = do
 clrQuoteExp
   :: forall language.
      Typeable language
-  => String -> Maybe TypeQ -> (ClrInlinedGroup language -> IO ClrBytecode) -> String -> Q Exp
-clrQuoteExp name returnType clrCompile body = do
+  => String -> (ClrInlinedGroup language -> IO ClrBytecode) -> String -> Q Exp
+clrQuoteExp name clrCompile body = do
   count <- getFinalizerCount @(ClrInlinedUnit language Type)
   modName <- mangleModule name <$> thisModule
   stubName <- newName $ getStubName name count
   let methodName = getMethodName name count
   let fullClassName = getFullClassName modName
-  let (parsedBody, resTy :: TypeQ) =
-        case (returnType, parseBody body) of
-          (Nothing, Left _err) -> (body, [t|()|])
-          (Just ty, Left _err) -> (body, ty)
-          (Nothing, Right bodyAndRet) -> bodyAndRet
-          (Just ty, Right (body', _)) -> (body', ty)
+  let (resultType, parsedBody) = parseBody body
   let (antis, parsedBody') = extractArgs toClrArg parsedBody
-  resTy <- [t|IO $(resTy)|]
   argsTyped <- traverse (snd . toTHType) antis
   let inlinedUnit :: ClrInlinedUnit language Type =
         ClrInlinedUnit
@@ -140,7 +136,7 @@ clrQuoteExp name returnType clrCompile body = do
           stubName
           fullClassName
           methodName
-          resTy
+          resultType
   pushWrapperGen (clrGenerator name modName clrCompile) $ return inlinedUnit
   --
   -- splice in a proxy datatype for the late bound class, used to delay the type checking of the stub call

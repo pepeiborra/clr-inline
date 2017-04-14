@@ -45,7 +45,6 @@ csharpExp :: ClrInlineConfig -> String -> Q Exp
 csharpExp cfg =
   clrQuoteExp
     name
-    (configForceReturnType cfg)
     (compile cfg)
 csharpDec :: ClrInlineConfig -> String -> Q [Dec]
 csharpDec cfg = clrQuoteDec name $ compile cfg
@@ -69,9 +68,10 @@ genCode ClrInlinedGroup {..} =
       ClrInlinedUnit {..} -> do
         yield $
           printf
-            "    public static void %s (%s) { "
+            "    public static %s %s (%s) { "
+            returnType
             (getMethodName name unitId)
-            (intercalate ", " [printf "%s:%s" a t | (a, ClrType t) <- Map.toList args])
+            (intercalate ", " [printf "%s %s" t a | (a, ClrType t) <- Map.toList args])
         forM_ (lines body) $ \l -> do yield $ printf "        %s" l
         yield "}"
     yield "}}"

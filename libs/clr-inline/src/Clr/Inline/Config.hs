@@ -11,12 +11,11 @@ data ClrInlineConfig = ClrInlineConfig
   , configExtraIncludeDirs :: [FilePath]
   , configDebugSymbols :: Bool
   , configCustomCompilerFlags :: [String]
-  , configForceReturnType :: Maybe TypeQ
   }
 
 defaultMonoConfig, defaultDotNetConfig, defaultInlineConfig :: ClrInlineConfig
-defaultMonoConfig = ClrInlineConfig "fsharpc" "mcs" [] [] False [] Nothing
-defaultDotNetConfig  = ClrInlineConfig "fsc" "csc" [] [] False [] Nothing
+defaultMonoConfig = ClrInlineConfig "fsharpc" "mcs" [] [] False []
+defaultDotNetConfig  = ClrInlineConfig "fsc" "csc" [] [] False []
 defaultInlineConfig = case defaultHostConfig of
                   ClrHostConfig ClrHostMono -> defaultMonoConfig
                   ClrHostConfig ClrHostDotNet -> defaultDotNetConfig

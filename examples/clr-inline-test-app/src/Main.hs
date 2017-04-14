@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -21,15 +22,27 @@ open System.Collections.Generic
 main :: IO ()
 main = do
   startClr
-  [csharp|
-         Console.WriteLine();
-         Console.WriteLine("Hello CLR inline !!!");
-         Console.WriteLine(2);
-         Console.WriteLine("The year is {0}", 2017);
-         Console.WriteLine("Well {0} {1}", "This", "Is Cool");
-         return;
-         |]
-  [fsharp| printfn "And this is %d in F#" (System.DateTime.Today.Year) |]
+
+  --
+  -- C# examples
+  --
+  [csharp| Console.WriteLine("Hello CLR inline !!!"); |]
+  i <- [csharp| int { return 2; }|]
+  i_array <- [csharp| int[] {
+                    int[] a = new int[4]{0,0,0,0};
+                    for(int i=0; i < 4; i++) {
+                      a[i] = i;
+                    }
+                    return a;
+                    }|]
+  i `shouldBe` 2
+  print =<< [csharp| int{return ($i_array:int[])[3];}|]
+  --
+  -- F# examples
+  --
+  _ :: () <- [fsharp| printfn "The result of this expression is discarded" |]
+
+  -- locals
   let h_i   = 2 :: Int
   let h_i32 = 2 :: Int32
   let h_i64 = 2 :: Int64
@@ -38,22 +51,22 @@ main = do
   let h_s = "Hello from Haskell"
   let h_t = Text.pack h_s
 
-  i <- [fsharp| int{DateTime(2017,01,01).Year} |]
-  h_i'   <- [fsharp| int { $h_i:int + $h_i}|]
+  -- Examples of antiquotation
+  i      <- [fsharp| int   { DateTime(2017,01,01).Year} |]
+  h_i'   <- [fsharp| int   { $h_i:int + $h_i}|]
   h_i32' <- [fsharp| int32 { $h_i32:int32 + 0}|]
   h_i64' <- [fsharp| int64 { $h_i64:int64 + 0L}|]
-  d <- [fsharp| double{ 2.0 * $h_d:double} |]
-  s <- [fsharp| string{"Hello"}|]
-  t <- [fsharp| text{"Hello text"}|]
-  w <- [fsharp| word{2}|]
-  o <- [fsharp| DateTime{ DateTime(2017,04,10)} |]
-
+  d      <- [fsharp| double{ 2.0 * $h_d:double} |]
+  s      <- [fsharp| string{ "Hello"}|]
+  t      <- [fsharp| text  { "Hello text"}|]
+  w      <- [fsharp| word  { 2}|]
   [fsharp| printfn "%s" $h_s:string |]
   [fsharp| printfn "%s" $h_t:text|]
-
-  day <- [fsharp| int{($o:DateTime).Day} |]
-
-  array <- [fsharp| DateTime[]{
+  --
+  -- reference type examples
+  o      <- [fsharp| DateTime{ DateTime(2017,04,10)} |]
+  day    <- [fsharp| int{($o:DateTime).Day} |]
+  array  <- [fsharp| DateTime[]{
                       [ DateTime.Today; DateTime.Now ] |> Array.ofList }
                     |]
   print =<< [fsharp| int{ ($array:DateTime[]).[0].Hour}|]

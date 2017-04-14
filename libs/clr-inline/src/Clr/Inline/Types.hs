@@ -62,6 +62,7 @@ toTHType (trim -> s) =
     "int32"  -> ([t|Int32|]    ,[t|Int32|])
     "int64"  -> ([t|Int64|]    ,[t|Int64|])
     "word"   -> ([t|Word64|]   ,[t|Word64|])
+    "void"   -> ([t|()|]       ,[t|()|])
     _        -> let t = return $ ConT ''Object `AppT` LitT (StrTyLit s) in (t, t)
 
 class InlineMarshal a b where

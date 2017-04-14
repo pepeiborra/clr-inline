@@ -41,7 +41,6 @@ fsharpExp :: ClrInlineConfig -> String -> Q Exp
 fsharpExp cfg =
   clrQuoteExp
     name
-    (configForceReturnType cfg)
     (compile cfg)
 
 fsharpDec :: ClrInlineConfig -> String -> Q [Dec]
