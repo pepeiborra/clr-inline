@@ -41,10 +41,8 @@ genCode ClrInlinedGroup {..} =
         yield $ printf   "    let %s (%s) ="
             (getMethodName name unitId)
             (intercalate ", " [printf "%s:%s" a t | (a, ClrType t) <- Map.toList args])
-        yield            "        try "
         forM_ (lines body) $ \l ->
-          yield $ printf "                       %s" l
-        yield            "        with e -> printfn \"Inline F# threw an exception:\\n %O\" e ; reraise()"
+          yield $ printf "        %s" l
 
 compile :: ClrInlineConfig -> ClrInlinedGroup FSharp -> IO ClrBytecode
 compile ClrInlineConfig {..} m@ClrInlinedGroup {..} = do

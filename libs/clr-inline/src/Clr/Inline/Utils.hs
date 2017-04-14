@@ -38,8 +38,8 @@ initAndLast = loopInitAndLast id where
 
 -- | Parses expressions of the form "ty{e}" and returns (ty, e)
 parseBody :: String -> (String, String)
-parseBody (trim -> e) =
-  case span ('{' /=) e of
+parseBody e =
+  case span ('{' /=) (trim e) of
     (typeString, exp') ->
       case initAndLast (drop 1 exp') of
         Just (exp,'}') -> (typeString, exp)
