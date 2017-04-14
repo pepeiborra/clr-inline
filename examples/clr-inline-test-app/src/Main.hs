@@ -72,8 +72,8 @@ main = do
   o :: DateTime <- [fsharp| DateTime{ DateTime(2017,04,10)} |]
   day    <- [fsharp| int{($o:DateTime).Day} |]
   array  <- [fsharp| DateTime[]{
-                      [ DateTime.Today; DateTime.Now ] |> Array.ofList }
-                    |]
+                      [~| DateTime.Today; DateTime.Now |~]
+                      }|]
   print =<< [fsharp| int{ ($array:DateTime[]).[0].Hour}|]
   print =<< [fsharp| int{ ($array:DateTime[]).[1].Hour}|]
 

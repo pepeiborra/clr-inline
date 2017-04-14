@@ -15,10 +15,16 @@ tokenized :: Iso' String [Token]
 tokenized = iso (tokenize (Other [])) (untokenize)
   where
     tokenize :: Token -> String -> [Token]
+    -- Tokenizing inside clr code
     tokenize (Other acc) [] = [Other (reverse acc)]
-    tokenize (Antiquote s t) [] = [Antiquote (reverse s) (reverse <$> t)]
+    -- Start an antiquote
     tokenize (Other acc) ('$':rest) = Other (reverse acc) : tokenize (Antiquote "" Nothing) rest
+    -- Escape F# array notation
+    tokenize (Other ('~':'|':acc)) (']':rest) = tokenize (Other (']':'|':acc)) rest
+    tokenize (Other ('~':'[':acc)) ('|':rest) = tokenize (Other ('|':'[':acc)) rest
     tokenize (Other acc) (c  :rest) = tokenize (Other (c:acc)) rest
+    -- Tokenizing inside an antiquote
+    tokenize (Antiquote s t) [] = [Antiquote (reverse s) (reverse <$> t)]
     tokenize (Antiquote s t) (c : rest) | isBreak c = Antiquote (reverse s) (reverse <$> t) : tokenize (Other [c]) rest
     tokenize (Antiquote s Nothing)  (':':rest) = tokenize (Antiquote s (Just "")) rest
     tokenize (Antiquote s Nothing)  (c  :rest) = tokenize (Antiquote (c:s) Nothing) rest

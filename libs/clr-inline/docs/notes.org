@@ -85,9 +85,11 @@
     CLOSED: [2017-04-13 Thu 21:39]
     Reference types are stored by name on the Haskell side.
     They are sent fully typed to the F# side.
-*** Support for arrays .
+*** DONE Support for arrays .
+    CLOSED: [2017-04-14 Fri 11:47]
     We just need special notation because the [|1;2|] syntax clashes with TH.
-*** Support for generic types.
+*** DONE Support for generic types.
+    CLOSED: [2017-04-14 Fri 11:40]
     As above, this will hopefully just involve converting F# notation to CLR.
 *** Inference of antiquote types
     This will require a new approach to invoking CLR methods that doesnt require a foreign wrapper,
