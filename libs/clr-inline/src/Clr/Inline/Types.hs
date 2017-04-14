@@ -40,7 +40,6 @@ toClrType t =
     ConT t | t == ''Text -> Just "System.String"
     AppT (ConT t) (LitT (StrTyLit s)) | t == ''Object -> Just s
     _ | otherwise -> Nothing
-toClrType _ = Nothing
 
 newtype TextBStr = TextBStr BStr
 type instance UnmarshalAs TextBStr = Text
@@ -63,6 +62,3 @@ toTHType (trim -> s) =
     "word"   -> ([t|Word64|]   ,[t|Word64|])
     "void"   -> ([t|()|]       ,[t|()|])
     _        -> let t = return $ ConT ''Object `AppT` LitT (StrTyLit s) in (t, t)
-
-class InlineMarshal a b where
-  inlineMarshal :: a -> (b -> IO c) -> IO c
