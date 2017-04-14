@@ -20,7 +20,6 @@ import           Language.Haskell.TH
 
 newtype Object (name::Symbol) = Object Int64
 
-type DateTime = Object "System.DateTime"
 
 type instance UnmarshalAs (Object n) = (Object n)
 

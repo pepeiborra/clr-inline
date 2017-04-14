@@ -16,6 +16,10 @@ using System;|]
 open System
 open System.Collections.Generic
 |]
+ 
+-- Note that "System.DateTime" and "DateTime" are not the same type in our simple model!!
+type SystemDateTime = Object "System.DateTime"
+type DateTime = Object "DateTime"
 
 main :: IO ()
 main = do
@@ -35,6 +39,9 @@ main = do
                     }|]
   i `shouldBe` 2
   print =<< [csharp| int{return ($i_array:int[])[3];}|]
+
+  today <- [csharp| System.DateTime{ return System.DateTime.Today;}|]
+  [csharp| Console.WriteLine( ($today:System.DateTime).ToString());|]
   --
   -- F# examples
   --
@@ -62,7 +69,7 @@ main = do
   [fsharp| printfn "%s" $h_t:text|]
   --
   -- reference type examples
-  o      <- [fsharp| DateTime{ DateTime(2017,04,10)} |]
+  o :: DateTime <- [fsharp| DateTime{ DateTime(2017,04,10)} |]
   day    <- [fsharp| int{($o:DateTime).Day} |]
   array  <- [fsharp| DateTime[]{
                       [ DateTime.Today; DateTime.Now ] |> Array.ofList }
