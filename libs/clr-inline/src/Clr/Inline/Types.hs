@@ -29,7 +29,7 @@ foreign import ccall "dynamic" releaseObject :: FunPtr (Int64 -> IO ()) -> (Int6
 type instance UnmarshalAs (Object n) = (Object n)
 
 -- | Slightly dodgy instance that adds a finalizer to release the CLR object
-instance {-# INCOHERENT #-} Unmarshal (Object n) (Object n) where
+instance {-# OVERLAPPING #-} Unmarshal (Object n) (Object n) where
   unmarshal o@(Object id) = do
     addFinalizer o $ do
       let f = unsafeDupablePerformIO (unsafeGetPointerToMethod "ReleaseObject")
