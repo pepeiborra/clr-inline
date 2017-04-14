@@ -69,6 +69,3 @@ compile ClrInlineConfig {..} m@ClrInlinedGroup {..} = do
       yield src
   bcode <- BS.readFile tgt
   return $ ClrBytecode bcode
-
-body :: ByteString
-body = [hereFile|src/introspect.fs|]
