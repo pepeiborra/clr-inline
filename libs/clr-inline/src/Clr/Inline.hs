@@ -10,8 +10,10 @@ module Clr.Inline
   , BStr(..)
   , TextBStr(..)
   , Object(..)
+  , ObjectPtr(..)
   )where
 
 import Clr.Host
 import Clr.FSharp.Inline
 import Clr.CSharp.Inline
+import Clr.Inline.Types

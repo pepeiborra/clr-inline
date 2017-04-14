@@ -76,8 +76,11 @@ main = do
   array  <- [fsharp| DateTime[]{
                       [~| DateTime.Today; DateTime.Now |~]
                       }|]
+  --
+  -- check that finalizers are not running too early.
   performGC
   threadDelay 1000000
+
   print =<< [fsharp| int{ ($array:DateTime[]).[0].Hour}|]
   print =<< [fsharp| int{ ($array:DateTime[]).[1].Hour}|]
 
@@ -98,3 +101,4 @@ main = do
 
   performGC
   threadDelay 1000000
+

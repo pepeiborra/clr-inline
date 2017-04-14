@@ -13,6 +13,7 @@ import           Clr.Host.BStr
 import           Clr.Marshal
 import           Data.Char
 import           Data.Int
+import           Data.IORef
 import           Data.List.Extra
 import           Data.Text            (Text)
 import           Data.Word
@@ -20,21 +21,27 @@ import           Foreign
 import           GHC.TypeLits
 import           Language.Haskell.TH
 import           System.IO.Unsafe
-import           System.Mem.Weak
 
-newtype Object (name::Symbol) = Object Int64
+newtype ObjectPtr (name::Symbol)= ObjectPtr Int64
+data Object (name::Symbol) = Object (ObjectPtr name) (IORef ())
 
 foreign import ccall "dynamic" releaseObject :: FunPtr (Int64 -> IO ()) -> (Int64 -> IO ())
 
-type instance UnmarshalAs (Object n) = (Object n)
+type instance UnmarshalAs (ObjectPtr n) = (Object n)
 
 -- | Slightly dodgy instance that adds a finalizer to release the CLR object
-instance {-# OVERLAPPING #-} Unmarshal (Object n) (Object n) where
-  unmarshal o@(Object id) = do
-    addFinalizer o $ do
+instance Unmarshal (ObjectPtr n) (Object n) where
+  unmarshal o@(ObjectPtr id) = do
+    ref <- newIORef ()
+    _ <- mkWeakIORef ref $ do
       let f = unsafeDupablePerformIO (unsafeGetPointerToMethod "ReleaseObject")
       releaseObject f id
-    return o
+    return (Object o ref)
+
+instance Marshal (Object n) (ObjectPtr n) where
+  marshal (Object ptr ref) f = do
+    () <- readIORef ref
+    f ptr
 
 newtype ClrType = ClrType {getClrType :: String}
 
@@ -51,7 +58,7 @@ toClrType t =
     ConT t | t == ''BStr -> Just "System.String"
     ConT t | t == ''String -> Just "System.String"
     ConT t | t == ''Text -> Just "System.String"
-    AppT (ConT t) (LitT (StrTyLit s)) | t == ''Object -> Just s
+    AppT (ConT t) (LitT (StrTyLit s)) | t == ''ObjectPtr -> Just s
     _ | otherwise -> Nothing
 
 newtype TextBStr = TextBStr BStr
@@ -74,4 +81,4 @@ toTHType (trim -> s) =
     "int64"  -> ([t|Int64|]    ,[t|Int64|])
     "word"   -> ([t|Word64|]   ,[t|Word64|])
     "void"   -> ([t|()|]       ,[t|()|])
-    _        -> let t = return $ ConT ''Object `AppT` LitT (StrTyLit s) in (t, t)
+    _        -> let t = return $ ConT ''ObjectPtr `AppT` LitT (StrTyLit s) in (t, t)
