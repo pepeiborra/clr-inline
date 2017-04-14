@@ -14,10 +14,8 @@ import           Clr.Inline.Types
 import           Control.Monad
 import           Control.Monad.Trans.Writer
 import qualified Data.ByteString                 as BS
-import           Data.ByteString.Char8           (ByteString)
 import           Data.List
 import qualified Data.Map as Map
-import           Data.String.Here.Uninterpolated
 import           System.Directory
 import           System.FilePath                 ((<.>), (</>))
 import           System.IO.Temp

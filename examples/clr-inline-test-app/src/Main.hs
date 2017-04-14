@@ -4,9 +4,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Main where
 
-import Clr.Host
-import Clr.CSharp.Inline
-import Clr.FSharp.Inline
+import Clr.Inline
 import Data.Int
 import Data.Text as Text (pack)
 import Test.Hspec

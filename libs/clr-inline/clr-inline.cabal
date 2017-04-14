@@ -48,14 +48,15 @@ cabal-version:       >=1.10
 
 library
   -- Modules exported by the library.
-  exposed-modules:     Clr.CSharp.Inline
-                       Clr.FSharp.Inline
+  exposed-modules:     Clr.Inline 
                        Clr.Inline.Config
-                       Clr.Inline.Types
   
   -- Modules included in this library but not exported.
   other-modules:       
+                       Clr.CSharp.Inline
+                       Clr.FSharp.Inline
                        Clr.Inline.State
+                       Clr.Inline.Types
                        Clr.Inline.Utils
                        Clr.Inline.Utils.Args
                        Clr.Inline.Utils.Embed
