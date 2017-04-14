@@ -30,7 +30,7 @@ tokenized = iso (tokenize (Other [])) (untokenize)
     untokenize (Antiquote v Nothing  : rest) = '$' : v ++ untokenize rest
     untokenize (Antiquote v (Just t) : rest) = '$' : v ++ ':' : t ++ untokenize rest
 
-    isBreak c = c == ' ' ||  c == ')' || c == '.'
+    isBreak c = c == ' ' ||  c == ')'
 
 -- | Looks for antiquotes of the form $foo in the given string
 --   Returns the antiquotes found, and a new string with the
