@@ -16,7 +16,7 @@ using System;|]
 open System
 open System.Collections.Generic
 |]
- 
+
 -- Note that "System.DateTime" and "DateTime" are not the same type in our simple model!!
 type SystemDateTime = Object "System.DateTime"
 type DateTime = Object "DateTime"
@@ -76,6 +76,11 @@ main = do
                     |]
   print =<< [fsharp| int{ ($array:DateTime[]).[0].Hour}|]
   print =<< [fsharp| int{ ($array:DateTime[]).[1].Hour}|]
+
+  dict <- [fsharp| Map<int,string> {
+                    [ 1,"Foo" ; 2, "bar" ] |> Map.ofSeq
+                 }|]
+  print =<< [fsharp| string{ ($dict:Map<int,string>).[1] }|]
 
   i `shouldBe` 2017
   h_i' `shouldBe` h_i * 2
