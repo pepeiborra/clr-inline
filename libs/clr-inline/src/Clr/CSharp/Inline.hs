@@ -24,11 +24,34 @@ import           System.IO.Temp
 import           System.Process
 import           Text.Printf
 
+-- | Quasiquoter for C# declarations and expressions.
+--   A quasiquote is a block of C# statements wrapped in curly braces
+--   preceded by the C# return type.
+--   Examples:
+--
+-- @
+-- example :: IO (Object "int[]")
+-- example = do
+--  [csharp| Console.WriteLine("Hello CLR inline !!!"); |]
+--  i <- [csharp| int { return 2; }|]
+--  [csharp| int[] {  int[] a = new int[4]{0,0,0,0};
+--                    for(int i=0; i < 4; i++) {
+--                      a[i] = i;
+--                    }
+--                    return a;
+--                 }|]
+-- @
+--
+--   See the documentation for 'fsharp' for details on the quotation
+--   and antiquotation syntaxes.
+--  This quasiquoter is implicitly configured with the 'defaultConfig'.
 csharp :: QuasiQuoter
 csharp = csharp' defaultConfig
+
 name :: String
 name = "csharp"
 
+-- | Explicit configuration version of 'csharp'.
 csharp' :: ClrInlineConfig -> QuasiQuoter
 csharp' cfg = QuasiQuoter
     { quoteExp  = csharpExp cfg
