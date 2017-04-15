@@ -19,6 +19,7 @@ import Clr.Inline.Utils
 import Clr.Inline.Utils.Args
 import Clr.Inline.Utils.Embed
 import Control.Lens
+import Data.Char
 import Data.List.Extra
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -160,8 +161,21 @@ clrQuoteExp name clrCompile body = do
 clrQuoteDec :: forall language . Typeable language => String -> (ClrInlinedGroup language -> IO ClrBytecode) -> String -> Q [Dec]
 clrQuoteDec name clrCompile body = do
   modName <- mangleModule name <$> thisModule
-  pushWrapperGen (clrGenerator name modName clrCompile) $
-    return (ClrInlinedDec (over lined trim $ normaliseLineEndings body) :: ClrInlinedUnit language Type)
+  pushWrapperGen (clrGenerator name modName clrCompile) $ do
+    let nbody = normaliseLineEndings body
+        ws =
+          [ (white, line)
+          | l <- lines nbody
+          , let (white, line) = span isSpace l
+          , not (null line)
+          ]
+        allEqual (x:y:xx) = x == y && allEqual (y : xx)
+        allEqual _ = True
+        body' =
+          if allEqual (map fst ws)
+            then unlines (map snd ws)
+            else nbody
+    return (ClrInlinedDec body' :: ClrInlinedUnit language Type)
   return mempty
 
 unmarshalAuto :: Unmarshal a (UnmarshalAs a) => a -> IO(UnmarshalAs a)

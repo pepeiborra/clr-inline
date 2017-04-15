@@ -17,6 +17,11 @@ s = "Hello world"
 t :: Text
 t = pack "Hello World"
 
+[fsharp|
+module Global =
+   let today = System.DateTime.Today
+   let hello = "Hello World" |]
+
 main :: IO ()
 main = do
   startClr
@@ -25,11 +30,11 @@ main = do
     [
       bench "invoke" $ whnfIO [fsharp| () |]
     , bench "unmarshal int" $ whnfIO [fsharp| int { 7 } |]
-    , bench "unmarshal string" $ whnfIO [fsharp| string { "Hello world" }|]
-    , bench "unmarshal text" $ whnfIO [fsharp| text{ "Hello world" }|]
+    , bench "unmarshal string" $ whnfIO [fsharp| string { Global.hello }|]
+    , bench "unmarshal text" $ whnfIO [fsharp| text{ Global.hello }|]
     , bench "marshal int" $ whnfIO [fsharp| $i:int|]
     , bench "marshal string" $ whnfIO [fsharp| $s:string|]
     , bench "marshal text" $ whnfIO [fsharp| $t:text|]
     , bench "marshal object" $ whnfIO [fsharp| $o:System.DateTime|]
-    , bench "unmarshal object" $ whnfIO [fsharp| System.DateTime{System.DateTime.Today}|]
+    , bench "unmarshal object" $ whnfIO [fsharp| System.DateTime{Global.today}|]
     ]
