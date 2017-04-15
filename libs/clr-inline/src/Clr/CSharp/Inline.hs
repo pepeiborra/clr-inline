@@ -30,7 +30,7 @@ import           Text.Printf
 --   Examples:
 --
 -- @
--- example :: IO (Object "int[]")
+-- example :: IO (Clr "int[]")
 -- example = do
 --  [csharp| Console.WriteLine("Hello CLR inline !!!"); |]
 --  i <- [csharp| int { return 2; }|]

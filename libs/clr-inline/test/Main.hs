@@ -20,8 +20,8 @@ open System.Collections.Generic
 |]
 
 -- Note that "System.DateTime" and "DateTime" are not the same type in our simple model!!
-type SystemDateTime = Object "System.DateTime"
-type DateTime = Object "DateTime"
+type SystemDateTime = Clr "System.DateTime"
+type DateTime = Clr "DateTime"
 
 main :: IO ()
 main = do

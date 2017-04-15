@@ -37,12 +37,12 @@ import           Language.Haskell.TH.Quote
 --  Example expressions:
 --
 -- @
--- hello :: IO (Int, Object "System.DateTime")
+-- hello :: IO (Int, Clr "System.DateTime")
 -- hello = do
 --   let year = 2017 :: Int
---   anObject <- [fsharp| DateTime{ DateTime($year:int,04,10)} |]
---   anInt <- [fsharp| int{ ($anObject:System.DateTime).Year + $year:int + $year}|]
---   return (anInt, anObject)
+--   anClr <- [fsharp| DateTime{ DateTime($year:int,04,10)} |]
+--   anInt <- [fsharp| int{ ($anClr:System.DateTime).Year + $year:int + $year}|]
+--   return (anInt, anClr)
 -- @
 --
 --  This quasiquoter is implicitly configured with the 'defaultConfig'.

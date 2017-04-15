@@ -8,8 +8,8 @@ module Clr.Inline
   , FunPtr
   , BStr(..)
   , TextBStr(..)
-  , Object(..)
-  , ObjectPtr(..)
+  , Clr(..)
+  , ClrPtr(..)
   )where
 
 import           Clr.CSharp.Inline
