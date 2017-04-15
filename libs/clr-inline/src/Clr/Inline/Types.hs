@@ -59,7 +59,7 @@ toClrType t =
     ConT t | t == ''String -> Just "System.String"
     ConT t | t == ''Text -> Just "System.String"
     AppT (ConT t) (LitT (StrTyLit s)) | t == ''ObjectPtr -> Just s
-    _ | otherwise -> Nothing
+    _ -> Nothing
 
 newtype TextBStr = TextBStr BStr
 type instance UnmarshalAs TextBStr = Text

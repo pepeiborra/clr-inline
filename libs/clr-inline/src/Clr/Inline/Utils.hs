@@ -1,9 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 {-# LANGUAGE LambdaCase          #-}
-{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell     #-}
-{-# LANGUAGE ViewPatterns        #-}
 module Clr.Inline.Utils where
 
 import           Control.Monad.Trans.Writer
@@ -20,7 +17,7 @@ mangleModule name (Module (PkgName pkg) (ModName m)) =
 yield :: Monad m => t -> WriterT [t] m ()
 yield x = tell [x]
 yieldAll :: Monad m => w -> WriterT w m ()
-yieldAll xx = tell xx
+yieldAll = tell
 
 -- | Fix different systems silly line ending conventions
 --   https://ghc.haskell.org/trac/ghc/ticket/11215

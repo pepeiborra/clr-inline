@@ -1,8 +1,6 @@
-{-# LANGUAGE TemplateHaskell #-}
 module Clr.Inline.Config where
 
 import Clr.Host.Config
-import Language.Haskell.TH
 
 data ClrInlineConfig = ClrInlineConfig
   { configFSharpPath :: FilePath

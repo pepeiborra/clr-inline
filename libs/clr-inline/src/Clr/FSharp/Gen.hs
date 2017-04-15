@@ -1,9 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE RecordWildCards   #-}
-{-# LANGUAGE TemplateHaskell   #-}
 module Clr.FSharp.Gen (name, compile) where
 
 import           Clr.Inline.Config
@@ -33,11 +31,11 @@ genCode ClrInlinedGroup {..} =
     yield $ printf "namespace %s" modNamespace
     forM_ units $ \case
       ClrInlinedDec body -> yield body
-      ClrInlinedUnit {} -> return ()
+      ClrInlinedExp {} -> return ()
     yield $ printf "module %s = " modName
     forM_ units $ \case
       ClrInlinedDec {} -> return ()
-      ClrInlinedUnit {..} -> do
+      ClrInlinedExp ClrInlinedExpDetails {..} -> do
         yield $ printf   "    let %s (%s) ="
             (getMethodName name unitId)
             (intercalate ", " [printf "%s:%s" a t | (a, ClrType t) <- Map.toList args])

@@ -3,7 +3,6 @@
 {-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TypeApplications    #-}
 module Clr.CSharp.Inline (csharp, csharp') where
 
@@ -27,7 +26,7 @@ import           Text.Printf
 
 csharp :: QuasiQuoter
 csharp = csharp' defaultConfig
-name :: [Char]
+name :: String
 name = "csharp"
 
 csharp' :: ClrInlineConfig -> QuasiQuoter
@@ -54,22 +53,22 @@ genCode ClrInlinedGroup {..} =
   execWriter $ do
     yield $ printf "namespace %s {" modNamespace
     forM_ units $ \case
-      ClrInlinedDec {..} ->
+      ClrInlinedDec body ->
         yield body
-      ClrInlinedUnit{} ->
+      ClrInlinedExp{} ->
         return ()
     yield $ printf "public class %s {" modName
     forM_ units $ \case
       ClrInlinedDec{} ->
         return ()
-      ClrInlinedUnit {..} -> do
+      ClrInlinedExp ClrInlinedExpDetails {..} -> do
         yield $
           printf
             "    public static %s %s (%s) { "
             returnType
             (getMethodName name unitId)
             (intercalate ", " [printf "%s %s" t a | (a, ClrType t) <- Map.toList args])
-        forM_ (lines body) $ \l -> do yield $ printf "        %s" l
+        forM_ (lines body) $ \l -> yield $ printf "        %s" l
         yield "}"
     yield "}}"
 

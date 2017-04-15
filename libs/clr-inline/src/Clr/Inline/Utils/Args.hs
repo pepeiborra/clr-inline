@@ -1,5 +1,3 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE ViewPatterns #-}
 module Clr.Inline.Utils.Args where
 
 import Control.Lens
@@ -12,7 +10,7 @@ data Token =
   deriving Show
 
 tokenized :: Iso' String [Token]
-tokenized = iso (tokenize (Other [])) (untokenize)
+tokenized = iso (tokenize (Other [])) untokenize
   where
     tokenize :: Token -> String -> [Token]
     -- Tokenizing inside clr code

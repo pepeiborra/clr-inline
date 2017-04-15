@@ -20,7 +20,6 @@ import Clr.Inline.Utils.Args
 import Clr.Inline.Utils.Embed
 import Control.Lens
 import Data.Char
-import Data.List.Extra
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
@@ -31,18 +30,22 @@ import Language.Haskell.TH.Syntax
 import System.IO.Unsafe
 import Text.Printf
 
-data ClrInlinedUnit language argType
-  = ClrInlinedUnit{  unitId        :: Int
-                  ,  body          :: String
-                  ,  args          :: Map String argType
-                  ,  stubName      :: Name
-                  ,  fullClassName :: String
-                  ,  methodName    :: String
-                  ,  returnType    :: String
-                  }
-  | ClrInlinedDec { body :: String}
+data ClrInlinedExpDetails argType = ClrInlinedExpDetails
+  { unitId :: Int
+  , body :: String
+  , args :: Map String argType
+  , stubName :: Name
+  , fullClassName :: String
+  , methodName :: String
+  , returnType :: String
+  }
 
-makeLensesFor [("args","_args")] ''ClrInlinedUnit
+data ClrInlinedUnit language argType
+  = ClrInlinedExp (ClrInlinedExpDetails argType)
+  | ClrInlinedDec String
+
+makePrisms ''ClrInlinedUnit
+makeLensesFor [("args","_args")] ''ClrInlinedExpDetails
 
 data ClrInlinedGroup language = ClrInlinedGroup
   { modName :: String
@@ -76,8 +79,8 @@ toClrTypeOrFail x =
 getValueName :: String -> Q Name
 getValueName a = fromMaybe (error $ "Identifier not in scope: " ++ a) <$> lookupValueName a
 
-generateFFIStub :: ClrInlinedUnit t Type -> Q [Dec]
-generateFFIStub ClrInlinedUnit {..} = do
+generateFFIStub :: ClrInlinedExpDetails Type -> Q [Dec]
+generateFFIStub ClrInlinedExpDetails{..} = do
   resTy <- [t| IO $(fst $ toTHType returnType)|]
   let funTy = return $ foldr (\t u -> ArrowT `AppT` t `AppT` u) resTy (Map.elems args)
   -- This is what we'd like to write:
@@ -93,8 +96,8 @@ getMethodStubRaw = unsafeDupablePerformIO $ unsafeGetPointerToMethod "GetMethodS
 invoke :: String -> String -> FunPtr a
 invoke c m = unsafeDupablePerformIO $ marshal c $ \c -> marshal m $ \m -> return $ getMethodStubRaw c m (BStr nullPtr)
 
-generateClrCall :: ClrInlinedUnit t a -> ExpQ
-generateClrCall ClrInlinedUnit{..} = do
+generateClrCall :: ClrInlinedExpDetails a -> ExpQ
+generateClrCall ClrInlinedExpDetails{..} = do
   let argExps =
         [ [| marshal $(varE =<< getValueName a)|]
         | a <- Map.keys args
@@ -115,7 +118,7 @@ clrGenerator
 clrGenerator name modName compile = do
   FinalizerState {wrappers} <- getFinalizerState @(ClrInlinedUnit language Type)
   let typedWrappers =
-        over (traversed . _args) (Map.mapKeysMonotonic toClrArg . Map.map toClrTypeOrFail) wrappers
+        over (traversed . _ClrInlinedExp . _args) (Map.mapKeysMonotonic toClrArg . Map.map toClrTypeOrFail) wrappers
   let mod = ClrInlinedGroup modName namespace typedWrappers
   _ <- runIO $ compile mod
   -- Embed the bytecodes
@@ -139,8 +142,8 @@ clrQuoteExp name clrCompile body = do
   let (resultType, parsedBody) = parseBody body
   let (antis, parsedBody') = extractArgs toClrArg parsedBody
   argsTyped <- traverse (snd . toTHType) antis
-  let inlinedUnit :: ClrInlinedUnit language Type =
-        ClrInlinedUnit
+  let inlinedUnit =
+        ClrInlinedExpDetails
           count
           (normaliseLineEndings parsedBody')
           argsTyped
@@ -148,7 +151,7 @@ clrQuoteExp name clrCompile body = do
           fullClassName
           methodName
           resultType
-  pushWrapperGen (clrGenerator name modName clrCompile) $ return inlinedUnit
+  pushWrapperGen (clrGenerator name modName clrCompile) $ return (ClrInlinedExp inlinedUnit :: ClrInlinedUnit language Type)
   --
   -- splice in a proxy datatype for the late bound class, used to delay the type checking of the stub call
   addTopDecls =<< generateFFIStub inlinedUnit

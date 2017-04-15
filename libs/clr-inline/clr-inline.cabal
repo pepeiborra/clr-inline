@@ -90,7 +90,7 @@ library
   -- Base language which the package is written in.
   default-language:    Haskell2010
   
-  ghc-options:         -Wall -Wno-name-shadowing
+  ghc-options:         -Wall -Wno-name-shadowing -Werror
 
 benchmark    clr-inline-benchmark
   type: exitcode-stdio-1.0
