@@ -70,8 +70,8 @@ instance MethodDynImportS2 T_Console T_WriteLine T_string T_object where
 instance MethodDynImportS3 T_Console T_WriteLine T_string (T_object) (T_object) where
   methodDynImportS3 = makeWriteLineType4
 
-instance (TString t) => Constructor1 (T_List t) () where
-  rawNew1 () = getMethodStub (tString @(T_List t)) ".ctor" (tString @())  >>= return . makeListCTor >>= \f-> f
+instance ConstructorDynImport1 (T_List t) () where
+  constructorDynImport1 = makeListCTor
 
 instance MethodDynImportI1 (T_List T_string) T_Add T_string where
   methodDynImportI1 = makeListAdd

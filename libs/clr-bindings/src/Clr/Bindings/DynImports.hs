@@ -3,6 +3,7 @@
 module Clr.Bindings.DynImports where
 
 import Clr.Bridge
+import Clr.Constructor
 import Clr.Method.Instance
 import Clr.Method.Static
 import Clr.TypeString
@@ -41,7 +42,7 @@ instance HandleUnit (x -> r) x r where
 
 --
 -- Each method signature needs its own seperate `foreign import "dynamic"`,
--- which is specified by implementing a MethodDynImport class
+-- which is specified by implementing a _DynImport_ class
 --
 class MethodDynImportI1 t m arg0 where
   methodDynImportI1 :: DynamicImportType (BridgeType t -> IngoreUnitType (BridgeType arg0) (IO (BridgeTypeM (ResultTypeI1 t m arg0))))
@@ -61,8 +62,19 @@ class MethodDynImportS2 t m arg0 arg1 where
 class MethodDynImportS3 t m arg0 arg1 arg2 where
   methodDynImportS3 :: DynamicImportType (BridgeType arg0 -> BridgeType arg1 -> BridgeType arg2 -> IO (BridgeTypeM (ResultTypeS3 t m arg0 arg1 arg2)))
 
+class ConstructorDynImport1 t arg0 where
+  constructorDynImport1 :: DynamicImportType (IngoreUnitType (BridgeType arg0) (IO (BridgeType t)))
+
+class ConstructorDynImport2 t arg0 arg1 where
+  constructorDynImport2 :: DynamicImportType (BridgeType arg0 -> BridgeType arg1 -> IO (BridgeType t))
+
+class ConstructorDynImport3 t arg0 arg1 arg2 where
+  constructorDynImport3 :: DynamicImportType (BridgeType arg0 -> BridgeType arg1 -> BridgeType arg2 -> IO (BridgeType t))
+
 --
---
+-- An instance of both MethodResult and MethodDynImport provides an instance for MethodInvoke.
+-- NB: the 1 argument variants contain additional complexity for mapping both actual arguments
+-- and unit type placeholders to the dynamic entry points, which don't take unit placeholders
 --
 instance ( TString t
          , TString m
@@ -126,4 +138,31 @@ instance ( TString t
          ) => MethodInvokeS3 t m arg0 arg1 arg2 where
   rawInvokeS3 x y z = getMethodStub (tString @t) (tString @m) ((tString @arg0) ++ ";" ++ (tString @arg1) ++ ";" ++ (tString @arg2)) >>= return . (methodDynImportS3 @t @m @arg0 @arg1 @arg2) >>= \f-> f x y z
 
+ctorString :: String
+ctorString = ".ctor"
+
+instance ( TString t
+         , TString arg0
+         , ConstructorDynImport1 t arg0
+         , HandleUnit (IngoreUnitType (BridgeType arg0) (IO (BridgeType t))) (BridgeType arg0) (IO (BridgeType t))
+         ) => Constructor1 t arg0 where
+  rawNew1 x = do
+    fp   <- getMethodStub (tString @t) ctorString (tString @arg0)
+    let f = constructorDynImport1 @t @arg0 fp
+    handleUnit @(IngoreUnitType (BridgeType arg0) (IO (BridgeType t))) @(BridgeType arg0) @(IO (BridgeType t)) f x
+
+instance ( TString t
+         , TString arg0
+         , TString arg1
+         , ConstructorDynImport2 t arg0 arg1
+         ) => Constructor2 t arg0 arg1 where
+  rawNew2 x y = getMethodStub (tString @t) ctorString ((tString @arg0) ++ ";" ++ (tString @arg1)) >>= return . (constructorDynImport2 @t @arg0 @arg1) >>= \f-> f x y
+
+instance ( TString t
+         , TString arg0
+         , TString arg1
+         , TString arg2
+         , ConstructorDynImport3 t arg0 arg1 arg2
+         ) => Constructor3 t arg0 arg1 arg2 where
+  rawNew3 x y z = getMethodStub (tString @t) ctorString ((tString @arg0) ++ ";" ++ (tString @arg1) ++ ";" ++ (tString @arg2)) >>= return . (constructorDynImport3 @t @arg0 @arg1 @arg2) >>= \f-> f x y z
 
