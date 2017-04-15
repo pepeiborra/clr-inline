@@ -6,12 +6,9 @@
 {-# LANGUAGE ViewPatterns        #-}
 module Clr.Inline.Utils where
 
-import           Clr.Inline.Types
-import           Control.Monad
 import           Control.Monad.Trans.Writer
 import           Data.Char
 import           Data.List.Extra
-import           Language.Haskell.TH        as TH
 import           Language.Haskell.TH.Syntax as TH
 import           Text.Printf
 
@@ -39,12 +36,11 @@ initAndLast = loopInitAndLast id where
   loopInitAndLast acc [x]    = Just (acc "", x)
   loopInitAndLast acc (x:xx) = loopInitAndLast (acc . (x:)) xx
 
--- | Parses expressions of the form "ty{e}" and returns (e,ty)
-parseBody :: String -> Either String (String, TypeQ)
-parseBody (trim -> e) = do
-  let (typeString, exp') = span ('{' /=) e
-  (exp,last) <- maybe (Left "Expected {") Right $ initAndLast (drop 1 exp')
-  unless (last == '}') $ Left $ "Expected }: " ++ [last]
-  typ <- maybe (Left $ "Cannot parse type " ++ typeString) (Right . fst) $ toTHType typeString
-  return (exp,typ)
-
+-- | Parses expressions of the form "ty{e}" and returns (ty, e)
+parseBody :: String -> (String, String)
+parseBody e =
+  case span ('{' /=) (trim e) of
+    (typeString, exp') ->
+      case initAndLast (drop 1 exp') of
+        Just (exp,'}') -> (typeString, exp)
+        _ -> ("void", e)

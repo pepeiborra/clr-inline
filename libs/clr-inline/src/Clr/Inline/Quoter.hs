@@ -10,6 +10,7 @@
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 module Clr.Inline.Quoter where
 
+import Clr.Host.BStr
 import Clr.Marshal
 import Clr.Inline.State
 import Clr.Inline.Types
@@ -17,7 +18,7 @@ import Clr.Inline.Utils
 import Clr.Inline.Utils.Args
 import Clr.Inline.Utils.Embed
 import Control.Lens
-import Data.List
+import Data.List.Extra
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
@@ -25,16 +26,18 @@ import Data.Typeable
 import Foreign.Ptr
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
+import System.IO.Unsafe
 import Text.Printf
 
 data ClrInlinedUnit language argType
-  = ClrInlinedUnit { unitId :: Int
-                  ,  body :: String
-                  ,  args :: Map String argType
-                  ,  stubName :: Name
+  = ClrInlinedUnit{  unitId        :: Int
+                  ,  body          :: String
+                  ,  args          :: Map String argType
+                  ,  stubName      :: Name
                   ,  fullClassName :: String
-                  ,  methodName :: String
-                  ,  returnType  :: Type }
+                  ,  methodName    :: String
+                  ,  returnType    :: String
+                  }
   | ClrInlinedDec { body :: String}
 
 makeLensesFor [("args","_args")] ''ClrInlinedUnit
@@ -73,7 +76,8 @@ getValueName a = fromMaybe (error $ "Identifier not in scope: " ++ a) <$> lookup
 
 generateFFIStub :: ClrInlinedUnit t Type -> Q [Dec]
 generateFFIStub ClrInlinedUnit {..} = do
-  let funTy = return $ foldr (\t u -> ArrowT `AppT` t `AppT` u) returnType (Map.elems args)
+  resTy <- [t| IO $(fst $ toTHType returnType)|]
+  let funTy = return $ foldr (\t u -> ArrowT `AppT` t `AppT` u) resTy (Map.elems args)
   -- This is what we'd like to write:
   -- [d| foreign import ccall "dynamic" $stubName :: $([t|FunPtr $funTy -> $funTy|]) |]
   -- Unfort. splicing names into foreign import decl is not supported, so we have to write:
@@ -81,18 +85,21 @@ generateFFIStub ClrInlinedUnit {..} = do
   ffiStub <- ForeignD . ImportF CCall Safe "dynamic" stubName <$> [t|FunPtr $funTy -> $funTy|]
   return [ffiStub]
 
-generateClrCall :: ClrInlinedUnit t Type -> ExpQ
+generateClrCall :: ClrInlinedUnit t a -> ExpQ
 generateClrCall ClrInlinedUnit{..} = do
   let argExps =
         [ [| marshal $(varE =<< getValueName a)|]
         | a <- Map.keys args
         ]
-  let argClrTypes = intercalate ";" $ getClrType . toClrTypeOrFail <$> Map.elems args
+  let roll m f = [|$m . ($f .)|]
   [| do unembedBytecode
-        stub <- getMethodStub $(lift fullClassName) $(lift methodName) argClrTypes
+        stub <- marshal $(lift fullClassName) $ \c ->
+          marshal $(lift methodName) $ \m ->
+          getMethodStubRaw >>= \f ->
+          return $ f c m (BStr nullPtr)
         let stub_f = $(varE stubName) stub
-        result <- $(foldr appE [|stub_f|] (argExps))
-        unmarshalAuto result
+        result <- $(foldr roll [|id|] (argExps)) stub_f
+        unmarshalAuto (result)
     |]
 
 -- | Runs after the whole module has been loaded and is responsible for generating:
@@ -117,22 +124,16 @@ clrGenerator name modName compile = do
 clrQuoteExp
   :: forall language.
      Typeable language
-  => String -> Maybe TypeQ -> (ClrInlinedGroup language -> IO ClrBytecode) -> String -> Q Exp
-clrQuoteExp name returnType clrCompile body = do
+  => String -> (ClrInlinedGroup language -> IO ClrBytecode) -> String -> Q Exp
+clrQuoteExp name clrCompile body = do
   count <- getFinalizerCount @(ClrInlinedUnit language Type)
   modName <- mangleModule name <$> thisModule
   stubName <- newName $ getStubName name count
   let methodName = getMethodName name count
   let fullClassName = getFullClassName modName
-  let (parsedBody, resTy :: TypeQ) =
-        case (returnType, parseBody body) of
-          (Nothing, Left _err) -> (body, [t|()|])
-          (Just ty, Left _err) -> (body, ty)
-          (Nothing, Right bodyAndRet) -> bodyAndRet
-          (Just ty, Right (body', _)) -> (body', ty)
+  let (resultType, parsedBody) = parseBody body
   let (antis, parsedBody') = extractArgs toClrArg parsedBody
-  resTy <- [t|IO $(resTy)|]
-  argsTyped <- traverse (\x -> maybe (error $ "Cannot parse type: " ++ x) snd (toTHType x)) antis
+  argsTyped <- traverse (snd . toTHType) antis
   let inlinedUnit :: ClrInlinedUnit language Type =
         ClrInlinedUnit
           count
@@ -141,7 +142,7 @@ clrQuoteExp name returnType clrCompile body = do
           stubName
           fullClassName
           methodName
-          resTy
+          resultType
   pushWrapperGen (clrGenerator name modName clrCompile) $ return inlinedUnit
   --
   -- splice in a proxy datatype for the late bound class, used to delay the type checking of the stub call
@@ -156,7 +157,7 @@ clrQuoteDec :: forall language . Typeable language => String -> (ClrInlinedGroup
 clrQuoteDec name clrCompile body = do
   modName <- mangleModule name <$> thisModule
   pushWrapperGen (clrGenerator name modName clrCompile) $
-    return (ClrInlinedDec (normaliseLineEndings body) :: ClrInlinedUnit language Type)
+    return (ClrInlinedDec (over lined trim $ normaliseLineEndings body) :: ClrInlinedUnit language Type)
   return mempty
 
 unmarshalAuto :: Unmarshal a (UnmarshalAs a) => a -> IO(UnmarshalAs a)

@@ -138,8 +138,11 @@ namespace Salsa
             else
             {
                 Type typ = StringToType(className);
-                MethodInfo meth = typ.GetMethod(
-                    methodName, StringToTypes(parameterTypeNames));
+                MethodInfo meth;
+                if (parameterTypeNames != null)
+                    meth = typ.GetMethod(methodName, StringToTypes(parameterTypeNames));
+                else
+                    meth = typ.GetMethod(methodName);
                 if(meth == null) {
                     var knownMethods = typ.GetMethods().Select(x => x.Name).ToArray();
                     throw new ArgumentException(String.Format("Method {0}({1}) not found in type {2}({3}). Try with: {4}", methodName, parameterTypeNames, typ.Name, typ.Assembly.FullName, String.Join(",",knownMethods) ));

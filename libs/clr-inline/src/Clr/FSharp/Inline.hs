@@ -8,7 +8,7 @@
 module Clr.FSharp.Inline
   ( fsharp
   , fsharp'
-  , getMethodStub
+  , getMethodStubRaw
   , FunPtr
   , BStr(..)
   , TextBStr(..)
@@ -17,6 +17,7 @@ module Clr.FSharp.Inline
   ) where
 
 import           Clr.Bindings
+import           Clr.Bindings.Host
 import           Clr.FSharp.Gen
 import           Clr.Inline.Config
 import           Clr.Inline.Quoter
@@ -40,7 +41,6 @@ fsharpExp :: ClrInlineConfig -> String -> Q Exp
 fsharpExp cfg =
   clrQuoteExp
     name
-    (configForceReturnType cfg)
     (compile cfg)
 
 fsharpDec :: ClrInlineConfig -> String -> Q [Dec]

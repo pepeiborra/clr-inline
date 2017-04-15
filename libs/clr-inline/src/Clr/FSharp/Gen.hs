@@ -14,10 +14,8 @@ import           Clr.Inline.Types
 import           Control.Monad
 import           Control.Monad.Trans.Writer
 import qualified Data.ByteString                 as BS
-import           Data.ByteString.Char8           (ByteString)
 import           Data.List
 import qualified Data.Map as Map
-import           Data.String.Here.Uninterpolated
 import           System.Directory
 import           System.FilePath                 ((<.>), (</>))
 import           System.IO.Temp
@@ -43,10 +41,8 @@ genCode ClrInlinedGroup {..} =
         yield $ printf   "    let %s (%s) ="
             (getMethodName name unitId)
             (intercalate ", " [printf "%s:%s" a t | (a, ClrType t) <- Map.toList args])
-        yield            "        try "
         forM_ (lines body) $ \l ->
-          yield $ printf "                       %s" l
-        yield            "        with e -> printfn \"Inline F# threw an exception:\\n %O\" e ; reraise()"
+          yield $ printf "        %s" l
 
 compile :: ClrInlineConfig -> ClrInlinedGroup FSharp -> IO ClrBytecode
 compile ClrInlineConfig {..} m@ClrInlinedGroup {..} = do
@@ -69,6 +65,3 @@ compile ClrInlineConfig {..} m@ClrInlinedGroup {..} = do
       yield src
   bcode <- BS.readFile tgt
   return $ ClrBytecode bcode
-
-body :: ByteString
-body = [hereFile|src/introspect.fs|]

@@ -26,7 +26,7 @@ class Marshal a b where
 --
 -- identity instance
 --
-instance {-# OVERLAPS #-} (a ~ b) => Marshal a b where
+instance {-# OVERLAPPABLE #-} (a ~ b) => Marshal a b where
   marshal x f = f x
 
 --
@@ -91,7 +91,7 @@ instance Unmarshal (ObjectID t) (Object t) where
   unmarshal oid = return $ Object oid
 
 
-instance Unmarshal a a where
+instance {-# OVERLAPPABLE #-} a ~ b => Unmarshal a b where
   unmarshal = return
 
 
