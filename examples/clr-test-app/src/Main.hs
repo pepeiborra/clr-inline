@@ -7,9 +7,9 @@ import Clr.Host
 import Clr.TypeString
 
 import Clr.Bindings
+import Clr.Bindings.Host
 import Clr.Bindings.IEnumerable
 import Clr.Bindings.Reflection
-import Clr.Bindings.Stubs
 
 import Data.Int(Int32, Int64)
 import Foreign.Ptr(Ptr, FunPtr)
@@ -43,61 +43,38 @@ foreign import ccall "dynamic" makeWriteLineType4 :: FunPtr (BStr -> (ObjectID a
 foreign import ccall "dynamic" makeListCTor :: FunPtr (IO (ObjectID a)) -> IO (ObjectID a)
 foreign import ccall "dynamic" makeListAdd :: FunPtr (ObjectID a -> BStr -> IO ()) -> (ObjectID a -> BStr -> IO ())
 
-{-
-instance MethodS1 T_Console T_WriteLine () where
-  type ResultTypeS1 T_Console T_WriteLine () = 'Nothing
-  rawInvokeS1 x = getMethodStub (tString @T_Console) (tString @T_WriteLine) "" >>= return . makeWriteLineType0 >>= \f-> f
+instance MethodResultS1 T_Console T_WriteLine arg0 where
+  type ResultTypeS1 T_Console T_WriteLine arg0 = 'Nothing
 
-instance MethodS1 T_Console T_WriteLine T_string where
-  type ResultTypeS1 T_Console T_WriteLine T_string = 'Nothing
-  rawInvokeS1 x = getMethodStub (tString @T_Console) (tString @T_WriteLine) (tString @T_string) >>= return . makeWriteLineType1 >>= \f-> f x
+instance MethodResultS2 T_Console T_WriteLine arg0 arg1 where
+  type ResultTypeS2 T_Console T_WriteLine arg0 arg1 = 'Nothing
 
-instance MethodS1 T_Console T_WriteLine T_int where
-  type ResultTypeS1 T_Console T_WriteLine T_int = 'Nothing
-  rawInvokeS1 x = getMethodStub (tString @T_Console) (tString @T_WriteLine) (tString @T_int) >>= return . makeWriteLineType2 >>= \f-> f x
+instance MethodResultS3 T_Console T_WriteLine arg0 arg1 arg2 where
+  type ResultTypeS3 T_Console T_WriteLine arg0 arg1 arg2 = 'Nothing
 
-instance MethodS2 T_Console T_WriteLine T_string T_object where
-  type ResultTypeS2 T_Console T_WriteLine T_string T_object = 'Nothing
-  rawInvokeS2 x y = getMethodStub (tString @T_Console) (tString @T_WriteLine) (tString @T_string ++ ";" ++ tString @T_object) >>= return . makeWriteLineType3 >>= \f-> f x y
+instance MethodResultI1 (T_List T_string) T_Add arg0 where
+  type ResultTypeI1 (T_List T_string) T_Add arg0 = 'Nothing
 
-instance MethodS3 T_Console T_WriteLine T_string (T_object) (T_object) where
-  type ResultTypeS3 T_Console T_WriteLine T_string (T_object) (T_object) = 'Nothing
-  rawInvokeS3 x y z = getMethodStub (tString @T_Console) (tString @T_WriteLine) (tString @T_string ++ ";" ++ tString @T_object ++ ";" ++ tString @T_object) >>= return . makeWriteLineType4 >>= \f-> f x y z
+instance MethodDynImportS1 T_Console T_WriteLine () where
+  methodDynImportS1 = makeWriteLineType0
 
-instance (TString t) => Constructor1 (T_List t) () where
-  rawNew1 () = getMethodStub (tString @(T_List t)) ".ctor" (tString @())  >>= return . makeListCTor >>= \f-> f
+instance MethodDynImportS1 T_Console T_WriteLine T_string where
+  methodDynImportS1 = makeWriteLineType1
 
-instance MethodI1 (T_List T_string) T_Add T_string where
-  type ResultTypeI1 (T_List T_string) T_Add T_string = 'Nothing
-  rawInvokeI1 l s = getMethodStub (tString @(T_List T_string)) (tString @T_Add) (tString @T_string) >>= return . makeListAdd >>= \f-> f l s
--}
-instance MethodS1' T_Console T_WriteLine () where
-  type ResultTypeS1' T_Console T_WriteLine () = 'Nothing
-  makerFuncS1 = makeWriteLineType0
+instance MethodDynImportS1 T_Console T_WriteLine T_int where
+  methodDynImportS1 = makeWriteLineType2
 
-instance MethodS1' T_Console T_WriteLine T_string where
-  type ResultTypeS1' T_Console T_WriteLine T_string = 'Nothing
-  makerFuncS1 = makeWriteLineType1
+instance MethodDynImportS2 T_Console T_WriteLine T_string T_object where
+  methodDynImportS2 = makeWriteLineType3
 
-instance MethodS1' T_Console T_WriteLine T_int where
-  type ResultTypeS1' T_Console T_WriteLine T_int = 'Nothing
-  makerFuncS1 = makeWriteLineType2
-
-instance MethodS2' T_Console T_WriteLine T_string T_object where
-  type ResultTypeS2' T_Console T_WriteLine T_string T_object = 'Nothing
-  makerFuncS2 = makeWriteLineType3
-
-instance MethodS3' T_Console T_WriteLine T_string (T_object) (T_object) where
-  type ResultTypeS3' T_Console T_WriteLine T_string (T_object) (T_object) = 'Nothing
-  makerFuncS3 = makeWriteLineType4
+instance MethodDynImportS3 T_Console T_WriteLine T_string (T_object) (T_object) where
+  methodDynImportS3 = makeWriteLineType4
 
 instance (TString t) => Constructor1 (T_List t) () where
   rawNew1 () = getMethodStub (tString @(T_List t)) ".ctor" (tString @())  >>= return . makeListCTor >>= \f-> f
 
-instance MethodI1' (T_List T_string) T_Add T_string where
-  type ResultTypeI1' (T_List T_string) T_Add T_string = 'Nothing
-  makerFuncI1 = makeListAdd
-
+instance MethodDynImportI1 (T_List T_string) T_Add T_string where
+  methodDynImportI1 = makeListAdd
 
 main :: IO ()
 main = do

@@ -13,8 +13,8 @@ import Clr.TypeString
 import Clr.Host
 import Clr.Host.BStr
 
+import Clr.Bindings.DynImports
 import Clr.Bindings.Host
-import Clr.Bindings.Stubs
 
 import Data.Kind
 import Data.Type.Bool
@@ -52,14 +52,17 @@ foreign import ccall "dynamic" makeEnumeratorCurrentBool  :: FunPtr (ObjectID (T
 -- TODO: makeEnumCurrent_ for every other prim type
 foreign import ccall "dynamic" makeEnumeratorCurrentObj   :: FunPtr (ObjectID (T_IEnumerator elem) -> IO (ObjectID elem)) -> (ObjectID (T_IEnumerator elem) -> IO (ObjectID elem))
 
-instance (TString t) => MethodI1' (T_IEnumerable t) (T_GetEnumerator) () where
-  type ResultTypeI1' (T_IEnumerable t) (T_GetEnumerator) () = 'Just (T_IEnumerator t)
-  makerFuncI1 = makeGetEnumerator
+instance MethodResultI1 (T_IEnumerable t) (T_GetEnumerator) () where
+  type ResultTypeI1 (T_IEnumerable t) (T_GetEnumerator) () = 'Just (T_IEnumerator t)
 
-instance MethodI1' T_IEnumerator' T_MoveNext () where
-  type ResultTypeI1' T_IEnumerator' T_MoveNext () = 'Just T_bool
-  makerFuncI1 = makeEnumeratorMoveNext
+instance MethodDynImportI1 (T_IEnumerable t) (T_GetEnumerator) () where
+  methodDynImportI1 = makeGetEnumerator
 
+instance MethodResultI1 T_IEnumerator' T_MoveNext () where
+  type ResultTypeI1 T_IEnumerator' T_MoveNext () = 'Just T_bool
+
+instance MethodDynImportI1 T_IEnumerator' T_MoveNext () where
+  methodDynImportI1 = makeEnumeratorMoveNext
 
 instance PropertyI (T_IEnumerator t) T_Current where
   type PropertyTypeI (T_IEnumerator t) T_Current = t
