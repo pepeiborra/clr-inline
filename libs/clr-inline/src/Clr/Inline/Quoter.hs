@@ -10,6 +10,7 @@
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 module Clr.Inline.Quoter where
 
+import Clr.Bindings.Host (GetMethodStubDelegate, makeGetMethodStubDelegate, unsafeGetPointerToMethod)
 import Clr.Host.BStr
 import Clr.Marshal
 import Clr.Inline.State
@@ -85,6 +86,12 @@ generateFFIStub ClrInlinedUnit {..} = do
   ffiStub <- ForeignD . ImportF CCall Safe "dynamic" stubName <$> [t|FunPtr $funTy -> $funTy|]
   return [ffiStub]
 
+getMethodStubRaw :: (GetMethodStubDelegate a)
+getMethodStubRaw = unsafeDupablePerformIO $ unsafeGetPointerToMethod "GetMethodStub" >>= return . makeGetMethodStubDelegate
+
+invoke :: String -> String -> FunPtr a
+invoke c m = unsafeDupablePerformIO $ marshal c $ \c -> marshal m $ \m -> return $ getMethodStubRaw c m (BStr nullPtr)
+
 generateClrCall :: ClrInlinedUnit t a -> ExpQ
 generateClrCall ClrInlinedUnit{..} = do
   let argExps =
@@ -93,10 +100,7 @@ generateClrCall ClrInlinedUnit{..} = do
         ]
   let roll m f = [|$m . ($f .)|]
   [| do unembedBytecode
-        stub <- marshal $(lift fullClassName) $ \c ->
-          marshal $(lift methodName) $ \m ->
-          getMethodStubRaw >>= \f ->
-          return $ f c m (BStr nullPtr)
+        let stub = invoke $(liftString fullClassName) $(liftString methodName)
         let stub_f = $(varE stubName) stub
         result <- $(foldr roll [|id|] (argExps)) stub_f
         unmarshalAuto (result)

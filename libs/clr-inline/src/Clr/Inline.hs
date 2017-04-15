@@ -5,7 +5,6 @@ module Clr.Inline
   , fsharp'
   , startClr
   -- * Reexports for generated code
-  , getMethodStubRaw
   , FunPtr
   , BStr(..)
   , TextBStr(..)
@@ -13,7 +12,9 @@ module Clr.Inline
   , ObjectPtr(..)
   )where
 
-import Clr.Host
-import Clr.FSharp.Inline
-import Clr.CSharp.Inline
-import Clr.Inline.Types
+import           Clr.CSharp.Inline
+import           Clr.FSharp.Inline
+import           Clr.Host
+import           Clr.Host.BStr
+import           Clr.Inline.Types
+import           Foreign

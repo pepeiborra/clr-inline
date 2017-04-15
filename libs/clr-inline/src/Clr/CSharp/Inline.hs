@@ -5,10 +5,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TypeApplications    #-}
-module Clr.CSharp.Inline (csharp, csharp', FunPtr, getMethodStubRaw, BStr(..)) where
+module Clr.CSharp.Inline (csharp, csharp') where
 
-import           Clr.Bindings
-import           Clr.Bindings.Host
 import           Clr.Inline.Config
 import           Clr.Inline.Quoter
 import           Clr.Inline.Utils
@@ -19,7 +17,6 @@ import           Control.Monad.Trans.Writer
 import qualified Data.ByteString            as BS
 import           Data.List
 import qualified Data.Map as Map
-import           Foreign
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Quote
 import           System.Directory
@@ -29,7 +26,7 @@ import           System.Process
 import           Text.Printf
 
 csharp :: QuasiQuoter
-csharp = csharp' defaultInlineConfig
+csharp = csharp' defaultConfig
 name :: [Char]
 name = "csharp"
 
