@@ -23,10 +23,10 @@ class PropertyI (t::Type) (m::Type) where
   type PropertyTypeI t m :: Type
 
 class PropertyI (t::Type) (m::Type) => PropertyGetI (t::Type) (m::Type) where
-  rawGetPropI :: (BridgeType t) -> IO (BridgeType (PropertyTypeI t m ))
+  rawGetPropI :: BridgeType t -> IO (BridgeType (PropertyTypeI t m))
 
 class PropertyI (t::Type) (m::Type) => PropertySetI (t::Type) (m::Type) where
-  rawSetPropI :: (BridgeType t) -> BridgeType (PropertyTypeI t m) -> IO ()
+  rawSetPropI :: BridgeType t -> BridgeType (PropertyTypeI t m) -> IO ()
 
 --
 -- Static properties

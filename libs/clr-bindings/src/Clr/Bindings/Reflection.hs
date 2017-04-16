@@ -53,8 +53,8 @@ foreign import ccall "dynamic" makeTypeFullName           :: FunPtr (ObjectID T_
 instance PropertyS T_AppDomain T_CurrentDomain where
   type PropertyTypeS T_AppDomain T_CurrentDomain = T_AppDomain
 
-instance PropertyGetS T_AppDomain T_CurrentDomain where
-  rawGetPropS = getMethodStub (tString @T_AppDomain) (tStringGet @T_CurrentDomain) (tString @()) >>= return . makeAppDomainCurrentDomain >>= \f-> f
+instance PropertyDynImportGetS T_AppDomain T_CurrentDomain where
+  propertyDynImportGetS = makeAppDomainCurrentDomain
 
 instance MethodResultI1 T_AppDomain T_GetAssemblies () where
   type ResultTypeI1 T_AppDomain T_GetAssemblies () = 'Just T_AssemblyArray
@@ -77,8 +77,8 @@ instance MethodDynImportS1 T_Assembly T_Load T_string where
 instance PropertyI T_Type T_FullName where
   type PropertyTypeI T_Type T_FullName = T_string
 
-instance PropertyGetI T_Type T_FullName where
-  rawGetPropI typ = getMethodStub (tString @T_Type) (tStringGet @T_FullName) (tString @()) >>= return . makeTypeFullName >>= \f-> f typ
+instance PropertyDynImportGetI T_Type T_FullName where
+  propertyDynImportGetI = makeTypeFullName
 
 currentDomain :: IO (Object T_AppDomain)
 currentDomain = getPropS @T_CurrentDomain @T_AppDomain

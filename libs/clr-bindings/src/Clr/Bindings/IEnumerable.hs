@@ -67,16 +67,16 @@ instance MethodDynImportI1 T_IEnumerator' T_MoveNext () where
 instance PropertyI (T_IEnumerator t) T_Current where
   type PropertyTypeI (T_IEnumerator t) T_Current = t
 
-instance {-# OVERLAPS #-} PropertyGetI (T_IEnumerator T_string) T_Current where
-  rawGetPropI ienumerator = getMethodStub (tString @(T_IEnumerator T_string)) (tStringGet @T_Current) (tString @()) >>= return . makeEnumeratorCurrentBStr >>= \f-> f ienumerator
+instance {-# OVERLAPS #-} PropertyDynImportGetI (T_IEnumerator T_string) T_Current where
+  propertyDynImportGetI = makeEnumeratorCurrentBStr
 
-instance {-# OVERLAPS #-} PropertyGetI (T_IEnumerator T_bool) T_Current where
-  rawGetPropI ienumerator = getMethodStub (tString @(T_IEnumerator T_bool)) (tStringGet @T_Current) (tString @()) >>= return . makeEnumeratorCurrentBool >>= \f-> f ienumerator
+instance {-# OVERLAPS #-} PropertyDynImportGetI (T_IEnumerator T_bool) T_Current where
+  propertyDynImportGetI = makeEnumeratorCurrentBool
 --
--- TODO: PropertyGetI for every other prim type
+-- TODO: PropertyDynImportGetI for every other prim type
 --
-instance {-# OVERLAPS #-} (IsPrimType (T name gt) ~ 'False, KnownSymbol name, TString gt) => PropertyGetI (T_IEnumerator (T name gt)) T_Current where
-  rawGetPropI ienumerator = getMethodStub (tString @(T_IEnumerator (T name gt))) (tStringGet @T_Current) (tString @()) >>= return . makeEnumeratorCurrentObj >>= \f-> f ienumerator
+instance {-# OVERLAPS #-} (IsPrimType (T name gt) ~ 'False) => PropertyDynImportGetI (T_IEnumerator (T name gt)) T_Current where
+  propertyDynImportGetI = makeEnumeratorCurrentObj
 
 
 type family IEnumElemT (x::Type) :: Type where

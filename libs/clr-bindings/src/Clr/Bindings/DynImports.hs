@@ -6,6 +6,7 @@ import Clr.Bridge
 import Clr.Constructor
 import Clr.Method.Instance
 import Clr.Method.Static
+import Clr.Property
 import Clr.TypeString
 
 import Clr.Bindings.Host
@@ -70,6 +71,18 @@ class ConstructorDynImport2 t arg0 arg1 where
 
 class ConstructorDynImport3 t arg0 arg1 arg2 where
   constructorDynImport3 :: DynamicImportType (BridgeType arg0 -> BridgeType arg1 -> BridgeType arg2 -> IO (BridgeType t))
+
+class PropertyDynImportGetI t m where
+  propertyDynImportGetI :: DynamicImportType (BridgeType t -> IO (BridgeType (PropertyTypeI t m)))
+
+class PropertyDynImportSetI t m where
+  propertyDynImportSetI :: DynamicImportType (BridgeType t -> BridgeType (PropertyTypeI t m) -> IO ())
+
+class PropertyDynImportGetS t m where
+  propertyDynImportGetS :: DynamicImportType (IO (BridgeType (PropertyTypeS t m)))
+
+class PropertyDynImportSetS t m where
+  propertyDynImportSetS :: DynamicImportType (BridgeType (PropertyTypeS t m) -> IO ())
 
 --
 -- An instance of both MethodResult and MethodDynImport provides an instance for MethodInvoke.
@@ -165,4 +178,34 @@ instance ( TString t
          , ConstructorDynImport3 t arg0 arg1 arg2
          ) => Constructor3 t arg0 arg1 arg2 where
   rawNew3 x y z = getMethodStub (tString @t) ctorString ((tString @arg0) ++ ";" ++ (tString @arg1) ++ ";" ++ (tString @arg2)) >>= return . (constructorDynImport3 @t @arg0 @arg1 @arg2) >>= \f-> f x y z
+
+instance ( TString t
+         , TString m
+         , PropertyI t m
+         , PropertyDynImportGetI t m
+         ) => PropertyGetI t m where
+  rawGetPropI obj = getMethodStub (tString @t) (tStringGet @m) (tString @()) >>= return . (propertyDynImportGetI @t @m) >>= \f-> f obj
+
+instance ( TString t
+         , TString m
+         , PropertyI t m
+         , TString (PropertyTypeI t m)
+         , PropertyDynImportSetI t m
+         ) => PropertySetI t m where
+  rawSetPropI obj x = getMethodStub (tString @t) (tStringSet @m) (tString @(PropertyTypeI t m)) >>= return . (propertyDynImportSetI @t @m) >>= \f-> f obj x
+
+instance ( TString t
+         , TString m
+         , PropertyS t m
+         , PropertyDynImportGetS t m
+         ) => PropertyGetS t m where
+  rawGetPropS = getMethodStub (tString @t) (tStringGet @m) (tString @()) >>= return . (propertyDynImportGetS @t @m) >>= \f-> f
+
+instance ( TString t
+         , TString m
+         , PropertyS t m
+         , TString (PropertyTypeS t m)
+         , PropertyDynImportSetS t m
+         ) => PropertySetS t m where
+  rawSetPropS x = getMethodStub (tString @t) (tStringSet @m) (tString @(PropertyTypeS t m)) >>= return . (propertyDynImportSetS @t @m) >>= \f-> f x
 
