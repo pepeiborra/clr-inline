@@ -1,8 +1,8 @@
 module Clr.Bindings
   ( module Clr.Bindings.Box
+  , module Clr.Bindings.DynImports
   , module Clr.Bindings.Marshal
   , BStr(..)
-  , getMethodStub
   , saveDynamicAssembly
   ) where
 
@@ -13,6 +13,7 @@ import Clr.Host
 import Clr.Host.BStr
 
 import Clr.Bindings.Box
+import Clr.Bindings.DynImports
 import Clr.Bindings.Host
 import Clr.Bindings.Marshal
 import Clr.Bindings.Object

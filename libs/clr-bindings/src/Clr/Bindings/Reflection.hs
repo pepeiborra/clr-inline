@@ -8,6 +8,7 @@ import Clr.TypeString
 import Clr.Host
 import Clr.Host.BStr
 
+import Clr.Bindings.DynImports
 import Clr.Bindings.Host
 import Clr.Bindings.IEnumerable
 import Clr.Bindings.Object
@@ -52,26 +53,32 @@ foreign import ccall "dynamic" makeTypeFullName           :: FunPtr (ObjectID T_
 instance PropertyS T_AppDomain T_CurrentDomain where
   type PropertyTypeS T_AppDomain T_CurrentDomain = T_AppDomain
 
-instance PropertyGetS T_AppDomain T_CurrentDomain where
-  rawGetPropS = getMethodStub (tString @T_AppDomain) (tStringGet @T_CurrentDomain) (tString @()) >>= return . makeAppDomainCurrentDomain >>= \f-> f
+instance PropertyDynImportGetS T_AppDomain T_CurrentDomain where
+  propertyDynImportGetS = makeAppDomainCurrentDomain
 
-instance MethodI1 T_AppDomain T_GetAssemblies () where
+instance MethodResultI1 T_AppDomain T_GetAssemblies () where
   type ResultTypeI1 T_AppDomain T_GetAssemblies () = 'Just T_AssemblyArray
-  rawInvokeI1 appDom () = getMethodStub (tString @T_AppDomain) (tString @T_GetAssemblies) (tString @()) >>= return . makeAppDomainGetAssemblies >>= \f-> f appDom
 
-instance MethodI1 T_Assembly T_GetTypes () where
+instance MethodDynImportI1 T_AppDomain T_GetAssemblies () where
+  methodDynImportI1 = makeAppDomainGetAssemblies
+
+instance MethodResultI1 T_Assembly T_GetTypes () where
   type ResultTypeI1 T_Assembly T_GetTypes () = 'Just T_TypeArray
-  rawInvokeI1 assem () = getMethodStub (tString @T_Assembly) (tString @T_GetTypes) (tString @()) >>= return . makeAssemblyGetTypes >>= \f-> f assem
 
-instance MethodS1 T_Assembly T_Load T_string where
+instance MethodDynImportI1 T_Assembly T_GetTypes () where
+  methodDynImportI1 = makeAssemblyGetTypes
+
+instance MethodResultS1 T_Assembly T_Load T_string where
   type ResultTypeS1 T_Assembly T_Load T_string = 'Just T_Assembly
-  rawInvokeS1 x = getMethodStub (tString @T_Assembly) (tString @T_Load) (tString @T_string) >>= return . makeAssemblyLoad >>= \f-> f x
+
+instance MethodDynImportS1 T_Assembly T_Load T_string where
+  methodDynImportS1 = makeAssemblyLoad
 
 instance PropertyI T_Type T_FullName where
   type PropertyTypeI T_Type T_FullName = T_string
 
-instance PropertyGetI T_Type T_FullName where
-  rawGetPropI typ = getMethodStub (tString @T_Type) (tStringGet @T_FullName) (tString @()) >>= return . makeTypeFullName >>= \f-> f typ
+instance PropertyDynImportGetI T_Type T_FullName where
+  propertyDynImportGetI = makeTypeFullName
 
 currentDomain :: IO (Object T_AppDomain)
 currentDomain = getPropS @T_CurrentDomain @T_AppDomain

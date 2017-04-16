@@ -8,6 +8,7 @@ import Clr.TypeString
 import Clr.Host
 import Clr.Host.BStr
 
+import Clr.Bindings.DynImports
 import Clr.Bindings.Host
 import Clr.Bindings.Marshal
 
@@ -24,7 +25,9 @@ type instance Candidates T_object  T_ToString = '[ '[ ] ]
 
 foreign import ccall "dynamic" makeToString :: FunPtr (ObjectID t -> IO BStr) -> (ObjectID t -> IO BStr)
 
-instance MethodI1 T_object T_ToString () where
+instance MethodResultI1 T_object T_ToString () where
   type ResultTypeI1 T_object T_ToString () = 'Just T_string
-  rawInvokeI1 obj () = getMethodStub (tString @T_object) (tString @T_ToString) (tString @()) >>= return . makeToString >>= \f-> f obj
+
+instance MethodDynImportI1 T_object T_ToString () where
+  methodDynImportI1 = makeToString
 

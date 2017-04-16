@@ -7,6 +7,7 @@ import Clr.Host
 import Clr.TypeString
 
 import Clr.Bindings
+import Clr.Bindings.Host
 import Clr.Bindings.IEnumerable
 import Clr.Bindings.Reflection
 
@@ -34,47 +35,46 @@ type instance Candidates T_Console T_WriteLine = '[ '[                          
                                                   , '[ T_string, T_object, T_object ] ]
 type instance Candidates (T_List t) (T_List t) = '[ '[] ]
 
-
-instance MethodS1 T_Console T_WriteLine () where
-  type ResultTypeS1 T_Console T_WriteLine () = 'Nothing
-  rawInvokeS1 x = getMethodStub (tString @T_Console) (tString @T_WriteLine) "" >>= return . makeWriteLineType0 >>= \f-> f
-
 foreign import ccall "dynamic" makeWriteLineType0 :: FunPtr (IO ()) -> IO ()
-
-instance MethodS1 T_Console T_WriteLine T_string where
-  type ResultTypeS1 T_Console T_WriteLine T_string = 'Nothing
-  rawInvokeS1 x = getMethodStub (tString @T_Console) (tString @T_WriteLine) (tString @T_string) >>= return . makeWriteLineType1 >>= \f-> f x
-
 foreign import ccall "dynamic" makeWriteLineType1 :: FunPtr (BStr -> IO ()) -> (BStr -> IO ())
-
-instance MethodS1 T_Console T_WriteLine T_int where
-  type ResultTypeS1 T_Console T_WriteLine T_int = 'Nothing
-  rawInvokeS1 x = getMethodStub (tString @T_Console) (tString @T_WriteLine) (tString @T_int) >>= return . makeWriteLineType2 >>= \f-> f x
-
 foreign import ccall "dynamic" makeWriteLineType2 :: FunPtr (Int32 -> IO ()) -> (Int32 -> IO ())
-
-instance MethodS2 T_Console T_WriteLine T_string T_object where
-  type ResultTypeS2 T_Console T_WriteLine T_string T_object = 'Nothing
-  rawInvokeS2 x y = getMethodStub (tString @T_Console) (tString @T_WriteLine) (tString @T_string ++ ";" ++ tString @T_object) >>= return . makeWriteLineType3 >>= \f-> f x y
-
 foreign import ccall "dynamic" makeWriteLineType3 :: FunPtr (BStr -> (ObjectID a) -> IO ()) -> (BStr -> (ObjectID a) -> IO ())
-
-instance MethodS3 T_Console T_WriteLine T_string (T_object) (T_object) where
-  type ResultTypeS3 T_Console T_WriteLine T_string (T_object) (T_object) = 'Nothing
-  rawInvokeS3 x y z = getMethodStub (tString @T_Console) (tString @T_WriteLine) (tString @T_string ++ ";" ++ tString @T_object ++ ";" ++ tString @T_object) >>= return . makeWriteLineType4 >>= \f-> f x y z
-
 foreign import ccall "dynamic" makeWriteLineType4 :: FunPtr (BStr -> (ObjectID a) -> (ObjectID b) -> IO ()) -> (BStr -> (ObjectID a) -> (ObjectID b) -> IO ())
-
-instance (TString t) => Constructor1 (T_List t) () where
-  rawNew1 () = getMethodStub (tString @(T_List t)) ".ctor" (tString @())  >>= return . makeListCTor >>= \f-> f
-
 foreign import ccall "dynamic" makeListCTor :: FunPtr (IO (ObjectID a)) -> IO (ObjectID a)
-
-instance MethodI1 (T_List T_string) T_Add T_string where
-  type ResultTypeI1 (T_List T_string) T_Add T_string = 'Nothing
-  rawInvokeI1 l s = getMethodStub (tString @(T_List T_string)) (tString @T_Add) (tString @T_string) >>= return . makeListAdd >>= \f-> f l s
-
 foreign import ccall "dynamic" makeListAdd :: FunPtr (ObjectID a -> BStr -> IO ()) -> (ObjectID a -> BStr -> IO ())
+
+instance MethodResultS1 T_Console T_WriteLine arg0 where
+  type ResultTypeS1 T_Console T_WriteLine arg0 = 'Nothing
+
+instance MethodResultS2 T_Console T_WriteLine arg0 arg1 where
+  type ResultTypeS2 T_Console T_WriteLine arg0 arg1 = 'Nothing
+
+instance MethodResultS3 T_Console T_WriteLine arg0 arg1 arg2 where
+  type ResultTypeS3 T_Console T_WriteLine arg0 arg1 arg2 = 'Nothing
+
+instance MethodResultI1 (T_List T_string) T_Add arg0 where
+  type ResultTypeI1 (T_List T_string) T_Add arg0 = 'Nothing
+
+instance MethodDynImportS1 T_Console T_WriteLine () where
+  methodDynImportS1 = makeWriteLineType0
+
+instance MethodDynImportS1 T_Console T_WriteLine T_string where
+  methodDynImportS1 = makeWriteLineType1
+
+instance MethodDynImportS1 T_Console T_WriteLine T_int where
+  methodDynImportS1 = makeWriteLineType2
+
+instance MethodDynImportS2 T_Console T_WriteLine T_string T_object where
+  methodDynImportS2 = makeWriteLineType3
+
+instance MethodDynImportS3 T_Console T_WriteLine T_string (T_object) (T_object) where
+  methodDynImportS3 = makeWriteLineType4
+
+instance ConstructorDynImport1 (T_List t) () where
+  constructorDynImport1 = makeListCTor
+
+instance MethodDynImportI1 (T_List T_string) T_Add T_string where
+  methodDynImportI1 = makeListAdd
 
 main :: IO ()
 main = do

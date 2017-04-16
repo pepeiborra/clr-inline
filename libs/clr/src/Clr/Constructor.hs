@@ -19,13 +19,13 @@ import Data.Kind
 -- Constructors
 --
 class Constructor1 (t::Type) (arg0::Type) where
-  rawNew1 :: (BridgeType arg0) -> (IO (BridgeType t))
+  rawNew1 :: BridgeType arg0 -> IO (BridgeType t)
 
 class Constructor2 (t::Type) (arg0::Type) (arg1::Type) where
-  rawNew2 :: (BridgeType arg0) -> (BridgeType arg1) -> (IO (BridgeType t))
+  rawNew2 :: BridgeType arg0 -> BridgeType arg1 -> IO (BridgeType t)
 
 class Constructor3 (t::Type) (arg0::Type) (arg1::Type) (arg3::Type) where
-  rawNew3 :: (BridgeType arg0) -> (BridgeType arg1) -> (BridgeType arg3) -> (IO (BridgeType t))
+  rawNew3 :: BridgeType arg0 -> BridgeType arg1 -> BridgeType arg3 -> IO (BridgeType t)
 
 --
 -- Unification of constructors
