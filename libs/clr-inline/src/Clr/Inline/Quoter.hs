@@ -70,19 +70,15 @@ getFullClassName language mod =
 toClrArg :: [Char] -> [Char]
 toClrArg x = "arg_" ++ x
 
-toClrTypeOrFail :: Type -> ClrType
-toClrTypeOrFail x =
-  fromMaybe
-    (error $ "Failed to convert to clr type: " ++ show (ppr x))
-    (toClrType x)
 
 getValueName :: String -> Q Name
 getValueName a = fromMaybe (error $ "Identifier not in scope: " ++ a) <$> lookupValueName a
 
-generateFFIStub :: KnownSymbol language => ClrInlinedExpDetails language Type -> Q [Dec]
+generateFFIStub :: KnownSymbol language => ClrInlinedExpDetails language String -> Q [Dec]
 generateFFIStub ClrInlinedExpDetails{..} = do
-  resTy <- [t| IO $(fst $ toTHType returnType)|]
-  let funTy = return $ foldr (\t u -> ArrowT `AppT` t `AppT` u) resTy (Map.elems args)
+  resTy <- [t| IO $(lookupQuotableMarshalType returnType)|]
+  argsTyped <- traverse lookupQuotableMarshalType args
+  let funTy = return $ foldr (\t u -> ArrowT `AppT` t `AppT` u) resTy (Map.elems argsTyped)
   -- This is what we'd like to write:
   -- [d| foreign import ccall "dynamic" $stubName :: $([t|FunPtr $funTy -> $funTy|]) |]
   -- Unfort. splicing languages into foreign import decl is not supported, so we have to write:
@@ -107,7 +103,7 @@ generateClrCall mod exp@ClrInlinedExpDetails{..} = do
         let stub = invoke $(liftString $ getFullClassName language mod) $(liftString $ getMethodName exp)
         let stub_f = $(varE stubName) stub
         result <- $(foldr roll [|id|] (argExps)) stub_f
-        unmarshalAuto (result)
+        unmarshalAuto (Proxy :: $([t| Proxy $(litT $ strTyLit returnType) |])) result
     |]
 
 -- | Runs after the whole module has been loaded and is responsible for generating:
@@ -116,9 +112,9 @@ clrGenerator
   :: forall language . KnownSymbol language
   => Proxy language -> Module -> (ClrInlinedGroup language -> IO ClrBytecode) -> Q ()
 clrGenerator language hsmod compile = do
-  FinalizerState {wrappers} <- getFinalizerState @(ClrInlinedUnit language Type)
-  let typedWrappers =
-        over (traversed . _ClrInlinedExp . _args) (Map.mapKeysMonotonic toClrArg . Map.map toClrTypeOrFail) wrappers
+  FinalizerState {wrappers} <- getFinalizerState @(ClrInlinedUnit language String)
+  typedWrappers <-
+        mapMOf (traversed . _ClrInlinedExp . _args) (fmap (Map.mapKeysMonotonic toClrArg) . traverse lookupQuotableClrType) wrappers
   let mod = ClrInlinedGroup hsmod typedWrappers
   _ <- runIO $ compile mod
   -- Embed the bytecodes
@@ -134,21 +130,20 @@ clrQuoteExp
      KnownSymbol language
   => Proxy language -> (ClrInlinedGroup language -> IO ClrBytecode) -> String -> Q Exp
 clrQuoteExp language clrCompile body = do
-  count <- getFinalizerCount @(ClrInlinedUnit language Type)
+  count <- getFinalizerCount @(ClrInlinedUnit language String)
   mod <- thisModule
   stubName <- newName $ printf "%s_stub_%d" (symbolVal language) count
   let (resultType, parsedBody) = parseBody body
   let (antis, parsedBody') = extractArgs toClrArg parsedBody
-  argsTyped <- traverse (snd . toTHType) antis
   let inlinedUnit =
         ClrInlinedExpDetails
           language
           count
           stubName
           (normaliseLineEndings parsedBody')
-          argsTyped
+          antis
           resultType
-  pushWrapperGen (clrGenerator language mod clrCompile) $ return (ClrInlinedExp inlinedUnit :: ClrInlinedUnit language Type)
+  pushWrapperGen (clrGenerator language mod clrCompile) $ return (ClrInlinedExp inlinedUnit :: ClrInlinedUnit language String)
   --
   -- splice in a proxy datatype for the late bound class, used to delay the type checking of the stub call
   addTopDecls =<< generateFFIStub inlinedUnit
@@ -175,8 +170,6 @@ clrQuoteDec language clrCompile body = do
           if allEqual (map fst ws)
             then unlines (map snd ws)
             else nbody
-    return (ClrInlinedDec language body' :: ClrInlinedUnit language Type)
+    return (ClrInlinedDec language body' :: ClrInlinedUnit language String)
   return mempty
 
-unmarshalAuto :: Unmarshal a (UnmarshalAs a) => a -> IO(UnmarshalAs a)
-unmarshalAuto = unmarshal

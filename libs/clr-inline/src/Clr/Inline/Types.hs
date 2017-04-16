@@ -11,10 +11,10 @@ import           Clr.Bindings.Marshal ()
 import           Clr.Bindings.Host
 import           Clr.Host.BStr
 import           Clr.Marshal
-import           Data.Char
 import           Data.Int
 import           Data.IORef
-import           Data.List.Extra
+import           Data.Maybe
+import           Data.Proxy
 import           Data.Text            (Text)
 import           Data.Word
 import           Foreign
@@ -23,7 +23,7 @@ import           Language.Haskell.TH
 import           System.IO.Unsafe
 
 -- | A pointer to a Clr object.
---   The only way to access the contents is in clr-inline quotations.
+--   The only way to access the contents is via clr-inline quotations.
 newtype ClrPtr (name::Symbol)= ClrPtr Int64
 
 -- | A wrapper around a 'ClrPtr', which will be released once this
@@ -48,42 +48,60 @@ instance Marshal (Clr n) (ClrPtr n) where
     () <- readIORef ref
     f ptr
 
-newtype ClrType = ClrType {getClrType :: String}
-
-toClrType :: Type -> Maybe ClrType
-toClrType t =
-  ClrType <$>
-  case t of
-    ConT t | t == ''Bool -> Just "System.Boolean"
-    ConT t | t == ''Double -> Just "System.Double"
-    ConT t | t == ''Int -> Just "System.Int32"
-    ConT t | t == ''Int32 -> Just "System.Int32"
-    ConT t | t == ''Int64 -> Just "System.Int64"
-    ConT t | t == ''TextBStr -> Just "System.String"
-    ConT t | t == ''BStr -> Just "System.String"
-    ConT t | t == ''String -> Just "System.String"
-    ConT t | t == ''Text -> Just "System.String"
-    AppT (ConT t) (LitT (StrTyLit s)) | t == ''ClrPtr -> Just s
-    _ -> Nothing
+newtype ClrType = ClrType {getClrType :: String} deriving Show
 
 newtype TextBStr = TextBStr BStr
-type instance UnmarshalAs TextBStr = Text
 instance Unmarshal TextBStr Text where unmarshal (TextBStr t) = unmarshal t
+instance Marshal Text TextBStr where marshal x f = marshal x (f . TextBStr)
 
--- | Rudimentary parser for stringy Haskell types.
---   If successful, produces two types:
---     1. when parsing a return type
---     2. when parsing an argument type
-toTHType :: String -> (TypeQ,TypeQ)
-toTHType (trim -> s) =
-  case map toLower s of
-    "string" -> ([t|BStr|]     ,[t|BStr|])
-    "text"   -> ([t|TextBStr|] ,[t|BStr|])
-    "double" -> ([t|Double|]   ,[t|Double|])
-    "bool"   -> ([t|Bool|]     ,[t|Bool|])
-    "int"    -> ([t|Int|]      ,[t|Int|])
-    "int32"  -> ([t|Int32|]    ,[t|Int32|])
-    "int64"  -> ([t|Int64|]    ,[t|Int64|])
-    "word"   -> ([t|Word64|]   ,[t|Word64|])
-    "void"   -> ([t|()|]       ,[t|()|])
-    _        -> let t = return $ ConT ''ClrPtr `AppT` LitT (StrTyLit s) in (t, t)
+-- | Extensible mapping between quotable CLR types and Haskell types
+class Unmarshal marshal haskell =>
+         Quotable (quoted::Symbol) (clr::Symbol)    marshal     haskell | marshal -> haskell clr
+instance Quotable "bool"           "System.Boolean" Bool        Bool
+instance Quotable "double"         "System.Double"  Double      Double
+instance Quotable "int"            "System.Int32"   Int         Int
+instance Quotable "int32"          "System.Int32"   Int32       Int32
+instance Quotable "int64"          "System.Int64"   Int64       Int64
+instance Quotable "long"           "System.Int64"   Int64       Int64
+instance Quotable "uint16"         "System.UInt16"  Word16      Word16
+instance Quotable "word16"         "System.UInt16"  Word16      Word16
+instance Quotable "uint32"         "System.UInt32"  Word32      Word32
+instance Quotable "word32"         "System.UInt32"  Word32      Word32
+instance Quotable "uint64"         "System.UInt64"  Word64      Word64
+instance Quotable "word64"         "System.UInt64"  Word64      Word64
+instance Quotable "string"         "System.String"  BStr        String
+instance Quotable "text"           "System.String"  TextBStr    Text
+instance Quotable "void"           "System.Void"    ()          ()
+-- | All reference types are handled by this instance.
+instance Quotable a                a                (ClrPtr a)  (Clr a)
+
+lookupQuotable :: Show a => ([InstanceDec] -> a) -> String -> Q a
+lookupQuotable extract quote = do
+  let ty = LitT (StrTyLit quote)
+  a <- newName "clr"
+  b <- newName "rep"
+  c <- newName "haskell"
+  instances <- reifyInstances ''Quotable [ ty, VarT a, VarT b, VarT c ]
+  return $ extract instances
+
+lookupQuotableClrType :: String -> Q ClrType
+lookupQuotableClrType s = lookupQuotable extractClrType s
+    where
+      extractClrType instances = fromMaybe (general instances) $ listToMaybe $ catMaybes $ map specific instances
+      specific (InstanceD _ _ (_ `AppT` _ `AppT` LitT (StrTyLit s) `AppT` _ `AppT` _) _) = Just $ ClrType s
+      specific _ = Nothing
+      general [InstanceD _ _ (_ `AppT` quote `AppT` clr `AppT` _ `AppT` _) _] | quote == clr = ClrType s
+      general _ = error $ "Overlapping instances for Quotable " ++ s
+
+lookupQuotableMarshalType :: String -> Q Type
+lookupQuotableMarshalType s = lookupQuotable extractMarshalType s
+  where
+    extractMarshalType instances = fromMaybe (general instances) $ listToMaybe $ catMaybes $ map specific instances
+    specific (InstanceD _ _ (_ `AppT` quote `AppT` clr `AppT` _ `AppT` _) _) | quote == clr = Nothing
+    specific (InstanceD _ _ (_ `AppT` _ `AppT` _ `AppT` marshalTy `AppT` _) _) = Just marshalTy
+    specific _ = Nothing
+    general [InstanceD _ _ (_ `AppT` quote `AppT` clr `AppT` AppT (ConT clrPtr) _ `AppT` _) _] | quote == clr && clrPtr == ''ClrPtr = AppT (ConT clrPtr) (LitT (StrTyLit s))
+    general _ = error $ "Overlapping instances for Quotable " ++ s
+
+unmarshalAuto :: Quotable quote clr a unmarshal => Proxy quote -> a -> IO unmarshal
+unmarshalAuto _ = unmarshal

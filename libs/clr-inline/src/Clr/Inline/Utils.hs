@@ -39,5 +39,5 @@ parseBody e =
   case span ('{' /=) (trim e) of
     (typeString, exp') ->
       case initAndLast (drop 1 exp') of
-        Just (exp,'}') -> (typeString, exp)
+        Just (exp,'}') -> (trim typeString, exp)
         _ -> ("void", e)

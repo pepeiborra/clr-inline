@@ -4,6 +4,7 @@ module Clr.Inline
   , fsharp
   , fsharp'
   , startClr
+  , Quotable
   -- * Reexports for generated code
   , FunPtr
   , BStr(..)

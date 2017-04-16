@@ -64,10 +64,12 @@ main = do
   h_i32' <- [fsharp| int32 { $h_i32:int32 + 0}|]
   h_i64' <- [fsharp| int64 { $h_i64:int64 + 0L}|]
   d      <- [fsharp| double{ 2.0 * $h_d:double} |]
-  s      <- [fsharp| string{ "Hello"}|]
-  t      <- [fsharp| text  { "Hello text"}|]
-  w      <- [fsharp| word  { 2}|]
-  [fsharp| printfn "%s" $h_s:string |]
+  s      <- [fsharp| string{ $h_s:string}|]
+  t      <- [fsharp| text  { $h_t:text}|]
+  w      <- [fsharp| uint16{ 2}|]
+  [fsharp| $w:uint16|]
+  w      <- [fsharp| word16{ 2}|]
+  [fsharp| $w:word16|]
   [fsharp| printfn "%s" $h_t:text|]
   --
   -- reference type examples
@@ -94,8 +96,8 @@ main = do
   h_i32' `shouldBe` h_i32
   h_i64' `shouldBe` h_i64
   d `shouldBe` h_d * 2
-  s `shouldBe` "Hello"
-  t `shouldBe` Text.pack "Hello text"
+  s `shouldBe` h_s
+  t `shouldBe` h_t
   w `shouldBe` 2
   day `shouldBe` 10
 

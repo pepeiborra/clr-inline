@@ -28,22 +28,32 @@ import           Language.Haskell.TH.Quote
 -- @
 --
 --  Expressions are wrapped in a curly braces block @{}@ that
---  declares the return type. An F# expression quotation can refer to
+--  fixes the return type. An F# expression quotation can refer to
 --  a Haskell binding @x@ using the syntax @($x:type)@ where type is
---  an F# type and is only required on the first usage, and the parentheses
---  are optional. An antiquotation @$x:type@
---  is well-scoped if there exists a variable @x@ with a compatible type in
---  the Haskell context. An F# expression always returns in the IO monad.
+--  a string denoting an F# type and is only required on the first usage, and the parentheses
+--  are optional. F# types are mapped to Haskell types via the 'Quotable' class.
+--  An antiquotation @$x:type@
+--  is well-scoped if there exists a variable @x@ with a Haskell type @U@ in
+--  the Haskell context such that there exists an instance
+--  @Quotable type clr marshall U@ for some @clr@ and @marshall@.
+--
+--  An F# expression returns an IO computation that
+--  produces a value of the quoted result type if said type is 'Quotable'.
 --  Example expressions:
 --
 -- @
--- hello :: IO (Int, Clr "System.DateTime")
+-- hello :: IO (Int, Clr \"System.DateTime")
 -- hello = do
 --   let year = 2017 :: Int
---   anClr <- [fsharp| DateTime{ DateTime($year:int,04,10)} |]
---   anInt <- [fsharp| int{ ($anClr:System.DateTime).Year + $year:int + $year}|]
+--   aClr <- [fsharp| DateTime{ DateTime($year:int,04,10)} |]
+--   anInt <- [fsharp| int{ ($aClr:System.DateTime).Year + $year:int + $year}|]
 --   return (anInt, anClr)
 -- @
+--
+--  CLR Reference types are modelled in Haskell as 'Clr' values, indexed with the
+--  name of their F# type as a type level symbol. String equivalence is a poor
+--  substitute for type equality, so for two 'Clr' values to have the same type
+--  they must be indexed by exactly the same string.
 --
 --  This quasiquoter is implicitly configured with the 'defaultConfig'.
 fsharp :: QuasiQuoter
