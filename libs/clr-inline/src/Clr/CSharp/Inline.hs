@@ -4,6 +4,7 @@
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeInType          #-}
 module Clr.CSharp.Inline (csharp, csharp') where
 
 import           Clr.Inline.Config
@@ -16,8 +17,10 @@ import           Control.Monad.Trans.Writer
 import qualified Data.ByteString            as BS
 import           Data.List
 import qualified Data.Map as Map
+import           Data.Proxy
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Quote
+import           Language.Haskell.TH.Syntax
 import           System.Directory
 import           System.FilePath            ((<.>), (</>))
 import           System.IO.Temp
@@ -48,8 +51,8 @@ import           Text.Printf
 csharp :: QuasiQuoter
 csharp = csharp' defaultConfig
 
-name :: String
-name = "csharp"
+name :: Proxy "csharp"
+name = Proxy
 
 -- | Explicit configuration version of 'csharp'.
 csharp' :: ClrInlineConfig -> QuasiQuoter
@@ -68,39 +71,40 @@ csharpExp cfg =
 csharpDec :: ClrInlineConfig -> String -> Q [Dec]
 csharpDec cfg = clrQuoteDec name $ compile cfg
 
-data CSharp
 
-genCode :: ClrInlinedGroup CSharp -> String
-genCode ClrInlinedGroup {..} =
+genCode :: ClrInlinedGroup "csharp" -> String
+genCode ClrInlinedGroup {units, mod = mod@(Module _ (ModName m))} =
   unlines $
   execWriter $ do
-    yield $ printf "namespace %s {" modNamespace
+    yield $ printf "namespace %s {" (getNamespace mod)
     forM_ units $ \case
-      ClrInlinedDec body ->
+      ClrInlinedDec _ body ->
         yield body
       ClrInlinedExp{} ->
         return ()
-    yield $ printf "public class %s {" modName
+    yield $ printf "public class %s {" (getClassName mod)
     forM_ units $ \case
       ClrInlinedDec{} ->
         return ()
-      ClrInlinedExp ClrInlinedExpDetails {..} -> do
+      ClrInlinedExp exp@ClrInlinedExpDetails {..} -> do
         yield $
           printf
             "    public static %s %s (%s) { "
             returnType
-            (getMethodName name unitId)
+            (getMethodName exp)
             (intercalate ", " [printf "%s %s" t a | (a, ClrType t) <- Map.toList args])
+        yield $ printf "#line 1 \"%s/slice-%d\"" m unitId
         forM_ (lines body) $ \l -> yield $ printf "        %s" l
         yield "}"
     yield "}}"
 
-compile :: ClrInlineConfig -> ClrInlinedGroup CSharp -> IO ClrBytecode
+compile :: ClrInlineConfig -> ClrInlinedGroup "csharp" -> IO ClrBytecode
 compile ClrInlineConfig{..} m@ClrInlinedGroup {..} = do
     temp <- getTemporaryDirectory
     dir <- createTempDirectory temp "inline-csharp"
-    let src = dir </> modName <.> ".cs"
-        tgt = dir </> modName <.> ".dll"
+    let ass = getAssemblyName name mod
+    let src = dir </> ass <.> ".cs"
+        tgt = dir </> ass <.> ".dll"
     writeFile src (genCode m)
     callCommand $
       unwords $
