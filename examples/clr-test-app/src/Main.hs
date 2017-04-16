@@ -15,7 +15,10 @@ import Data.Int(Int32, Int64)
 import Foreign.Ptr(Ptr, FunPtr)
 
 import Pipes
-import Pipes.Prelude(stdoutLn)
+import Pipes.Prelude.Text(stdoutLn)
+
+import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
 
 type T_Console   = T "System.Console" '[]
 type T_List t    = T "System.Collections.Generic.List" '[t]
@@ -92,6 +95,6 @@ main = do
   putStrLn "These are all the assemblies currently loaded:"
   assems <- assembliesLoaded                                                    -- Reflection
   assemNames <- mapM (\assem-> invokeI @"ToString" assem ()) assems
-  mapM_ (\assemName-> putStrLn $ "\t" ++ assemName) assemNames
+  mapM_ (\assemName-> TIO.putStrLn $ (T.pack "\t") `T.append` assemName) assemNames
   return ()
 

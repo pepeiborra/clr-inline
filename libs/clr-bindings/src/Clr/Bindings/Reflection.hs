@@ -87,7 +87,7 @@ assemblyLoad :: T.Text -> IO (Object T_Assembly)
 assemblyLoad assemName = invokeS @T_Load @T_Assembly assemName
 
 assemIsDynamicDriverInternal :: Object T_Assembly -> IO Bool
-assemIsDynamicDriverInternal assem = invokeI @T_ToString assem () >>= \assemName-> return $ assemName == "DynamicAssembly, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null"
+assemIsDynamicDriverInternal assem = invokeI @T_ToString assem () >>= \assemName-> return $ assemName == T.pack "DynamicAssembly, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null"
 
 assembliesLoaded :: IO [Object T_Assembly]
 assembliesLoaded = do
@@ -109,6 +109,6 @@ knownTypes = do
   types  <- mapM assemGetTypes assems
   return $ concat types
 
-typeFullName :: Object T_Type -> IO String
+typeFullName :: Object T_Type -> IO T.Text
 typeFullName typ = getPropI @T_FullName typ
 

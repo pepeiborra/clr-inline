@@ -36,5 +36,12 @@ instance Unmarshal BStr Text where
 instance Unmarshal BStr String where
   unmarshal x = unmarshal x >>= return . unpack
 
-type instance UnmarshalAs BStr = String
+--
+-- NB: This next line specifies that all methods
+-- returning a System.String, get the result
+-- converted to a Text. This needs a bit of work,
+-- but polymorphism in the return type is going
+-- to make compilation a lot harder. TODO.
+--
+type instance UnmarshalAs BStr = Text
 
