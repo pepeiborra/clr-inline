@@ -1,5 +1,5 @@
 # clr-inline: Call into the CLR by writing C# / F# inline in Haskell modules
-[![Windows Build Status](https://img.shields.io/appveyor/ci/pepeiborra/clr-haskell.svg?label=Windows%20build)](https://ci.appveyor.com/project/pepeiborra/clr-haskell)
+[![Unix build status](https://gitlab.com/tim-m89/clr-haskell/badges/master/build.svg)](https://gitlab.com/tim-m89/clr-haskell/commits/master)[![Windows Build Status](https://img.shields.io/appveyor/ci/pepeiborra/clr-haskell.svg?label=Windows%20build)](https://ci.appveyor.com/project/pepeiborra/clr-haskell)
 
 **NOTE: you will need GHC >= 8.2 to use this package in Windows.
 
