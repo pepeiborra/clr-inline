@@ -6,9 +6,8 @@ import Clr
 
 import Clr.Host
 
-import Clr.Bindings.Reflection
-
 import Clr.ImportGen.Definition
+import Clr.ImportGen.Reflection
 
 import Data.IORef
 import System.IO.Unsafe(unsafePerformIO)
@@ -37,8 +36,19 @@ ensureClrStarted = runIO $ startClr
 defToAssems :: RefImportDef -> Q [Object T_Assembly]
 defToAssems = undefined
 
-assemGetTypesWithinNS :: Object T_Assembly -> [Import] -> Q [Object T_Type]
-assemGetTypesWithinNS assem allImports = undefined
+assemGetAllTypesOfNS :: Object T_Assembly -> T.Text -> Q [Object T_Type]
+assemGetAllTypesOfNS = undefined
+
+assemGetTypesByFQName :: Object T_Assembly -> [T.Text] -> Q [Object T_Type]
+assemGetTypesByFQName = undefined
+
+assemGetTypesMatchingImport :: Object T_Assembly -> Import -> Q [Object T_Type]
+assemGetTypesMatchingImport assem (Import ns typs) = case typs of
+  [] -> assemGetAllTypesOfNS  assem ns
+  xs -> assemGetTypesByFQName assem (map (\typName -> ns `T.append` T.pack "." `T.append` typName) xs)
+
+assemGetTypesMatchingImports :: Object T_Assembly -> [Import] -> Q [Object T_Type]
+assemGetTypesMatchingImports assem imports = mapM (assemGetTypesMatchingImport assem) imports >>= return . concat
 
 declareMembersInstance :: [Object T_MemberInfo] -> Q Dec
 declareMembersInstance members = undefined
@@ -57,7 +67,7 @@ importDefToQDec def = do
   ensureClrStarted
   assems <- defToAssems def
   let allImports = getImps def
-  typs <- mapM (\assem-> assemGetTypesWithinNS assem allImports) assems >>= return . concat
+  typs <- mapM (\assem-> assemGetTypesMatchingImports assem allImports) assems >>= return . concat
   decs <- mapM declareType typs >>= return . concat
   return decs
 

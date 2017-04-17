@@ -19,6 +19,7 @@ library
                      , Clr.ImportGen.Parser
                      , Clr.ImportGen.Processor
                      , Clr.ImportGen.QQ
+                     , Clr.ImportGen.Reflection
   build-depends:       base >= 4.7 && < 5
                      , template-haskell
                      , text

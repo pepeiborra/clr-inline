@@ -9,7 +9,6 @@ import Clr.TypeString
 import Clr.Bindings
 import Clr.Bindings.Host
 import Clr.Bindings.IEnumerable
-import Clr.Bindings.Reflection
 
 import Data.Int(Int32, Int64)
 import Foreign.Ptr(Ptr, FunPtr)
@@ -92,9 +91,4 @@ main = do
   invokeI @"Add" list "bar"
   let prodList = toProducer list                                                -- IEnumerable implementors can be converted to Producers (pipes package)
   runEffect $ prodList >-> stdoutLn
-  putStrLn "These are all the assemblies currently loaded:"
-  assems <- assembliesLoaded                                                    -- Reflection
-  assemNames <- mapM (\assem-> invokeI @"ToString" assem ()) assems
-  mapM_ (\assemName-> TIO.putStrLn $ (T.pack "\t") `T.append` assemName) assemNames
-  return ()
 

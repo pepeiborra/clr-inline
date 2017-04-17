@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeApplications, TypeInType, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, TypeFamilies #-}
 
-module Clr.Bindings.Reflection where
+module Clr.ImportGen.Reflection where
 
 import Clr
 import Clr.TypeString
