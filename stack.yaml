@@ -39,6 +39,7 @@ packages:
 - 'libs/clr/'
 - 'libs/clr-host/'
 - 'libs/clr-bindings/'
+- 'libs/clr-import-gen/'
 - 'libs/clr-inline/'
 - 'examples/clr-test-app/'
 - 'examples/clr-inline-test-app/'
