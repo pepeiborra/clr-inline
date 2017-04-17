@@ -30,21 +30,42 @@ lineParser = lineImportParser <|> lineRefParser
 isNameSpaceChar :: Char -> Bool
 isNameSpaceChar = inClass "a-zA-Z.-"
 
+isTypeNameChar :: Char -> Bool
+isTypeNameChar = inClass "a-zA-Z-"
+
 isSpace' :: Char -> Bool
 isSpace' c = c `elem` (" \t\f\v" :: String)
 
 skipSpace' :: Parser ()
 skipSpace' = skipWhile isSpace'
 
+parseTypeName :: Parser T.Text
+parseTypeName = do
+  skipSpace'
+  typeName <- takeWhile1 isTypeNameChar
+  skipSpace'
+  return typeName
+
+parseImportParenTypes :: Parser [T.Text]
+parseImportParenTypes = do
+  skipSpace'
+  string "("
+  typs <- parseTypeName `sepBy1` (char ',')
+  skipSpace'
+  string ")"
+  skipSpace'
+  return typs
+
 lineImportParser :: Parser Line
 lineImportParser = do
   skipSpace'
   string s_import
   skipSpace'
-  imp <- takeWhile1 isNameSpaceChar
+  ns <- takeWhile1 isNameSpaceChar
   skipSpace'
+  typs <- option [] parseImportParenTypes
   endOfLine <|> endOfInput
-  return $ LineImport imp []
+  return $ LineImport ns typs
 
 lineRefParser :: Parser Line
 lineRefParser = do
@@ -53,7 +74,7 @@ lineRefParser = do
   skipSpace'
   ref <- takeTill isEndOfLine
   endOfLine <|> endOfInput
-  return $ LineRef ref
+  return $ LineRef $ T.strip ref
 
 importDefParser :: Parser RefImportDef
 importDefParser = do

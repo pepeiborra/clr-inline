@@ -7,10 +7,10 @@ data Ref    = Ref T.Text
 data Import = Import T.Text [T.Text]
 
 instance Show Ref where
-  show (Ref t) = show t
+  show (Ref t) = T.unpack t
 instance Show Import where
-  show (Import ns [])   = show ns
-  show (Import ns typs) = show ns ++ " (" ++ intercalate "," (map T.unpack typs) ++ ")"
+  show (Import ns [])   = T.unpack ns
+  show (Import ns typs) = T.unpack ns ++ "(" ++ intercalate "," (map T.unpack typs) ++ ")"
 
 data RefImportDef
   = RefImportDef
