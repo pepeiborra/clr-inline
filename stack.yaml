@@ -41,7 +41,7 @@ packages:
 - 'libs/clr-bindings/'
 - 'libs/clr-inline/'
 - 'examples/clr-test-app/'
-- 'examples/clr-inline-test-app/'
+- 'examples/clr-inline-demo/'
 - 'utils/clr-win-linker/'
 
 # Dependency packages to be pulled from upstream that are not in the resolver

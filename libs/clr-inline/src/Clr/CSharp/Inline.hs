@@ -2,13 +2,9 @@
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell     #-}
-{-# LANGUAGE TypeApplications    #-}
-module Clr.CSharp.Inline (csharp, csharp', FunPtr, getMethodStubRaw, BStr(..)) where
+{-# LANGUAGE TypeInType          #-}
+module Clr.CSharp.Inline (csharp, csharp') where
 
-import           Clr.Bindings
-import           Clr.Bindings.Host
 import           Clr.Inline.Config
 import           Clr.Inline.Quoter
 import           Clr.Inline.Utils
@@ -19,20 +15,44 @@ import           Control.Monad.Trans.Writer
 import qualified Data.ByteString            as BS
 import           Data.List
 import qualified Data.Map as Map
-import           Foreign
+import           Data.Proxy
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Quote
+import           Language.Haskell.TH.Syntax
 import           System.Directory
 import           System.FilePath            ((<.>), (</>))
 import           System.IO.Temp
 import           System.Process
 import           Text.Printf
 
+-- | Quasiquoter for C# declarations and expressions.
+--   A quasiquote is a block of C# statements wrapped in curly braces
+--   preceded by the C# return type.
+--   Examples:
+--
+-- @
+-- example :: IO (Clr "int[]")
+-- example = do
+--  [csharp| Console.WriteLine("Hello CLR inline !!!"); |]
+--  i <- [csharp| int { return 2; }|]
+--  [csharp| int[] {  int[] a = new int[4]{0,0,0,0};
+--                    for(int i=0; i < 4; i++) {
+--                      a[i] = i;
+--                    }
+--                    return a;
+--                 }|]
+-- @
+--
+--   See the documentation for 'fsharp' for details on the quotation
+--   and antiquotation syntaxes.
+--  This quasiquoter is implicitly configured with the 'defaultConfig'.
 csharp :: QuasiQuoter
-csharp = csharp' defaultInlineConfig
-name :: [Char]
-name = "csharp"
+csharp = csharp' defaultConfig
 
+name :: Proxy "csharp"
+name = Proxy
+
+-- | Explicit configuration version of 'csharp'.
 csharp' :: ClrInlineConfig -> QuasiQuoter
 csharp' cfg = QuasiQuoter
     { quoteExp  = csharpExp cfg
@@ -49,39 +69,40 @@ csharpExp cfg =
 csharpDec :: ClrInlineConfig -> String -> Q [Dec]
 csharpDec cfg = clrQuoteDec name $ compile cfg
 
-data CSharp
 
-genCode :: ClrInlinedGroup CSharp -> String
-genCode ClrInlinedGroup {..} =
+genCode :: ClrInlinedGroup "csharp" -> String
+genCode ClrInlinedGroup {units, mod = mod@(Module _ (ModName m))} =
   unlines $
   execWriter $ do
-    yield $ printf "namespace %s {" modNamespace
+    yield $ printf "namespace %s {" (getNamespace mod)
     forM_ units $ \case
-      ClrInlinedDec {..} ->
+      ClrInlinedDec _ body ->
         yield body
-      ClrInlinedUnit{} ->
+      ClrInlinedExp{} ->
         return ()
-    yield $ printf "public class %s {" modName
+    yield $ printf "public class %s {" (getClassName mod)
     forM_ units $ \case
       ClrInlinedDec{} ->
         return ()
-      ClrInlinedUnit {..} -> do
+      ClrInlinedExp exp@ClrInlinedExpDetails {..} -> do
         yield $
           printf
             "    public static %s %s (%s) { "
             returnType
-            (getMethodName name unitId)
+            (getMethodName exp)
             (intercalate ", " [printf "%s %s" t a | (a, ClrType t) <- Map.toList args])
-        forM_ (lines body) $ \l -> do yield $ printf "        %s" l
+        yield $ printf "#line 1 \"%s/slice-%d\"" m unitId
+        forM_ (lines body) $ \l -> yield $ printf "        %s" l
         yield "}"
     yield "}}"
 
-compile :: ClrInlineConfig -> ClrInlinedGroup CSharp -> IO ClrBytecode
+compile :: ClrInlineConfig -> ClrInlinedGroup "csharp" -> IO ClrBytecode
 compile ClrInlineConfig{..} m@ClrInlinedGroup {..} = do
     temp <- getTemporaryDirectory
     dir <- createTempDirectory temp "inline-csharp"
-    let src = dir </> modName <.> ".cs"
-        tgt = dir </> modName <.> ".dll"
+    let ass = getAssemblyName name mod
+    let src = dir </> ass <.> ".cs"
+        tgt = dir </> ass <.> ".dll"
     writeFile src (genCode m)
     callCommand $
       unwords $

@@ -30,7 +30,7 @@ setFinalizerState :: Typeable a => FinalizerState a -> Q ()
 setFinalizerState = TH.putQ
 
 getFinalizerCount :: forall a. Typeable a => Q Int
-getFinalizerCount = getFinalizerState @ a >>= return . finalizerCount
+getFinalizerCount = finalizerCount <$> getFinalizerState @ a
 
 incrementFinalizerCount :: forall a. Typeable a => Q ()
 incrementFinalizerCount =
@@ -51,7 +51,7 @@ pushWrapper w =
     getFinalizerState @ a >>= \FinalizerState{..} ->
     setFinalizerState FinalizerState{wrappers = w:wrappers, ..}
 
-pushWrapperGen :: forall a . Typeable a => (Q ()) -> Q a -> Q ()
+pushWrapperGen :: forall a . Typeable a => Q () -> Q a -> Q ()
 pushWrapperGen actionIfLast gen = do
     incrementFinalizerCount @ a
     TH.addModFinalizer $ do

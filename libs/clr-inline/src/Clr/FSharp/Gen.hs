@@ -1,9 +1,8 @@
-{-# OPTIONS_GHC -fno-warn-name-shadowing #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE RecordWildCards   #-}
-{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TypeInType        #-}
 module Clr.FSharp.Gen (name, compile) where
 
 import           Clr.Inline.Config
@@ -16,40 +15,43 @@ import           Control.Monad.Trans.Writer
 import qualified Data.ByteString                 as BS
 import           Data.List
 import qualified Data.Map as Map
+import           Data.Proxy
+import           Language.Haskell.TH.Syntax
 import           System.Directory
 import           System.FilePath                 ((<.>), (</>))
 import           System.IO.Temp
 import           System.Process
 import           Text.Printf
 
-data FSharp
-name :: String
-name = "fsharp"
+name :: Proxy "fsharp"
+name = Proxy
 
-genCode :: ClrInlinedGroup FSharp -> String
-genCode ClrInlinedGroup {..} =
+genCode :: ClrInlinedGroup "fsharp" -> String
+genCode ClrInlinedGroup {units, mod = mod@(Module _ (ModName m))} =
   unlines $
   execWriter $ do
-    yield $ printf "namespace %s" modNamespace
+    yield $ printf "namespace %s" (getNamespace mod)
     forM_ units $ \case
-      ClrInlinedDec body -> yield body
-      ClrInlinedUnit {} -> return ()
-    yield $ printf "module %s = " modName
+      ClrInlinedDec _ body -> yield body
+      ClrInlinedExp {} -> return ()
+    yield $ printf "module %s = " (getClassName mod)
     forM_ units $ \case
       ClrInlinedDec {} -> return ()
-      ClrInlinedUnit {..} -> do
+      ClrInlinedExp exp@ClrInlinedExpDetails {..} -> do
         yield $ printf   "    let %s (%s) ="
-            (getMethodName name unitId)
+            (getMethodName exp)
             (intercalate ", " [printf "%s:%s" a t | (a, ClrType t) <- Map.toList args])
+        yield $ printf "#line 0 \"%s/slice-%d\"" m unitId
         forM_ (lines body) $ \l ->
           yield $ printf "        %s" l
 
-compile :: ClrInlineConfig -> ClrInlinedGroup FSharp -> IO ClrBytecode
+compile :: ClrInlineConfig -> ClrInlinedGroup "fsharp" -> IO ClrBytecode
 compile ClrInlineConfig {..} m@ClrInlinedGroup {..} = do
   temp <- getTemporaryDirectory
+  let ass = getAssemblyName name mod
   dir <- createTempDirectory temp "inline-fsharp"
-  let src = dir </> modName <.> ".fs"
-      tgt = dir </> modName <.> ".dll"
+  let src = dir </> ass <.> ".fs"
+      tgt = dir </> ass <.> ".dll"
   writeFile src (genCode m)
   callCommand $
     unwords $

@@ -4,16 +4,18 @@ module Clr.Inline
   , fsharp
   , fsharp'
   , startClr
+  , Quotable
   -- * Reexports for generated code
-  , getMethodStubRaw
   , FunPtr
   , BStr(..)
   , TextBStr(..)
-  , Object(..)
-  , ObjectPtr(..)
+  , Clr(..)
+  , ClrPtr(..)
   )where
 
-import Clr.Host
-import Clr.FSharp.Inline
-import Clr.CSharp.Inline
-import Clr.Inline.Types
+import           Clr.CSharp.Inline
+import           Clr.FSharp.Inline
+import           Clr.Host
+import           Clr.Host.BStr
+import           Clr.Inline.Types
+import           Foreign

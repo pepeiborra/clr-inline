@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE TypeApplications, TypeInType, TypeFamilies, TypeSynonymInstances, MultiParamTypeClasses, FlexibleInstances #-}
 
 module Clr.Bindings.Marshal where
@@ -5,7 +6,6 @@ module Clr.Bindings.Marshal where
 import Clr
 import Clr.Bridge
 import Clr.Marshal
-
 import Clr.Host.BStr
 
 import Data.Coerce
@@ -18,7 +18,9 @@ import Foreign.Storable
 instance Marshal Text BStr where
   marshal x f = do
     bstr <- useAsPtr x (\p-> \l-> allocBStr p l)
-    f bstr
+    !res <- f bstr
+    freeBStr bstr
+    return res
 
 instance Marshal String BStr where
   marshal x f = marshal (pack x) f
