@@ -9,6 +9,7 @@ data Token =
   | Antiquote String (Maybe String)
   deriving Show
 
+-- TODO tokenizing quoted strings
 tokenized :: Iso' String [Token]
 tokenized = iso (tokenize (Other [])) untokenize
   where
