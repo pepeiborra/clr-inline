@@ -87,7 +87,7 @@ lookupQuotable extract quote = do
 lookupQuotableClrType :: String -> Q ClrType
 lookupQuotableClrType s = lookupQuotable extractClrType s
     where
-      extractClrType instances = fromMaybe (general instances) $ listToMaybe $ catMaybes $ map specific instances
+      extractClrType instances = fromMaybe (general instances) $ listToMaybe $ mapMaybe specific instances
       specific (InstanceD _ _ (_ `AppT` _ `AppT` LitT (StrTyLit s) `AppT` _ `AppT` _) _) = Just $ ClrType s
       specific _ = Nothing
       general [InstanceD _ _ (_ `AppT` quote `AppT` clr `AppT` _ `AppT` _) _] | quote == clr = ClrType s
@@ -96,7 +96,7 @@ lookupQuotableClrType s = lookupQuotable extractClrType s
 lookupQuotableMarshalType :: String -> Q Type
 lookupQuotableMarshalType s = lookupQuotable extractMarshalType s
   where
-    extractMarshalType instances = fromMaybe (general instances) $ listToMaybe $ catMaybes $ map specific instances
+    extractMarshalType instances = fromMaybe (general instances) $ listToMaybe $ mapMaybe specific instances
     specific (InstanceD _ _ (_ `AppT` quote `AppT` clr `AppT` _ `AppT` _) _) | quote == clr = Nothing
     specific (InstanceD _ _ (_ `AppT` _ `AppT` _ `AppT` marshalTy `AppT` _) _) = Just marshalTy
     specific _ = Nothing

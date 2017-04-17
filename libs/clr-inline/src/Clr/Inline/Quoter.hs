@@ -67,7 +67,7 @@ getFullClassName language mod =
     (getClassName mod)
     (getAssemblyName language mod)
 
-toClrArg :: [Char] -> [Char]
+toClrArg :: String -> String
 toClrArg x = "arg_" ++ x
 
 
@@ -87,7 +87,7 @@ generateFFIStub ClrInlinedExpDetails{..} = do
   return [ffiStub]
 
 getMethodStubRaw :: (GetMethodStubDelegate a)
-getMethodStubRaw = unsafeDupablePerformIO $ unsafeGetPointerToMethod "GetMethodStub" >>= return . makeGetMethodStubDelegate
+getMethodStubRaw = unsafeDupablePerformIO $ makeGetMethodStubDelegate <$> unsafeGetPointerToMethod "GetMethodStub"
 
 invoke :: String -> String -> FunPtr a
 invoke c m = unsafeDupablePerformIO $ marshal c $ \c -> marshal m $ \m -> return $ getMethodStubRaw c m (BStr nullPtr)
@@ -102,7 +102,7 @@ generateClrCall mod exp@ClrInlinedExpDetails{..} = do
   [| do unembedBytecode
         let stub = invoke $(liftString $ getFullClassName language mod) $(liftString $ getMethodName exp)
         let stub_f = $(varE stubName) stub
-        result <- $(foldr roll [|id|] (argExps)) stub_f
+        result <- $(foldr roll [|id|] argExps) stub_f
         unmarshalAuto (Proxy :: $([t| Proxy $(litT $ strTyLit returnType) |])) result
     |]
 

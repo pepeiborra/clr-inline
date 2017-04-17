@@ -41,7 +41,7 @@ genCode ClrInlinedGroup {units, mod = mod@(Module _ (ModName m))} =
         yield $ printf   "    let %s (%s) ="
             (getMethodName exp)
             (intercalate ", " [printf "%s:%s" a t | (a, ClrType t) <- Map.toList args])
-        yield $ printf "#line 0 \"%s/slice-%d\"" (m) unitId
+        yield $ printf "#line 0 \"%s/slice-%d\"" m unitId
         forM_ (lines body) $ \l ->
           yield $ printf "        %s" l
 
