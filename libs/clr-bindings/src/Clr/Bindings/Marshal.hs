@@ -33,7 +33,9 @@ instance Unmarshal BStr Text where
     let ptrData   = coerce x              :: Ptr Word16
     let ptrLen    = plusPtr ptrData (-4)  :: Ptr Word16
     lenBytes     <- peek ptrLen
-    fromPtr ptrData $ fromIntegral $ lenBytes `div` charSize
+    !t <- fromPtr ptrData $ fromIntegral $ lenBytes `div` charSize
+    freeBStr x
+    return t
 
 instance Unmarshal BStr String where
   unmarshal x = unmarshal x >>= return . unpack
