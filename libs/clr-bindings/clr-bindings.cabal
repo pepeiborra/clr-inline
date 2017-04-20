@@ -18,7 +18,6 @@ library
   exposed-modules:     Clr.Bindings
                      , Clr.Bindings.Box
                      , Clr.Bindings.DynImports
-                     , Clr.Bindings.Host
                      , Clr.Bindings.ImportGen
                      , Clr.Bindings.IEnumerable
                      , Clr.Bindings.Marshal

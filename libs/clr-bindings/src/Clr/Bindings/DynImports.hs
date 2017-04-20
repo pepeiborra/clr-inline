@@ -9,7 +9,7 @@ import Clr.Method.Static
 import Clr.Property
 import Clr.TypeString
 
-import Clr.Bindings.Host
+import Clr.Marshal.Host
 
 import Data.Kind
 import Foreign.Ptr

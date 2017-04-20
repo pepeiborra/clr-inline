@@ -9,7 +9,7 @@ import Clr.Host
 import Clr.Host.BStr
 
 import Clr.Bindings.DynImports
-import Clr.Bindings.Host
+import Clr.Marshal.Host
 import Clr.Bindings.IEnumerable
 import Clr.Bindings.Object
 

@@ -21,6 +21,7 @@ executable clr-test-app
                      , clr
                      , clr-host
                      , clr-bindings
+                     , clr-marshal
                      , pipes
                      , pipes-text
                      , text

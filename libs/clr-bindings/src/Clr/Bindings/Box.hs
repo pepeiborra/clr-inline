@@ -7,8 +7,8 @@ import Clr.Marshal
 
 import Clr.Host.BStr
 
-import Clr.Bindings.Host
 import Clr.Bindings.Marshal
+import Clr.Marshal.Host
 
 import Data.Int
 import Data.Text

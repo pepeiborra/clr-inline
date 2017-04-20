@@ -9,4 +9,5 @@ library
   hs-source-dirs:      src
   default-language:    Haskell2010
   exposed-modules:     Clr.Marshal
+                       Clr.Marshal.Host
   build-depends:       base, clr-host, text

@@ -10,7 +10,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Clr.Inline.Quoter where
 
-import Clr.Bindings.Host (GetMethodStubDelegate, makeGetMethodStubDelegate, unsafeGetPointerToMethod)
+import Clr.Marshal.Host (GetMethodStubDelegate, makeGetMethodStubDelegate, unsafeGetPointerToMethod)
 import Clr.Host.BStr
 import Clr.Marshal
 import Clr.Inline.State
