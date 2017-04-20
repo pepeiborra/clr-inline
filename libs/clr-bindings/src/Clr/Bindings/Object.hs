@@ -9,8 +9,8 @@ import Clr.Host
 import Clr.Host.BStr
 
 import Clr.Bindings.DynImports
-import Clr.Bindings.Marshal
 import Clr.Marshal.Host
+import Clr.Bindings.BStr
 
 import Foreign.Ptr
 

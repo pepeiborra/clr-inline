@@ -17,10 +17,10 @@ library
   hs-source-dirs:      src
   exposed-modules:     Clr.Bindings
                      , Clr.Bindings.Box
+                     , Clr.Bindings.BStr
                      , Clr.Bindings.DynImports
                      , Clr.Bindings.ImportGen
                      , Clr.Bindings.IEnumerable
-                     , Clr.Bindings.Marshal
                      , Clr.Bindings.Object
                      , Clr.Bindings.Reflection
   build-depends:       base >= 4.7 && < 5, clr, clr-host, clr-marshal, text, template-haskell, pipes

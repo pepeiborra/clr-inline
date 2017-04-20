@@ -15,6 +15,7 @@ import Clr.TypeString
 import Clr.Host
 import Clr.Host.BStr
 
+import Clr.Bindings.BStr
 import Clr.Bindings.DynImports
 
 import Data.Kind

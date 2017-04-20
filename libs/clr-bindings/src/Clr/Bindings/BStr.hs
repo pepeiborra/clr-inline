@@ -1,7 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE TypeApplications, TypeInType, TypeFamilies, TypeSynonymInstances, MultiParamTypeClasses, FlexibleInstances #-}
 
-module Clr.Bindings.Marshal where
+module Clr.Bindings.BStr where
 
 import Clr
 import Clr.Bridge
