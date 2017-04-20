@@ -7,7 +7,6 @@
 {-# LANGUAGE ViewPatterns           #-}
 module Clr.Inline.Types where
 
-import           Clr.Bindings.Marshal ()
 import           Clr.Host.BStr
 import           Clr.Marshal
 import           Clr.Marshal.Host
