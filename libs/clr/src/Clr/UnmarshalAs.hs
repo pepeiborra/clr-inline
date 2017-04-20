@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE KindSignatures #-}
 
-module Clr.Unmarshal where
+module Clr.UnmarshalAs where
 
 import Clr.Marshal
 import Clr.Object
@@ -12,8 +12,6 @@ import Data.Kind
 import Data.Word
 import Foreign.C
 
-instance Unmarshal (ObjectID t) (Object t) where
-  unmarshal oid = return $ Object oid
 --
 -- Declares how to automatically convert from the bridge type of methods result to a high level Haskell type
 -- TODO: Can we do without this the end user can choose between String or Text for example?

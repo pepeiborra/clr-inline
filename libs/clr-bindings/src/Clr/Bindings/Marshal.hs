@@ -6,7 +6,7 @@ module Clr.Bindings.Marshal where
 import Clr
 import Clr.Bridge
 import Clr.Marshal
-import Clr.Unmarshal
+import Clr.UnmarshalAs
 
 import Clr.Host.BStr
 

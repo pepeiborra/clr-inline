@@ -21,7 +21,7 @@ library
                      , Clr.Curry
                      , Clr.Inheritance
                      , Clr.ListTuple
-                     , Clr.Unmarshal
+                     , Clr.UnmarshalAs
                      , Clr.Method.Instance
                      , Clr.Method.Static
                      , Clr.Property
