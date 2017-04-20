@@ -30,9 +30,9 @@ library
                        Clr.FSharp.Gen
   build-depends:        base >=4.9 && <4.10,
                         bytestring,
-                        clr,
                         clr-bindings,
                         clr-host,
+                        clr-marshal,
                         containers,
                         directory,
                         extra,

@@ -8,6 +8,7 @@ module Clr.Bindings.IEnumerable where
 import Clr
 import Clr.Bridge
 import Clr.Marshal
+import Clr.Unmarshal
 import Clr.TypeString
 
 import Clr.Host

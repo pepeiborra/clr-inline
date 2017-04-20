@@ -1,21 +1,17 @@
-{-# LANGUAGE MultiParamTypeClasses, PolyKinds, KindSignatures, TypeFamilies, TypeSynonymInstances, FlexibleInstances, TypeOperators, TypeInType, TypeApplications, ScopedTypeVariables, AllowAmbiguousTypes, UndecidableInstances #-}
-
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE BangPatterns #-}
 module Clr.Marshal where
 
-import Clr.Bridge
-import Clr.Object
-
+import Clr.Host.BStr
 import Data.Coerce
-import Data.Int
-import Data.Kind
 import Data.Text
 import Data.Text.Foreign
 import Data.Word
-import Foreign.C
-import Foreign.Marshal.Alloc
+
 import Foreign.Ptr
 import Foreign.Storable
-
 
 --
 -- Conversion from a high level Haskell type a a raw bridge type
@@ -54,32 +50,17 @@ instance {-# OVERLAPS #-} (Marshal a1 b1, Marshal a2 b2, Marshal a3 b3, Marshal 
   marshal (x1,x2,x3,x4,x5) f = marshal x1 $ \x1'-> marshal x2 $ \x2'-> marshal x3 $ \x3'-> marshal x4 $ \x4'-> marshal x5 $ \x5'-> f (x1', x2', x3', x4', x5')
 
 --
--- Marshaling objects
+-- BStr instance
 --
-instance {-# OVERLAPS #-} Marshal (Object t) (ObjectID t) where
-  marshal (Object x) f = f x
+instance Marshal Text BStr where
+  marshal x f = do
+    bstr <- useAsPtr x (\p-> \l-> allocBStr p l)
+    !res <- f bstr
+    freeBStr bstr
+    return res
 
-
---
--- Declares how to automatically convert from the bridge type of methods result to a high level Haskell type
--- TODO: Can we do without this the end user can choose between String or Text for example?
-type family UnmarshalAs (x::Type) :: Type
-type instance UnmarshalAs (ObjectID t) = (Object t)
-type instance UnmarshalAs ()           = ()
-type instance UnmarshalAs Bool         = Bool
-type instance UnmarshalAs Word8        = Word8
-type instance UnmarshalAs Word16       = Word16
-type instance UnmarshalAs Word32       = Word32
-type instance UnmarshalAs Word64       = Word64
-type instance UnmarshalAs Int8         = Int8
-type instance UnmarshalAs Int16        = Int16
-type instance UnmarshalAs Int32        = Int32
-type instance UnmarshalAs Int64        = Int64
-type instance UnmarshalAs Int          = Int
-type instance UnmarshalAs CFloat       = Float
-type instance UnmarshalAs CDouble      = Double
-type instance UnmarshalAs Float        = Float
-type instance UnmarshalAs Double       = Double
+instance Marshal String BStr where
+  marshal x f = marshal (pack x) f
 
 --
 -- Conversion from a raw bridge type of a methods result to a high level Haskell type
@@ -87,11 +68,24 @@ type instance UnmarshalAs Double       = Double
 class Unmarshal a b where
   unmarshal :: a -> IO b
 
-instance Unmarshal (ObjectID t) (Object t) where
-  unmarshal oid = return $ Object oid
-
-
+--
+-- Identity instance
+--
 instance {-# OVERLAPPABLE #-} a ~ b => Unmarshal a b where
   unmarshal = return
 
+--
+-- BStr instances
+--
+instance Unmarshal BStr Text where
+  unmarshal x = do
+    let charSize = 2
+    let ptrData   = coerce x              :: Ptr Word16
+    let ptrLen    = plusPtr ptrData (-4)  :: Ptr Word16
+    lenBytes     <- peek ptrLen
+    !t <- fromPtr ptrData $ fromIntegral $ lenBytes `div` charSize
+    freeBStr x
+    return t
 
+instance Unmarshal BStr String where
+  unmarshal x = unmarshal x >>= return . unpack
