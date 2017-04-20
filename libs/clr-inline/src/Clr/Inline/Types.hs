@@ -33,8 +33,6 @@ data Clr (name::Symbol) = Clr (ClrPtr name) (IORef ())
 
 foreign import ccall "dynamic" releaseObject :: FunPtr (Int64 -> IO ()) -> (Int64 -> IO ())
 
-type instance UnmarshalAs (ClrPtr n) = (Clr n)
-
 instance Unmarshal (ClrPtr n) (Clr n) where
   unmarshal o@(ClrPtr id) = do
     ref <- newIORef ()
