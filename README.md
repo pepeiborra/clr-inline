@@ -12,6 +12,7 @@ It is currently divided into these packages:
 
 * clr - Most of the end developer API and lots of type level trickery to make this all work.
 * clr-host - Attempts to provide a common minimal disconnected way to start and stop the backend. Mono works great. .Net has a few issues. CoreCLR is not yet implemented but my minimal tests show that it doesn't suffer from all the problems of .Net.
+* clr-marshal - A minimal package providing the primitives for marshaling and unmarshaling data through the bridge.
 * clr-bindings - Provides glue between the above 2, as neither of those packages depend on each other, some of which is just a few instances.
 * clr-inline - A quasiquoter allowing to inline F# and C# in Haskell source code.
 * clr-test-app - Just an example of what currently works.
