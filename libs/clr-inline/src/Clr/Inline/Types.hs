@@ -7,10 +7,9 @@
 {-# LANGUAGE ViewPatterns           #-}
 module Clr.Inline.Types where
 
-import           Clr.Bindings.Marshal ()
-import           Clr.Bindings.Host
 import           Clr.Host.BStr
 import           Clr.Marshal
+import           Clr.Marshal.Host
 import           Data.Int
 import           Data.IORef
 import           Data.Maybe
@@ -32,8 +31,6 @@ newtype ClrPtr (name::Symbol)= ClrPtr Int64
 data Clr (name::Symbol) = Clr (ClrPtr name) (IORef ())
 
 foreign import ccall "dynamic" releaseObject :: FunPtr (Int64 -> IO ()) -> (Int64 -> IO ())
-
-type instance UnmarshalAs (ClrPtr n) = (Clr n)
 
 instance Unmarshal (ClrPtr n) (Clr n) where
   unmarshal o@(ClrPtr id) = do

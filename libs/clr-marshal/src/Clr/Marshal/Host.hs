@@ -1,14 +1,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Clr.Bindings.Host where
+module Clr.Marshal.Host where
 
-import Clr
 import Clr.Marshal
 
 import Clr.Host
 import Clr.Host.BStr
-
-import Clr.Bindings.Marshal
 
 import Data.Coerce
 import Data.Word

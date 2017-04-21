@@ -40,6 +40,7 @@ packages:
 - 'libs/clr-host/'
 - 'libs/clr-bindings/'
 - 'libs/clr-inline/'
+- 'libs/clr-marshal/'
 - 'examples/clr-test-app/'
 - 'examples/clr-inline-demo/'
 - 'utils/clr-win-linker/'

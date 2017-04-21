@@ -1,7 +1,7 @@
 module Clr.Bindings
   ( module Clr.Bindings.Box
   , module Clr.Bindings.DynImports
-  , module Clr.Bindings.Marshal
+  , module Clr.Bindings.BStr
   , BStr(..)
   , saveDynamicAssembly
   ) where
@@ -14,8 +14,8 @@ import Clr.Host.BStr
 
 import Clr.Bindings.Box
 import Clr.Bindings.DynImports
-import Clr.Bindings.Host
-import Clr.Bindings.Marshal
+import Clr.Marshal.Host
+import Clr.Bindings.BStr
 import Clr.Bindings.Object
 
 import Data.Word

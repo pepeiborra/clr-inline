@@ -5,7 +5,7 @@
 {-# LANGUAGE TemplateHaskell     #-}
 module Clr.Inline.Utils.Embed where
 
-import           Clr.Bindings.Host
+import           Clr.Marshal.Host
 import           Control.Monad
 import           Data.ByteString            (ByteString)
 import qualified Data.ByteString            as BS
