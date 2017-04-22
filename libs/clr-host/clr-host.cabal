@@ -1,7 +1,10 @@
 name:                clr-host
 version:             0.1.0.0
-synopsis:            Initial project template from stack
-description:         Please see README.md
+synopsis:            Hosting the Common Language Runtime
+description:         clr-host is a library that provides the ability to host (also known as embed) the
+                     common language runtime within the current Haskell process. Generally you'll only
+                     interface directly to this library to start the CLR, and the other code here is
+                     for higher level abstractions to use.
 homepage:            https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-host
 license:             BSD3
 license-file:        LICENSE
