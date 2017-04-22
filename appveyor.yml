@@ -17,9 +17,10 @@ install:
 - ps: $env:VSCOMNTOOLS=(Get-Content ("env:VS" + "$env:VSVER" + "0COMNTOOLS"))
 - echo "Using Visual Studio %VSVER%.0 at %VSCOMNTOOLS%"
 - call "%VSCOMNTOOLS%\..\..\VC\vcvarsall.bat" %VCVARS_PLATFORM%
-- stack install clr-win-linker 
+- stack install clr-win-linker
 
 test_script:
 - echo "" | stack --no-terminal build
+- stack test clr-import-gen
 - stack test clr-inline --ghc-options="-pgml clr-win-linker"
 - stack bench clr-inline --ghc-options="-pgml clr-win-linker"

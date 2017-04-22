@@ -1,9 +1,12 @@
+{-# LANGUAGE OverloadedStrings #-}
 
 import Clr.ImportGen.Definition
 import Clr.ImportGen.Parser
 
 import Data.Attoparsec.Text
 import qualified Data.Text as T
+
+import Test.Hspec
 
 testDefStr :: T.Text
 testDefStr = T.pack $
@@ -19,7 +22,12 @@ testDefStr = T.pack $
 
 main :: IO ()
 main = do
-  defs <- return $ parseImportDefs testDefStr
-  putStrLn ""
-  print defs
+  let defs = parseImportDefs testDefStr
+  defs `shouldBe` Right (
+    RefImportDef
+    [ Ref "foo"
+    , Ref "Somecomplicatedref, version=1.2.3, culture=neutral" ]
+    [ Import "bar" []
+    , Import "One.Two.Three" ["something"]
+    , Import "NS" ["thisThing", "thatThing"] ] )
   return ()

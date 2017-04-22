@@ -27,6 +27,7 @@ library
                      , clr
                      , clr-host
                      , clr-bindings
+                     , clr-marshal
   default-language:    Haskell2010
 
 test-suite clr-import-gen-test
@@ -41,6 +42,8 @@ test-suite clr-import-gen-test
                      , clr
                      , clr-host
                      , clr-bindings
+                     , clr-marshal
+                     , hspec
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 
