@@ -6,7 +6,7 @@
 
 ## Overview
 
-This library provides provides the strongly typed approach for CLR / Haskell interop. 
+This package provides a library to implement a strongly typed flavour for CLR <-> Haskell interoperability. It includes an encoding of OOP type system semantics within the GHC Haskell type system.
 
 See the [**example**](https://gitlab.com/tim-m89/clr-haskell/blob/master/examples/clr-test-app/src/Main.hs) for what it is currently capable of and how to use it.
 
