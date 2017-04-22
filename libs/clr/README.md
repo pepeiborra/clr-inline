@@ -43,5 +43,5 @@ strList <- new @'("List", "String") ()
 * Generics may be used in a method identifier position in the same way
 
 ```haskell
-invokeS '("SomeGenericMethod", "Integer") ()
+invokeS '("SomeGenericMethod", "Integer") @"SomeClass" ()
 ```
