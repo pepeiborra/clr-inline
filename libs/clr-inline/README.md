@@ -16,7 +16,7 @@ from Haskell, without the need to write any boilerplate FFI declarations.
 
 Graphical hello world using F# Winforms:
 
-```Haskell
+```haskell
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -48,7 +48,7 @@ since GHC does not allow calling a quasiquoter from the same module where it is
 defined, the recommended practice is to configure the quasiquoters in a 
 dedicated Config module. Example configuration for WPF dependencies:
 
-```Haskell
+```haskell
 module WpfDeps where
 
 import Clr.Inline
