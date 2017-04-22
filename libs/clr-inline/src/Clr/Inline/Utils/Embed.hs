@@ -5,7 +5,7 @@
 {-# LANGUAGE TemplateHaskell     #-}
 module Clr.Inline.Utils.Embed where
 
-import           Clr.Bindings.Host
+import           Clr.Marshal.Host
 import           Control.Monad
 import           Data.ByteString            (ByteString)
 import qualified Data.ByteString            as BS
@@ -40,13 +40,14 @@ embedBytecode name bs = do
 -- | Idempotent action that reads the embedded bytecodes in a module
 --   by querying the table of static pointers
 unembedBytecode :: IO ()
+{-# NOINLINE unembedBytecode #-}
 unembedBytecode = doit `seq` return ()
   where
     {-# NOINLINE doit #-}
     doit = unsafePerformIO $ do
       keys <- staticPtrKeys
-      forM_ keys $ \key -> do
-        unsafeLookupStaticPtr key >>= \case
+      forM_ keys $
+        unsafeLookupStaticPtr >=> \case
           Just (sptr :: StaticPtr ClrBytecode) -> do
             let ClrBytecode bytes = deRefStaticPtr sptr
             loadBytecode bytes

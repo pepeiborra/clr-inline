@@ -1,8 +1,6 @@
-{-# LANGUAGE TemplateHaskell #-}
 module Clr.Inline.Config where
 
 import Clr.Host.Config
-import Language.Haskell.TH
 
 data ClrInlineConfig = ClrInlineConfig
   { configFSharpPath :: FilePath
@@ -13,9 +11,9 @@ data ClrInlineConfig = ClrInlineConfig
   , configCustomCompilerFlags :: [String]
   }
 
-defaultMonoConfig, defaultDotNetConfig, defaultInlineConfig :: ClrInlineConfig
+defaultMonoConfig, defaultDotNetConfig, defaultConfig :: ClrInlineConfig
 defaultMonoConfig = ClrInlineConfig "fsharpc" "mcs" [] [] False []
 defaultDotNetConfig  = ClrInlineConfig "fsc" "csc" [] [] False []
-defaultInlineConfig = case defaultHostConfig of
+defaultConfig = case defaultHostConfig of
                   ClrHostConfig ClrHostMono -> defaultMonoConfig
                   ClrHostConfig ClrHostDotNet -> defaultDotNetConfig

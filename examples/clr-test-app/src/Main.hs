@@ -7,7 +7,7 @@ import Clr.Host
 import Clr.TypeString
 
 import Clr.Bindings
-import Clr.Bindings.Host
+import Clr.Marshal.Host
 import Clr.Bindings.IEnumerable
 
 import Data.Int(Int32, Int64)

@@ -1,0 +1,13 @@
+name:                clr-marshal
+version:             0.1.0.0
+synopsis:            Marshaling for the clr 
+description:         Please see README.md
+homepage:            https://gitlab.com/tim-m89/ce
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+  exposed-modules:     Clr.Marshal
+                       Clr.Marshal.Host
+  build-depends:       base, clr-host, text

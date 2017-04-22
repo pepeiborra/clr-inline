@@ -1,5 +1,3 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE ViewPatterns #-}
 module Clr.Inline.Utils.Args where
 
 import Control.Lens
@@ -11,8 +9,9 @@ data Token =
   | Antiquote String (Maybe String)
   deriving Show
 
+-- TODO tokenizing quoted strings
 tokenized :: Iso' String [Token]
-tokenized = iso (tokenize (Other [])) (untokenize)
+tokenized = iso (tokenize (Other [])) untokenize
   where
     tokenize :: Token -> String -> [Token]
     -- Tokenizing inside clr code

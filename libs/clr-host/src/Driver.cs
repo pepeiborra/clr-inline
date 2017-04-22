@@ -72,7 +72,7 @@ namespace Salsa
 
             MethodInfo meth = typeof(Driver).GetMethod(methodName);
             if (meth == null)
-                throw new ArgumentException("Method not found.", "methodName");
+                throw new ArgumentException("Method not found.", methodName);
 
             // Return a delegate pointing to the indicated method (cast to an int
             // so we can call this method using ExecuteInDefaultAppDomain)
