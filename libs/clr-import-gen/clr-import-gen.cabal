@@ -21,13 +21,14 @@ library
                      , Clr.ImportGen.QQ
                      , Clr.ImportGen.Reflection
   build-depends:       base >= 4.7 && < 5
-                     , template-haskell
-                     , text
                      , attoparsec
                      , clr
                      , clr-host
                      , clr-bindings
                      , clr-marshal
+                     , pipes
+                     , template-haskell
+                     , text
   default-language:    Haskell2010
 
 test-suite clr-import-gen-test
@@ -35,8 +36,6 @@ test-suite clr-import-gen-test
   hs-source-dirs:      test
   main-is:             Spec.hs
   build-depends:       base
-                     , template-haskell
-                     , text
                      , attoparsec
                      , clr-import-gen
                      , clr
@@ -44,6 +43,9 @@ test-suite clr-import-gen-test
                      , clr-bindings
                      , clr-marshal
                      , hspec
+                     , pipes
+                     , template-haskell
+                     , text
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 

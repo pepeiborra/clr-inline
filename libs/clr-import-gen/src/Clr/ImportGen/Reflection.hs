@@ -2,6 +2,8 @@
 
 module Clr.ImportGen.Reflection where
 
+import Prelude hiding (concat, mapM, sequence)
+
 import Clr
 import Clr.TypeString
 
@@ -9,14 +11,18 @@ import Clr.Host
 import Clr.Host.BStr
 
 import Clr.Bindings.DynImports
-import Clr.Marshal.Host
 import Clr.Bindings.IEnumerable
 import Clr.Bindings.Object
 
-import Control.Monad(filterM)
+import Clr.Marshal.Host
+
 import Data.Word
 import Foreign.Ptr
+
 import qualified Data.Text as T
+
+import Pipes
+import Pipes.Prelude
 
 type T_Assembly        = T "System.Reflection.Assembly" '[]
 type T_AssemblyArray   = T "System.Reflection.Assembly[]" '[]
@@ -33,10 +39,11 @@ type T_GetTypes      = T "GetTypes" '[]
 type T_FullName      = T "FullName" '[]
 type T_GetMembers    = T "GetMembers" '[]
 type T_Name          = T "Name" '[]
+type T_Namespace     = T "Namespace" '[]
 
 type instance Members T_AppDomain  = '[ T_CurrentDomain, T_GetAssemblies ]
 type instance Members T_Assembly   = '[ T_GetTypes, T_Load ]
-type instance Members T_Type       = '[ T_FullName, T_GetMembers ]
+type instance Members T_Type       = '[ T_FullName, T_GetMembers, T_Namespace ]
 type instance Members T_MemberInfo = '[ T_Name ]
 
 type instance Candidates T_AppDomain T_GetAssemblies = '[ '[ ] ]
@@ -59,6 +66,7 @@ foreign import ccall "dynamic" makeAssemblyLoad           :: FunPtr (BStr -> IO 
 foreign import ccall "dynamic" makeTypeFullName           :: FunPtr (ObjectID T_Type -> IO BStr) -> (ObjectID T_Type -> IO BStr)
 foreign import ccall "dynamic" makeTypeGetMembers         :: FunPtr (ObjectID T_Type -> IO (ObjectID T_MemberInfoArray)) -> (ObjectID T_Type -> IO (ObjectID T_MemberInfoArray))
 foreign import ccall "dynamic" makeMemberInfoName         :: FunPtr (ObjectID T_MemberInfo -> IO BStr) -> (ObjectID T_MemberInfo -> IO BStr)
+foreign import ccall "dynamic" makeTypeNamespace          :: FunPtr (ObjectID T_Type -> IO BStr) -> (ObjectID T_Type -> IO BStr)
 
 instance PropertyS T_AppDomain T_CurrentDomain where
   type PropertyTypeS T_AppDomain T_CurrentDomain = T_AppDomain
@@ -81,6 +89,9 @@ instance MethodResultI1 T_Type T_GetMembers () where
 instance PropertyI T_MemberInfo T_Name where
   type PropertyTypeI T_MemberInfo T_Name = T_string
 
+instance PropertyI T_Type T_Namespace where
+  type PropertyTypeI T_Type T_Namespace = T_string
+
 instance PropertyDynImportGetS T_AppDomain T_CurrentDomain where
   propertyDynImportGetS = makeAppDomainCurrentDomain
 
@@ -102,44 +113,96 @@ instance MethodDynImportI1 T_Type T_GetMembers () where
 instance PropertyDynImportGetI T_MemberInfo T_Name where
   propertyDynImportGetI = makeMemberInfoName
 
+instance PropertyDynImportGetI T_Type T_Namespace where
+  propertyDynImportGetI = makeTypeNamespace
+
+--
+-- AppDomain.CurrentDomain
+--
 currentDomain :: IO (Object T_AppDomain)
 currentDomain = getPropS @T_CurrentDomain @T_AppDomain
 
+--
+-- Assembly.Load(System.String)
+--
 assemblyLoad :: T.Text -> IO (Object T_Assembly)
 assemblyLoad assemName = invokeS @T_Load @T_Assembly assemName
 
+--
+-- assemIsDynamicDriverInternal assem is true if the assembly represents that created on the fly by the driver
+--
 assemIsDynamicDriverInternal :: Object T_Assembly -> IO Bool
 assemIsDynamicDriverInternal assem = invokeI @T_ToString assem () >>= \assemName-> return $ assemName == T.pack "DynamicAssembly, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null"
 
-assembliesLoaded :: IO [Object T_Assembly]
-assembliesLoaded = do
-  assems <- assembliesLoaded'
-  filterM (\assem-> assemIsDynamicDriverInternal assem >>= return . not) assems
+--
+-- assembliesLoaded is a producer of the currently loaded assemblies minus the internal one created by the Driver
+--
+assembliesLoaded :: Producer (Object T_Assembly) IO ()
+assembliesLoaded = assembliesLoaded' >-> filterM (\assem-> assemIsDynamicDriverInternal assem >>= return . not)
 
-assembliesLoaded' :: IO [Object T_Assembly]
-assembliesLoaded'  = do
-  domain <- currentDomain
-  assems <- invokeI @T_GetAssemblies domain ()
-  toListM assems
+--
+-- assembliesLoaded' is a producer of the currently loaded assemblies
+--
+assembliesLoaded' :: Producer (Object T_Assembly) IO ()
+assembliesLoaded' = do
+  domain <- liftIO $ currentDomain
+  assems <- liftIO $ invokeI @T_GetAssemblies domain ()
+  toProducer assems
 
-assemGetTypes :: Object T_Assembly -> IO [Object T_Type]
-assemGetTypes assem = invokeI @T_GetTypes assem () >>= toListM
+--
+-- assemGetTypes assem is a producer of types defined within assem
+--
+assemGetTypes :: Object T_Assembly -> Producer (Object T_Type) IO ()
+assemGetTypes assem = do
+  typs <- liftIO $ invokeI @T_GetTypes assem ()
+  toProducer typs
 
-knownTypes :: IO [Object T_Type]
-knownTypes = do
-  assems <- assembliesLoaded
-  types  <- mapM assemGetTypes assems
-  return $ concat types
+--
+-- knownTypes is a producer of all the types founds in all the currently loaded assemblies
+--
+knownTypes :: Producer (Object T_Type) IO ()
+knownTypes = for assembliesLoaded assemGetTypes
 
+--
+-- System.Type.FullName
+--
 typeFullName :: Object T_Type -> IO T.Text
 typeFullName typ = getPropI @T_FullName typ
 
-typeGetMembers :: Object T_Type -> IO [Object T_MemberInfo]
-typeGetMembers typ = invokeI @T_GetMembers typ () >>= toListM
+--
+-- System.Type.GetMembers
+--
+typeGetMembers :: Object T_Type -> Producer (Object T_MemberInfo) IO ()
+typeGetMembers typ = liftIO (invokeI @T_GetMembers typ ()) >>= toProducer
 
+--
+-- typeName is System.Reflection.MemberInfo.Name on a parameter of System.Type
+--
+-- NB: This highlights a current issue where we'd actually like to syntacticaly declare
+-- something that is compatible with the type as simple you do in C#, but in Haskell calling
+-- memberInfoName on a type will result in a compilation error of could not match...
+-- The other end of the spectrum is that of toProducer within the IEnumerable module, but
+-- the signature is bit complicated and not easy to deduce, polymorphism can cause other
+-- compilation errors. TODO.
 typeName :: Object T_Type -> IO T.Text
 typeName typ = getPropI @T_Name typ
 
+--
+-- System.Type.Namespace
+--
+typeNamespace :: Object T_Type -> IO T.Text
+typeNamespace typ = getPropI @T_Namespace typ
+
+--
+-- System.Reflection.MemberInfo.Name
+--
 memberInfoName :: Object T_MemberInfo -> IO T.Text
 memberInfoName mi = getPropI @T_Name mi
+
+--
+-- assemGetTypesOfNs assem ns, is each type within assem that has a matching namespace of ns
+--
+assemGetAllTypesOfNS :: Object T_Assembly -> T.Text -> Producer (Object T_Type) IO ()
+assemGetAllTypesOfNS assem ns = assemGetTypes assem >-> filterM (\typ-> typeNamespace typ >>= \nsTyp-> return $ nsTyp == ns)
+
 
