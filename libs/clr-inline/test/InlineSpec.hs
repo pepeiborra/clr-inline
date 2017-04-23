@@ -128,6 +128,23 @@ spec = beforeAll_ startClr $ do
            System.GC.KeepAlive($tuple:WeakReference*DateTime)}
            |] `shouldReturn` True
 
+  it "F# generics are handled" $ do
+        dict <- [fsharp| Map<int,string> {
+                    [ 1,"Foo" ; 2, "bar" ] |> Map.ofSeq
+                 }|]
+        [fsharp| string{ ($dict:Map<int,string>).[1] }|]
+          `shouldReturn` "Foo"
+
+  it "C# arrays are handled" $ do
+      i_array <- [csharp| int[] {
+                        int[] a = new int[4]{0,0,0,0};
+                        for(int i=0; i < 4; i++) {
+                          a[i] = i;
+                        }
+                        return a;
+                        }|]
+      [csharp|int{return ($i_array:int[])[2];}|] `shouldReturn` 2
+
 gcUntil cond = do
   let loop 10 = error "gc: tried too many times"
       loop i  = do
