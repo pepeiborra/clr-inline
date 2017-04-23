@@ -106,26 +106,29 @@ spec = beforeAll_ startClr $ do
 
   it "Reference types are released when Haskell GCs them" $ do
     !tuple <-
-      [fsharp|WeakReference*DateTime{
-           let d = DateTime.Today
+      [fsharp|WeakReference*Object{
+           let d = obj()
            let w = WeakReference(d)
            (w,d)}|]
-    !w <- [fsharp|WeakReference{fst $tuple:WeakReference*DateTime}|]
+    !w <- [fsharp|WeakReference{fst $tuple:WeakReference*Object}|]
     gcUntil [fsharp|bool{System.GC.Collect(); not ($w:WeakReference).IsAlive}|]
 
   it "But not any earlier" $ do
     tuple <-
-      [fsharp|WeakReference*DateTime{
-           let d = DateTime.Today
+      [fsharp|WeakReference*Object{
+           let d = Object()
            let w = WeakReference(d)
+           if not (Object.ReferenceEquals(w.Target,d)) then
+               failwithf "This is not a good test(%O,%O)" w.Target d
            (w,d)}|]
-    w <- [fsharp|WeakReference{fst $tuple:WeakReference*DateTime}|]
+    w <- [fsharp|WeakReference{fst $tuple:WeakReference*Object}|]
+    d <- [fsharp|Object{snd $tuple:WeakReference*Object}|]
     performGC
     threadDelay 50000
     [fsharp|bool{
-           System.GC.Collect()
+           GC.Collect()
            let res = ($w:WeakReference).IsAlive
-           System.GC.KeepAlive($tuple:WeakReference*DateTime)
+           GC.KeepAlive($d:Object)
            res}
            |] `shouldReturn` True
 
