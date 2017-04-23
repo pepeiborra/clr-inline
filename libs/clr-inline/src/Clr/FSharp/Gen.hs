@@ -27,7 +27,7 @@ name :: Proxy "fsharp"
 name = Proxy
 
 genCode :: ClrInlinedGroup "fsharp" -> String
-genCode ClrInlinedGroup {units, mod = mod@(Module _ (ModName m))} =
+genCode ClrInlinedGroup {units, mod} =
   unlines $
   execWriter $ do
     yield $ printf "namespace %s" (getNamespace mod)
@@ -41,7 +41,7 @@ genCode ClrInlinedGroup {units, mod = mod@(Module _ (ModName m))} =
         yield $ printf   "    let %s (%s) ="
             (getMethodName exp)
             (intercalate ", " [printf "%s:%s" a t | (a, ClrType t) <- Map.toList args])
-        yield $ printf "#line 0 \"%s/slice-%d\"" m unitId
+        yield $ printf "#line %d \"%s\"" (fst $ loc_start loc) (loc_filename loc)
         forM_ (lines body) $ \l ->
           yield $ printf "        %s" l
 

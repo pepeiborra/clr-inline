@@ -37,6 +37,7 @@ data ClrInlinedExpDetails (language :: Symbol) argType = ClrInlinedExpDetails
   , stubName :: Name
   , body :: String
   , args :: Map String argType
+  , loc  :: Loc
   , returnType :: String
   }
 
@@ -133,6 +134,7 @@ clrQuoteExp language clrCompile body = do
   count <- getFinalizerCount @(ClrInlinedUnit language String)
   mod <- thisModule
   stubName <- newName $ printf "%s_stub_%d" (symbolVal language) count
+  loc <- location
   let (resultType, parsedBody) = parseBody body
   let (antis, parsedBody') = extractArgs toClrArg parsedBody
   let inlinedUnit =
@@ -142,6 +144,7 @@ clrQuoteExp language clrCompile body = do
           stubName
           (normaliseLineEndings parsedBody')
           antis
+          loc
           resultType
   pushWrapperGen (clrGenerator language mod clrCompile) $ return (ClrInlinedExp inlinedUnit :: ClrInlinedUnit language String)
   --

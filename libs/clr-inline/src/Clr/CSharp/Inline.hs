@@ -18,7 +18,6 @@ import qualified Data.Map as Map
 import           Data.Proxy
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Quote
-import           Language.Haskell.TH.Syntax
 import           System.Directory
 import           System.FilePath            ((<.>), (</>))
 import           System.IO.Temp
@@ -71,7 +70,7 @@ csharpDec cfg = clrQuoteDec name $ compile cfg
 
 
 genCode :: ClrInlinedGroup "csharp" -> String
-genCode ClrInlinedGroup {units, mod = mod@(Module _ (ModName m))} =
+genCode ClrInlinedGroup {units, mod} =
   unlines $
   execWriter $ do
     yield $ printf "namespace %s {" (getNamespace mod)
@@ -91,7 +90,7 @@ genCode ClrInlinedGroup {units, mod = mod@(Module _ (ModName m))} =
             returnType
             (getMethodName exp)
             (intercalate ", " [printf "%s %s" t a | (a, ClrType t) <- Map.toList args])
-        yield $ printf "#line 1 \"%s/slice-%d\"" m unitId
+        yield $ printf "#line %d \"%s\"" (fst $ loc_start loc) (loc_filename loc)
         forM_ (lines body) $ \l -> yield $ printf "        %s" l
         yield "}"
     yield "}}"
