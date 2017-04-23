@@ -124,8 +124,9 @@ spec = beforeAll_ startClr $ do
     threadDelay 50000
     [fsharp|bool{
            System.GC.Collect()
-           ignore <| ($w:WeakReference).IsAlive
-           System.GC.KeepAlive($tuple:WeakReference*DateTime)}
+           let res = ($w:WeakReference).IsAlive
+           System.GC.KeepAlive($tuple:WeakReference*DateTime)
+           res}
            |] `shouldReturn` True
 
   it "F# generics are handled" $ do
