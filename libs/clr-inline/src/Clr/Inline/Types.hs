@@ -57,6 +57,7 @@ class Unmarshal marshal haskell =>
 instance Quotable "bool"           "System.Boolean" Bool        Bool
 instance Quotable "double"         "System.Double"  Double      Double
 instance Quotable "int"            "System.Int32"   Int         Int
+instance Quotable "int16"          "System.Int16"   Int16       Int16
 instance Quotable "int32"          "System.Int32"   Int32       Int32
 instance Quotable "int64"          "System.Int64"   Int64       Int64
 instance Quotable "long"           "System.Int64"   Int64       Int64
