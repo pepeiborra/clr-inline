@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeApplications, TypeInType, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, TypeFamilies #-}
+{-# LANGUAGE TypeApplications, TypeInType, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, TypeFamilies, OverloadedStrings #-}
 
 module Clr.ImportGen.Reflection where
 
@@ -16,6 +16,7 @@ import Clr.Bindings.Object
 
 import Clr.Marshal.Host
 
+import Control.Monad(forM_)
 import Data.Word
 import Foreign.Ptr
 
@@ -32,24 +33,28 @@ type T_TypeArray       = T "System.Type[]" '[]
 type T_MemberInfo      = T "System.Reflection.MemberInfo" '[]
 type T_MemberInfoArray = T "System.Reflection.MemberInfo[]" '[]
 
-type T_Load          = T "Load" '[]
-type T_CurrentDomain = T "CurrentDomain" '[]
-type T_GetAssemblies = T "GetAssemblies" '[]
-type T_GetTypes      = T "GetTypes" '[]
-type T_FullName      = T "FullName" '[]
-type T_GetMembers    = T "GetMembers" '[]
-type T_Name          = T "Name" '[]
-type T_Namespace     = T "Namespace" '[]
+type T_Load                = T "Load" '[]
+type T_CurrentDomain       = T "CurrentDomain" '[]
+type T_GetAssemblies       = T "GetAssemblies" '[]
+type T_GetTypes            = T "GetTypes" '[]
+type T_FullName            = T "FullName" '[]
+type T_GetMembers          = T "GetMembers" '[]
+type T_Name                = T "Name" '[]
+type T_Namespace           = T "Namespace" '[]
+type T_GetGenericArguments = T "GetGenericArguments" '[]
+type T_GetType             = T "GetType" '[]
 
 type instance Members T_AppDomain  = '[ T_CurrentDomain, T_GetAssemblies ]
-type instance Members T_Assembly   = '[ T_GetTypes, T_Load ]
-type instance Members T_Type       = '[ T_FullName, T_GetMembers, T_Namespace ]
+type instance Members T_Assembly   = '[ T_GetTypes, T_Load, T_GetType ]
+type instance Members T_Type       = '[ T_FullName, T_GetMembers, T_Namespace, T_GetGenericArguments ]
 type instance Members T_MemberInfo = '[ T_Name ]
 
-type instance Candidates T_AppDomain T_GetAssemblies = '[ '[ ] ]
-type instance Candidates T_Assembly  T_GetTypes      = '[ '[ ] ]
-type instance Candidates T_Assembly  T_Load          = '[ '[ T_string ] ]
-type instance Candidates T_Type      T_GetMembers    = '[ '[ ] ]
+type instance Candidates T_AppDomain T_GetAssemblies       = '[ '[ ] ]
+type instance Candidates T_Assembly  T_GetTypes            = '[ '[ ] ]
+type instance Candidates T_Assembly  T_Load                = '[ '[ T_string ] ]
+type instance Candidates T_Type      T_GetMembers          = '[ '[ ] ]
+type instance Candidates T_Type      T_GetGenericArguments = '[ '[ ] ]
+type instance Candidates T_Assembly  T_GetType             = '[ '[ T_string ] ]
 
 type instance SuperTypes T_AppDomain       = '[ T_object ]
 type instance SuperTypes T_Assembly        = '[ T_object ]
@@ -59,14 +64,16 @@ type instance SuperTypes T_TypeArray       = '[ T_IEnumerable T_Type ]
 type instance SuperTypes T_MemberInfo      = '[ T_object ]
 type instance SuperTypes T_MemberInfoArray = '[ T_IEnumerable T_MemberInfo ]
 
-foreign import ccall "dynamic" makeAppDomainCurrentDomain :: FunPtr (IO (ObjectID T_AppDomain)) -> IO (ObjectID T_AppDomain)
-foreign import ccall "dynamic" makeAppDomainGetAssemblies :: FunPtr (ObjectID T_AppDomain -> IO (ObjectID T_AssemblyArray)) -> (ObjectID T_AppDomain -> IO (ObjectID T_AssemblyArray))
-foreign import ccall "dynamic" makeAssemblyGetTypes       :: FunPtr (ObjectID T_Assembly -> IO (ObjectID T_TypeArray)) -> (ObjectID T_Assembly -> IO (ObjectID T_TypeArray))
-foreign import ccall "dynamic" makeAssemblyLoad           :: FunPtr (BStr -> IO (ObjectID T_Assembly)) -> (BStr -> IO (ObjectID T_Assembly))
-foreign import ccall "dynamic" makeTypeFullName           :: FunPtr (ObjectID T_Type -> IO BStr) -> (ObjectID T_Type -> IO BStr)
-foreign import ccall "dynamic" makeTypeGetMembers         :: FunPtr (ObjectID T_Type -> IO (ObjectID T_MemberInfoArray)) -> (ObjectID T_Type -> IO (ObjectID T_MemberInfoArray))
-foreign import ccall "dynamic" makeMemberInfoName         :: FunPtr (ObjectID T_MemberInfo -> IO BStr) -> (ObjectID T_MemberInfo -> IO BStr)
-foreign import ccall "dynamic" makeTypeNamespace          :: FunPtr (ObjectID T_Type -> IO BStr) -> (ObjectID T_Type -> IO BStr)
+foreign import ccall "dynamic" makeAppDomainCurrentDomain  :: FunPtr (IO (ObjectID T_AppDomain)) -> IO (ObjectID T_AppDomain)
+foreign import ccall "dynamic" makeAppDomainGetAssemblies  :: FunPtr (ObjectID T_AppDomain -> IO (ObjectID T_AssemblyArray)) -> (ObjectID T_AppDomain -> IO (ObjectID T_AssemblyArray))
+foreign import ccall "dynamic" makeAssemblyGetTypes        :: FunPtr (ObjectID T_Assembly -> IO (ObjectID T_TypeArray)) -> (ObjectID T_Assembly -> IO (ObjectID T_TypeArray))
+foreign import ccall "dynamic" makeAssemblyLoad            :: FunPtr (BStr -> IO (ObjectID T_Assembly)) -> (BStr -> IO (ObjectID T_Assembly))
+foreign import ccall "dynamic" makeTypeFullName            :: FunPtr (ObjectID T_Type -> IO BStr) -> (ObjectID T_Type -> IO BStr)
+foreign import ccall "dynamic" makeTypeGetMembers          :: FunPtr (ObjectID T_Type -> IO (ObjectID T_MemberInfoArray)) -> (ObjectID T_Type -> IO (ObjectID T_MemberInfoArray))
+foreign import ccall "dynamic" makeMemberInfoName          :: FunPtr (ObjectID T_MemberInfo -> IO BStr) -> (ObjectID T_MemberInfo -> IO BStr)
+foreign import ccall "dynamic" makeTypeNamespace           :: FunPtr (ObjectID T_Type -> IO BStr) -> (ObjectID T_Type -> IO BStr)
+foreign import ccall "dynamic" makeTypeGetGenericArguments :: FunPtr (ObjectID T_Type -> IO (ObjectID T_TypeArray)) -> (ObjectID T_Type -> IO (ObjectID T_TypeArray))
+foreign import ccall "dynamic" makeAssemblyGetType         :: FunPtr (ObjectID T_Assembly -> BStr -> IO (ObjectID T_Type)) -> (ObjectID T_Assembly -> BStr -> IO (ObjectID T_Type))
 
 instance PropertyS T_AppDomain T_CurrentDomain where
   type PropertyTypeS T_AppDomain T_CurrentDomain = T_AppDomain
@@ -92,6 +99,12 @@ instance PropertyI T_MemberInfo T_Name where
 instance PropertyI T_Type T_Namespace where
   type PropertyTypeI T_Type T_Namespace = T_string
 
+instance MethodResultI1 T_Type T_GetGenericArguments () where
+  type ResultTypeI1 T_Type T_GetGenericArguments () = 'Just T_TypeArray
+
+instance MethodResultI1 T_Assembly T_GetType T_string where
+  type ResultTypeI1 T_Assembly T_GetType T_string = 'Just T_Type
+
 instance PropertyDynImportGetS T_AppDomain T_CurrentDomain where
   propertyDynImportGetS = makeAppDomainCurrentDomain
 
@@ -116,6 +129,13 @@ instance PropertyDynImportGetI T_MemberInfo T_Name where
 instance PropertyDynImportGetI T_Type T_Namespace where
   propertyDynImportGetI = makeTypeNamespace
 
+instance MethodDynImportI1 T_Type T_GetGenericArguments () where
+  methodDynImportI1 = makeTypeGetGenericArguments
+
+instance MethodDynImportI1 T_Assembly T_GetType T_string where
+  methodDynImportI1 = makeAssemblyGetType
+
+
 --
 -- AppDomain.CurrentDomain
 --
@@ -132,7 +152,7 @@ assemblyLoad assemName = invokeS @T_Load @T_Assembly assemName
 -- assemIsDynamicDriverInternal assem is true if the assembly represents that created on the fly by the driver
 --
 assemIsDynamicDriverInternal :: Object T_Assembly -> IO Bool
-assemIsDynamicDriverInternal assem = invokeI @T_ToString assem () >>= \assemName-> return $ assemName == T.pack "DynamicAssembly, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null"
+assemIsDynamicDriverInternal assem = invokeI @T_ToString assem () >>= \assemName-> return $ assemName == "DynamicAssembly, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null"
 
 --
 -- assembliesLoaded is a producer of the currently loaded assemblies minus the internal one created by the Driver
@@ -170,7 +190,7 @@ typeFullName :: Object T_Type -> IO T.Text
 typeFullName typ = getPropI @T_FullName typ
 
 --
--- System.Type.GetMembers
+-- System.Type.GetMembers()
 --
 typeGetMembers :: Object T_Type -> Producer (Object T_MemberInfo) IO ()
 typeGetMembers typ = liftIO (invokeI @T_GetMembers typ ()) >>= toProducer
@@ -205,4 +225,44 @@ memberInfoName mi = getPropI @T_Name mi
 assemGetAllTypesOfNS :: Object T_Assembly -> T.Text -> Producer (Object T_Type) IO ()
 assemGetAllTypesOfNS assem ns = assemGetTypes assem >-> filterM (\typ-> typeNamespace typ >>= \nsTyp-> return $ nsTyp == ns)
 
+--
+-- simplifyTypeName returns the supplied string upto but not including the "`"
+--
+simplifyTypeName :: T.Text -> T.Text
+simplifyTypeName = fst . T.breakOn "`"
+
+--
+-- typeFullNm is like typeFullName, except simplifyTypeName is called on the result
+--
+typeFullNm :: Object T_Type -> IO T.Text
+typeFullNm typ = typeFullName typ >>= return . simplifyTypeName
+
+--
+-- typeIsSupported returns false if the name contains a particular character
+-- that we'd like to ignore at least for an early release
+--
+typeIsSupported :: Object T_Type -> IO Bool
+typeIsSupported typ = do
+  name <- typeFullName typ
+  let containsUnderscore   = "_" `T.isInfixOf` name -- Internal only? Generally can ignore these.
+  let containsAngleBracket = "<" `T.isInfixOf` name -- These occur when a nested class depends on the generic type instantiation of the parent. Ignore these for now then revisit. TODO.
+  let containsPlus         = "+" `T.isInfixOf` name -- Probably need further work to support nested classes in general. TODO.
+  return $ not containsUnderscore && not containsAngleBracket && not containsPlus
+
+--
+-- System.Type.GetGenericArguments()
+--
+typeGetGenericArguments :: Object T_Type -> Producer (Object T_Type) IO ()
+typeGetGenericArguments typ = liftIO (invokeI @T_GetGenericArguments typ ()) >>= toProducer
+
+--
+-- System.Reflection.Assembly.GetType(System.String)
+--
+assemGetType :: Object T_Assembly -> T.Text -> IO (Object T_Type)
+assemGetType = invokeI @T_GetType
+
+assemGetTypesByFQName :: Object T_Assembly -> [T.Text] -> Producer (Object T_Type) IO ()
+assemGetTypesByFQName assem names = forM_ names $ \name-> do
+    typ <- liftIO $ assemGetType assem name
+    yield typ
 

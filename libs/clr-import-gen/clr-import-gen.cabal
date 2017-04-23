@@ -44,6 +44,7 @@ test-suite clr-import-gen-test
                      , clr-marshal
                      , hspec
                      , pipes
+                     , pipes-text
                      , template-haskell
                      , text
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N

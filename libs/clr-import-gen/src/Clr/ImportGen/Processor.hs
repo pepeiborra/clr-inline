@@ -18,6 +18,9 @@ import Language.Haskell.TH.Syntax
 
 import qualified Data.Text as T
 
+import Pipes.Prelude(toListM)
+
+
 clrNameCounter :: IORef Int
 {-# NOINLINE clrNameCounter #-}
 clrNameCounter = unsafePerformIO (newIORef 0)
@@ -33,6 +36,20 @@ newUniqueName prefix = runIO $ do
 ensureClrStarted :: Q ()
 ensureClrStarted = runIO $ startClr
 
+typeGetGenArgVars :: Object T_Type -> Q [Type]
+typeGetGenArgVars typ = do
+  genArgs <- runIO $ toListM $ typeGetGenericArguments typ
+  names   <- runIO $ mapM typeName genArgs
+  return $ map (VarT . mkName . T.unpack) names
+
+typeGetHaskellRepresentation :: Object T_Type -> Q Type
+typeGetHaskellRepresentation typ = do
+  nm <- runIO $ typeFullNm typ >>= return . T.unpack :: Q String
+  genVars <- typeGetGenArgVars typ
+  return $ ParensT $ ConT (mkName "T") `AppT` (LitT $ StrTyLit nm) `AppT` (ParensT (
+    foldr (\a-> \b-> PromotedConsT `AppT` a `AppT` b ) PromotedNilT genVars ))
+
+
 defToAssems :: RefImportDef -> Q [Object T_Assembly]
 defToAssems = undefined
 
@@ -43,8 +60,8 @@ assemGetAllTypesOfNS' = undefined
 
 assemGetTypesMatchingImport :: Object T_Assembly -> Import -> Q [Object T_Type]
 assemGetTypesMatchingImport assem (Import ns typs) = case typs of
-  [] -> assemGetAllTypesOfNS'  assem ns
-  xs -> assemGetTypesByFQName' assem (map (\typName -> ns `T.append` T.pack "." `T.append` typName) xs)
+  [] -> runIO $ toListM $ assemGetAllTypesOfNS assem ns
+  xs -> runIO $ toListM $ assemGetTypesByFQName assem (map (\typName -> ns `T.append` T.pack "." `T.append` typName) xs)
 
 assemGetTypesMatchingImports :: Object T_Assembly -> [Import] -> Q [Object T_Type]
 assemGetTypesMatchingImports assem imports = mapM (assemGetTypesMatchingImport assem) imports >>= return . concat
