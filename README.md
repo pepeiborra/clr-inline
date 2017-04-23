@@ -1,18 +1,44 @@
-# clr-haskell: Interoperability with the CLR
+# clr-haskell - Haskell interoperability with the CLR
 
-[![unix build status](https://gitlab.com/tim-m89/clr-haskell/badges/master/build.svg)](https://gitlab.com/tim-m89/clr-haskell/commits/master)[![Windows Build Status](https://img.shields.io/appveyor/ci/pepeiborra/clr-haskell.svg?label=Windows%20build)](https://ci.appveyor.com/project/pepeiborra/clr-haskell)
+## Status
 
-clr-haskell is a project to enable the use of code within the common language runtime (.Net / Mono / CoreCLR) from Haskell. It is direct continuation of the Salsa project in that it aims to provide a way to host the runtime within a Haskell process, and a strongly typed binding to any of the code within the CLR. In doing so, it demonstrates that Haskell's type system (GHC specifically) is strong enough to encode most (if not all) the complexities of an OO type system.
+[![unix build status](https://gitlab.com/tim-m89/clr-haskell/badges/master/build.svg)](https://gitlab.com/tim-m89/clr-haskell/commits/master)[![Windows Build status](https://ci.appveyor.com/api/projects/status/073rvyuyvxrcqvsw?svg=true&label=Windows%20build)](https://ci.appveyor.com/project/TimMatthews/clr-haskell)
 
-We should expect at a bare minimum, a high level interface to call a CLR method by name, and the exact method invocation to go to the right method (virtual methods, overrides of those, methods marked new to hide the base implementation at compile time instead of runtime, overloading: multiple choices based on different numbers and types of arguments, implicit upcast from subclasses to super classes as simple as an original .Net invocation would look, etc)
+Overview
+==========
 
-This project is not a way to target / cross compile Haskell to run on the CLR. The Haskell code remains as is, and so does the CLR code. It is merely trying to bridge functionality between the 2 eco systems.
+**clr-haskell** is a project to enable the use of code within the common language runtime (.Net / Mono / CoreCLR) from GHC Haskell.
 
-It is currently divided into these packages:
+This project is not a way to target / cross compile Haskell to run on the CLR, instead the Haskell code compiles & runs as normal, and so does the CLR code.
 
-* clr - Most of the end developer API and lots of type level trickery to make this all work.
-* clr-host - Attempts to provide a common minimal disconnected way to start and stop the backend. Mono works great. .Net has a few issues. CoreCLR is not yet implemented but my minimal tests show that it doesn't suffer from all the problems of .Net.
-* clr-marshal - A minimal package providing the primitives for marshaling and unmarshaling data through the bridge.
-* clr-bindings - Provides glue between the above 2, as neither of those packages depend on each other, some of which is just a few instances.
-* clr-inline - A quasiquoter allowing to inline F# and C# in Haskell source code.
-* clr-test-app - Just an example of what currently works.
+It merely allows these 2 eco systems to interface to each other.
+
+### Flavours
+
+
+This project provides 2 primary flavours for a developer to interop between the CLR & Haskell:
+
+* The Haskeller's strongly typed flavour. Takes advantage of the latest GHC extensions to provide a way of encoding an OO type system within the Haskell type system.
+* The .Net dev's inline flavour. Provides the ability to call directly into valid C# / F# syntax via quasi-quoted template Haskell.
+
+Project Structure
+==========
+
+### Libraries
+
+* [**clr-typed**](https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-typed) - The strongly typed flavour.
+* [**clr-inline**](https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-inline) - The inline flavour.
+* [**clr-host**](https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-host) - Host (also known as embed) the CLR runtime within the current Haskell process, and minimal boostrap interface for the other libraries.
+* [**clr-marshal**](https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-marshal) -  Common dep used by both flavours - marshaling and unmarshaling high level Haskell types to low level bridge types.
+* [**clr-bindings**](https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-bindings) - Glue between the strongly typed flavour and the backend interface of the clr-host library.
+
+### Utils
+
+* [**clr-win-linker**](https://gitlab.com/tim-m89/clr-haskell/tree/master/utils/clr-win-linker) - A font end to the linker to back-port a bug fix to GHC versions < 8.2
+
+License
+==========
+
+Open source under the permissive BSD3 license. See [LICENSE](https://gitlab.com/tim-m89/clr-haskell/tree/master/LICENSE)
+
+

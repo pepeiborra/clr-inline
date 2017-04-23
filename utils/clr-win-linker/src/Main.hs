@@ -26,11 +26,6 @@ modifyLinkerArgs = do
     else yield x
   modifyLinkerArgs
 
-prependWith :: a -> Pipe a a (SafeT IO) ()
-prependWith x = do
-  yield x
-  forever $ await >>= yield
-
 main :: IO ()
 main = do
   args <- getArgs
@@ -39,6 +34,6 @@ main = do
     (x : xs) -> do
       let linkFileOrig = tail x
       let linkFileNew  = linkFileOrig ++ "-temp"
-      runSafeT $ runEffect $ SP.readFile linkFileOrig >-> modifyLinkerArgs >-> tee (SP.writeFile linkFileNew) >-> prependWith "New linker args:" >-> stdoutLn
+      runSafeT $ runEffect $ SP.readFile linkFileOrig >-> modifyLinkerArgs >-> SP.writeFile linkFileNew
       renameFile linkFileNew linkFileOrig
       runLinker args

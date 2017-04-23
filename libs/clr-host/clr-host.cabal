@@ -1,7 +1,10 @@
 name:                clr-host
 version:             0.1.0.0
-synopsis:            Initial project template from stack
-description:         Please see README.md
+synopsis:            Hosting the Common Language Runtime
+description:         clr-host is a library that provides the ability to host (also known as embed) the
+                     common language runtime within the current Haskell process. Generally you'll only
+                     interface directly to this library to start the CLR, and the other code here is
+                     for higher level abstractions to use.
 homepage:            https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-host
 license:             BSD3
 license-file:        LICENSE
@@ -22,6 +25,7 @@ flag enable_mono
   description: build with mono support
   default: False
 
+-- Deps for running the setup itself (compilation of the C# code).
 custom-setup
   setup-depends:       base, directory, filepath, Cabal, transformers
 
@@ -29,23 +33,19 @@ library
   hs-source-dirs:      src
   c-sources:           src/clrHost.c, src/dotNetHost.c
   default-language:    Haskell2010
+  -- Common modules
   exposed-modules:     Clr.Host
                      , Clr.Host.Config
                      , Clr.Host.BStr
   other-modules:       Clr.Host.Driver
                      , Clr.Host.BStr.Type
-  if flag(enable_dotnet) && flag(enable_mono)
-    Cpp-options:         -DHAVE_DOTNET, -DHAVE_MONO
-    cc-options:          -DHAVE_DOTNET, -DHAVE_MONO
-    exposed-modules:     Clr.Host.DotNet, Clr.Host.Mono
-    other-modules:       Clr.Host.BStr.DotNet
-                       , Clr.Host.BStr.Mono
-                       , Clr.Host.DotNet.Common
-                       , Clr.Host.DotNet.Guid
-                       , Clr.Host.DotNet.SafeArray
-                       , Clr.Host.DotNet.Variant
-    Extra-Libraries:     glib-2.0, mono-2.0, oleaut32, ole
-  if flag(enable_dotnet) && !flag(enable_mono)
+  -- Common build deps
+  build-depends:       base >= 4.7 && < 5, bytestring, file-embed
+  -- Windows extra build deps
+  if os(windows)
+    build-depends:       Win32
+  -- .Net specific options
+  if flag(enable_dotnet)
     Cpp-options:         -DHAVE_DOTNET
     cc-options:          -DHAVE_DOTNET
     exposed-modules:     Clr.Host.DotNet
@@ -55,12 +55,14 @@ library
                        , Clr.Host.DotNet.SafeArray
                        , Clr.Host.DotNet.Variant
     Extra-Libraries:     oleaut32, ole32
-  if !flag(enable_dotnet) && flag(enable_mono)
+  -- Mono specific options
+  if flag(enable_mono)
     Cpp-options:         -DHAVE_MONO
     cc-options:          -DHAVE_MONO
     exposed-modules:     Clr.Host.Mono
     other-modules:       Clr.Host.BStr.Mono
     Extra-Libraries:     glib-2.0, mono-2.0
+  -- If neither .Net / Mono chosen, default to .Net on Windows and Mono otherwise.
   if !flag(enable_dotnet) && !flag(enable_mono)
     if os(windows)
       Cpp-options:         -DHAVE_DOTNET
@@ -78,10 +80,7 @@ library
       exposed-modules:     Clr.Host.Mono
       other-modules:       Clr.Host.BStr.Mono
       Extra-Libraries:     glib-2.0, mono-2.0
-  if os(windows)
-    build-depends:       base >= 4.7 && < 5, bytestring, file-embed, Win32
-  else
-    build-depends:       base >= 4.7 && < 5, bytestring, file-embed
+
 
 test-suite clr-host-test
   type:                exitcode-stdio-1.0

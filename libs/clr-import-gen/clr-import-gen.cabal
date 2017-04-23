@@ -22,7 +22,7 @@ library
                      , Clr.ImportGen.Reflection
   build-depends:       base >= 4.7 && < 5
                      , attoparsec
-                     , clr
+                     , clr-typed
                      , clr-host
                      , clr-bindings
                      , clr-marshal
@@ -38,7 +38,7 @@ test-suite clr-import-gen-test
   build-depends:       base
                      , attoparsec
                      , clr-import-gen
-                     , clr
+                     , clr-typed
                      , clr-host
                      , clr-bindings
                      , clr-marshal

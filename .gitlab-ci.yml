@@ -18,4 +18,4 @@ build:
     - stack build --test clr-inline
     - stack build --bench clr-inline
     - stack test clr-import-gen
-    - stack exec clr-test-app
+    - stack exec clr-typed-demo
