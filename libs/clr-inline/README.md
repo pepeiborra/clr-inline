@@ -1,7 +1,7 @@
 clr-inline
 ==============
 [![Unix build status](https://gitlab.com/tim-m89/clr-haskell/badges/master/build.svg)](https://gitlab.com/tim-m89/clr-haskell/commits/master)
-[![Windows Build Status](https://img.shields.io/appveyor/ci/tim-m89/clr-haskell.svg?label=Windows%20build)](https://ci.appveyor.com/project/tim-m89/clr-haskell)
+[![Windows Build Status](https://img.shields.io/appveyor/ci/TimMatthews/clr-haskell.svg?label=Windows%20build)](https://ci.appveyor.com/project/tim-m89/clr-haskell)
 
 **NOTE: you will need GHC >= 8.2 to use this package in Windows.
 
