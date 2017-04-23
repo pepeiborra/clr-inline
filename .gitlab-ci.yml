@@ -17,4 +17,4 @@ build:
     - stack build
     - stack build --test clr-inline
     - stack build --bench clr-inline
-    - stack exec clr-test-app
+    - stack exec clr-typed-demo

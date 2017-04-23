@@ -36,12 +36,12 @@ resolver: lts-8.8
 # non-dependency (i.e. a user package), and its test suites and benchmarks
 # will not be run. This is useful for tweaking upstream packages.
 packages:
-- 'libs/clr/'
+- 'libs/clr-typed/'
 - 'libs/clr-host/'
 - 'libs/clr-bindings/'
 - 'libs/clr-inline/'
 - 'libs/clr-marshal/'
-- 'examples/clr-test-app/'
+- 'examples/clr-typed-demo/'
 - 'examples/clr-inline-demo/'
 - 'utils/clr-win-linker/'
 

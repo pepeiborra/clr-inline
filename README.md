@@ -23,7 +23,7 @@ This project provides 2 primary flavours for a developer to interop between the 
 
 ### Libraries
 
-* [**clr**](https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr) - The strongly typed flavour.
+* [**clr-typed**](https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-typed) - The strongly typed flavour.
 * [**clr-inline**](https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-inline) - The inline flavour.
 * [**clr-host**](https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-host) - Host (also known as embed) the CLR runtime within the current Haskell process, and minimal boostrap interface for the other libraries.
 * [**clr-marshal**](https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-marshal) -  Common dep used by both flavours - marshaling and unmarshaling high level Haskell types to low level bridge types.

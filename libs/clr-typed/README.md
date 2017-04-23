@@ -1,4 +1,4 @@
-# clr - A strongly typed Haskell interface to the CLR type system
+# clr-typed - A strongly typed Haskell interface to the CLR type system
 
 ## Status
 
