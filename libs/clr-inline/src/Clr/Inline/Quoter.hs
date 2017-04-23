@@ -15,8 +15,7 @@ import Clr.Host.BStr
 import Clr.Marshal
 import Clr.Inline.State
 import Clr.Inline.Types
-import Clr.Inline.Utils
-import Clr.Inline.Utils.Args
+import Clr.Inline.Utils.Parse
 import Clr.Inline.Utils.Embed
 import Control.Lens
 import Data.Char
@@ -135,14 +134,13 @@ clrQuoteExp language clrCompile body = do
   mod <- thisModule
   stubName <- newName $ printf "%s_stub_%d" (symbolVal language) count
   loc <- location
-  let (resultType, parsedBody) = parseBody body
-  let (antis, parsedBody') = extractArgs toClrArg parsedBody
+  let ParseResult parsedBody resultType antis = parse toClrArg body
   let inlinedUnit =
         ClrInlinedExpDetails
           language
           count
           stubName
-          (normaliseLineEndings parsedBody')
+          (normaliseLineEndings parsedBody)
           antis
           loc
           resultType

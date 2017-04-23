@@ -24,7 +24,7 @@ library
                        Clr.Inline.State
                        Clr.Inline.Types
                        Clr.Inline.Utils
-                       Clr.Inline.Utils.Args
+                       Clr.Inline.Utils.Parse
                        Clr.Inline.Utils.Embed
                        Clr.Inline.Quoter
                        Clr.FSharp.Gen
