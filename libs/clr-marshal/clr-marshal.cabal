@@ -1,8 +1,8 @@
 name:                clr-marshal
 version:             0.1.0.0
-synopsis:            Marshaling for the clr 
-description:         Please see README.md
-homepage:            https://gitlab.com/tim-m89/ce
+synopsis:            Marshaling for the clr
+description:         A Common dependency
+homepage:            https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-marshal
 cabal-version:       >=1.10
 
 library
