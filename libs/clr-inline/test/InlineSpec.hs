@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -104,16 +105,31 @@ spec = beforeAll_ startClr $ do
     [fsharp| int {fst $tuple:int*bool}|] `shouldReturn` 8
 
   it "Reference types are released when Haskell GCs them" $ do
+    !tuple <-
+      [fsharp|WeakReference*DateTime{
+           let d = DateTime.Today
+           let w = WeakReference(d)
+           (w,d)}|]
+    !w <- [fsharp|WeakReference{fst $tuple:WeakReference*DateTime}|]
+    gcUntil [fsharp|bool{System.GC.Collect(); not ($w:WeakReference).IsAlive}|]
+
+  it "But not any earlier" $ do
     tuple <-
       [fsharp|WeakReference*DateTime{
            let d = DateTime.Today
            let w = WeakReference(d)
            (w,d)}|]
     w <- [fsharp|WeakReference{fst $tuple:WeakReference*DateTime}|]
-    return () -- gcUntil [fsharp|bool{not ($w:WeakReference).IsAlive}|]
+    performGC
+    threadDelay 50000
+    [fsharp|bool{
+           System.GC.Collect()
+           ignore <| ($w:WeakReference).IsAlive
+           System.GC.KeepAlive($tuple:WeakReference*DateTime)}
+           |] `shouldReturn` True
 
 gcUntil cond = do
-  let loop 10 = error "gcUntil: tried too many times"
+  let loop 10 = error "gc: tried too many times"
       loop i  = do
         performGC
         threadDelay (i * 10000)
