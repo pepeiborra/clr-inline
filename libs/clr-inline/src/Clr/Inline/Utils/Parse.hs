@@ -1,7 +1,8 @@
-module Clr.Inline.Utils.Args where
+module Clr.Inline.Utils.Parse where
 
 import Control.Lens
 import Data.Char
+import Data.List.Extra
 import Data.Map (Map)
 import qualified Data.Map as Map
 
@@ -28,7 +29,7 @@ tokenized = iso (tokenize (Other [])) untokenize
     tokenize (Antiquote s t) (c : rest) | isBreak c = Antiquote (reverse s) (reverse <$> t) : tokenize (Other [c]) rest
     tokenize (Antiquote s Nothing)  (':':rest) = tokenize (Antiquote s (Just "")) rest
     tokenize (Antiquote s Nothing)  (c  :rest) = tokenize (Antiquote (c:s) Nothing) rest
-    tokenize (Antiquote s (Just t))   (c  :rest) = tokenize (Antiquote s (Just (c:t))) rest
+    tokenize (Antiquote s (Just t)) (c  :rest) = tokenize (Antiquote s (Just (c:t))) rest
 
     untokenize :: [Token] -> String
     untokenize [] = []
@@ -49,3 +50,36 @@ extractArgs transf = mapAccumROf (tokenized.traversed) f mempty
     f acc (Antiquote v Nothing)
       | Just _ <- acc ^? at v = (acc, Other (transf v))
       | otherwise = error $ "The first occurrence of an antiquote must include a type ann. (" ++ v ++ ")"
+
+-- | Fix different systems silly line ending conventions
+--   https://ghc.haskell.org/trac/ghc/ticket/11215
+normaliseLineEndings :: String -> String
+normaliseLineEndings []            = []
+normaliseLineEndings ('\r':'\n':s) = '\n' : normaliseLineEndings s -- windows
+normaliseLineEndings ('\r':s)      = '\n' : normaliseLineEndings s -- old OS X
+normaliseLineEndings (  c :s)      =   c  : normaliseLineEndings s
+
+initAndLast :: String -> Maybe (String, Char)
+initAndLast = loopInitAndLast id where
+  loopInitAndLast _   [ ]    = Nothing
+  loopInitAndLast acc [x]    = Just (acc "", x)
+  loopInitAndLast acc (x:xx) = loopInitAndLast (acc . (x:)) xx
+
+-- | Parses expressions of the form "ty{e}" and returns (ty, e)
+parseBody :: String -> (String, String)
+parseBody e =
+  case span ('{' /=) (trim e) of
+    (typeString, exp') ->
+      case initAndLast (drop 1 exp') of
+        Just (exp,'}') -> (trim typeString, exp)
+        _ -> ("void", e)
+
+data ParseResult = ParseResult
+  { body, returnType :: String
+  , args :: Map String String
+  }
+
+parse :: (String -> String) -> String -> ParseResult
+parse transf inline = ParseResult b ret args where
+  (ret, inline') = parseBody inline
+  (args, b) = extractArgs transf inline'
