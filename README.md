@@ -4,7 +4,8 @@
 
 [![unix build status](https://gitlab.com/tim-m89/clr-haskell/badges/master/build.svg)](https://gitlab.com/tim-m89/clr-haskell/commits/master)[![Windows Build status](https://ci.appveyor.com/api/projects/status/073rvyuyvxrcqvsw?svg=true&label=Windows%20build)](https://ci.appveyor.com/project/TimMatthews/clr-haskell)
 
-## Overview
+Overview
+==========
 
 **clr-haskell** is a project to enable the use of code within the common language runtime (.Net / Mono / CoreCLR) from GHC Haskell.
 
@@ -12,14 +13,16 @@ This project is not a way to target / cross compile Haskell to run on the CLR, i
 
 It merely allows these 2 eco systems to interface to each other.
 
-## Flavours
+### Flavours
+
 
 This project provides 2 primary flavours for a developer to interop between the CLR & Haskell:
 
 * The Haskeller's strongly typed flavour. Takes advantage of the latest GHC extensions to provide a way of encoding an OO type system within the Haskell type system.
 * The .Net dev's inline flavour. Provides the ability to call directly into valid C# / F# syntax via quasi-quoted template Haskell.
 
-## Project Structure
+Project Structure
+==========
 
 ### Libraries
 
@@ -29,6 +32,13 @@ This project provides 2 primary flavours for a developer to interop between the 
 * [**clr-marshal**](https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-marshal) -  Common dep used by both flavours - marshaling and unmarshaling high level Haskell types to low level bridge types.
 * [**clr-bindings**](https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-bindings) - Glue between the strongly typed flavour and the backend interface of the clr-host library.
 
-## Utils
+### Utils
 
 * [**clr-win-linker**](https://gitlab.com/tim-m89/clr-haskell/tree/master/utils/clr-win-linker) - A font end to the linker to back-port a bug fix to GHC versions < 8.2
+
+License
+==========
+
+Open source under the permissive BSD3 license. See [LICENSE](https://gitlab.com/tim-m89/clr-haskell/tree/master/LICENSE)
+
+
