@@ -65,7 +65,7 @@ This is driven by Cabal flags in the `clr-host` package.
 
 Requirements
 ================
-`clr-inline` requires GHC >7.10 for `mono`, and GHC >8.2 for `.Net`. 
+`clr-inline` requires GHC >=8.0 for `mono`, and GHC >=8.2 for `.Net`. 
 
 The quasiquoters look for the F#/C# compiler binaries in the
 application path. External dependencies and additional search paths can be provided to
