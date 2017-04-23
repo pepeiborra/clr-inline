@@ -13,7 +13,6 @@ import           Clr.Inline.Types
 import           Control.Monad
 import           Control.Monad.Trans.Writer
 import qualified Data.ByteString                 as BS
-import           Data.List
 import qualified Data.Map as Map
 import           Data.Proxy
 import           Language.Haskell.TH.Syntax
@@ -34,13 +33,15 @@ genCode ClrInlinedGroup {units, mod} =
     forM_ units $ \case
       ClrInlinedDec _ body -> yield body
       ClrInlinedExp {} -> return ()
-    yield $ printf "module %s = " (getClassName mod)
+    yield $ printf "type %s =" (getClassName mod)
     forM_ units $ \case
       ClrInlinedDec {} -> return ()
       ClrInlinedExp exp@ClrInlinedExpDetails {..} -> do
-        yield $ printf   "    let %s (%s) ="
-            (getMethodName exp)
-            (intercalate ", " [printf "%s:%s" a t | (a, ClrType t) <- Map.toList args])
+        let argsString =
+              case Map.toList args of
+                [] -> "()"
+                other -> unwords [printf "(%s:%s)" a t | (a, ClrType t) <- other]
+        yield $ printf   "  static member %s %s =" (getMethodName exp) argsString
         yield $ printf "#line %d \"%s\"" (fst $ loc_start loc) (loc_filename loc)
         forM_ (lines body) $ \l ->
           yield $ printf "        %s" l

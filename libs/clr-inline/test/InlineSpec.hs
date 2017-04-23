@@ -98,7 +98,7 @@ spec = beforeAll_ startClr $ do
   it "F# handles two antiquotations" $
     [fsharp|bool{$h_i32:int32 + $h_i:int = 4}|] `shouldReturn` True
 
-  it "F# tuples are handled" $ do
+  it "F# tuples are handled correctly" $ do
     tuple <- [fsharp| int*bool{8,true}|]
     [fsharp| bool{snd $tuple:int*bool}|] `shouldReturn` True
     [fsharp| int {fst $tuple:int*bool}|] `shouldReturn` 8
