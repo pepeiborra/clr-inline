@@ -65,7 +65,13 @@ This is driven by Cabal flags in the `clr-host` package.
 
 Requirements
 ================
-`clr-inline` requires GHC >=8.0 for `mono`, and GHC >=8.2 for `.Net`. 
+`clr-inline` requires GHC >=8.0 for `mono`, and either GHC >=8.2 or a [linker preprocessor] for `.Net`.
+
+[linker preprocessor]: https://gitlab.com/tim-m89/clr-haskell/tree/master/utils/clr-win-linker
+
+Cabal requires that the CLR compiler is in the application path at `cabal configure` time. 
+The module `Clr.Inline.Cabal` provides an optional Cabal user hook that can be added to a cabal
+ Setup script to check for this automatically
 
 The quasiquoters look for the F#/C# compiler binaries in the
 application path. External dependencies and additional search paths can be provided to

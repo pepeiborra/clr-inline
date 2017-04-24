@@ -23,6 +23,7 @@ source-repository head
 library
   hs-source-dirs:      src
   exposed-modules:     Clr.Inline 
+                       Clr.Inline.Cabal
                        Clr.Inline.Config
   other-modules:       
                        Clr.CSharp.Inline
@@ -36,6 +37,7 @@ library
                        Clr.FSharp.Gen
   build-depends:        base >=4.9 && <4.10,
                         bytestring,
+                        Cabal,
                         clr-host,
                         clr-marshal,
                         containers,

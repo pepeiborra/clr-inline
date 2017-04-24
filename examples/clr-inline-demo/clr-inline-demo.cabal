@@ -9,9 +9,13 @@ author:              Pepe Iborra
 maintainer:          pepeiborra@gmail.com
 copyright:           (c) 2017 Jose Iborra
 category:            Development
-build-type:          Simple
-cabal-version:       >=1.10
+cabal-version:       >=1.24
 extra-source-files:  src/Window.xaml
+build-type:          Custom
+
+custom-setup
+    setup-depends:   base, Cabal, clr-inline 
+
 
 executable winforms
   main-is:             Winforms.hs
