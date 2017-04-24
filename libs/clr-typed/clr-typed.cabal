@@ -3,6 +3,7 @@ version:             0.1.0.0
 synopsis:            A strongly typed Haskell interface to the CLR type system
 description:         Please see README.md
 homepage:            https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-typed
+bug-reports:         https://gitlab.com/tim-m89/clr-haskell/issues 
 license:             BSD3
 license-file:        LICENSE
 author:              Tim Matthews
@@ -12,6 +13,10 @@ category:            Development
 build-type:          Simple
 extra-source-files:  test/Bindings.hs
 cabal-version:       >=1.10
+
+source-repository head
+    type:            git
+    location:        https://gitlab.com/tim-m89/clr-haskell/tree/master   
 
 library
   hs-source-dirs:      src

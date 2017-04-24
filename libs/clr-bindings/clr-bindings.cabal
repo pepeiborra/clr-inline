@@ -1,6 +1,6 @@
 name:                clr-bindings
 version:             0.1.0.0
-synopsis:            Initial project template from stack
+synopsis:            Glue between clr-host and clr-typed
 description:         Please see README.md
 homepage:            https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-bindings
 license:             BSD3
@@ -10,8 +10,11 @@ maintainer:          tim.matthews7@gmail.com
 copyright:           2017 Tim Matthews
 category:            Development
 build-type:          Simple
-extra-source-files:  README.md
 cabal-version:       >=1.10
+
+source-repository head
+    type:            git
+    location:        https://gitlab.com/tim-m89/clr-haskell/tree/master   
 
 library
   hs-source-dirs:      src

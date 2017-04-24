@@ -11,8 +11,8 @@ What is clr-inline
 It was inspired by [`inline-java`], [`inline-c`] and [`inline-r`], and it is implemented
 on top of [clr-host][clr-host] and [clr-marshal][clr-marshal] packages.
 
-[clr-host]: clr-host/
-[clr-marshal]: clr-marshal/
+[clr-host]: https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-host
+[clr-marshal]: https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-marshal
 [inline-java]: http://hackage.haskell.org/package/inline-java
 [inline-r]: http://hackage.haskell.org/package/inline-r
 [inline-c]: http://hackage.haskell.org/package/inline-c

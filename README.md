@@ -34,7 +34,7 @@ Project Structure
 
 ### Utils
 
-* [**clr-win-linker**](https://gitlab.com/tim-m89/clr-haskell/tree/master/utils/clr-win-linker) - A font end to the linker to back-port a bug fix to GHC versions < 8.2
+* [**clr-win-linker**](https://gitlab.com/tim-m89/clr-haskell/tree/master/utils/clr-win-linker) - A front end to the linker to back-port a bug fix to GHC versions < 8.2
 
 License
 ==========

@@ -1,8 +1,7 @@
-
 name:                clr-inline-demo
 version:             0.1.0.0
-synopsis:            Example/test for the inline frontend
--- description:         
+synopsis:            Examples for clr-inline
+description:         Examples for clr-inline
 homepage:            https://gitlab.com/tim-m89/clr-haskell
 license:             BSD3
 license-file:        LICENSE
@@ -12,11 +11,10 @@ copyright:           (c) 2017 Jose Iborra
 category:            Development
 build-type:          Simple
 cabal-version:       >=1.10
+extra-source-files:  src/Window.xaml
 
 executable winforms
   main-is:             Winforms.hs
-  -- other-modules:       
-  -- other-extensions:    
   build-depends:       base >=4.9 && <4.10, clr-inline
   hs-source-dirs:      src
   default-language:    Haskell2010
@@ -27,8 +25,6 @@ executable wpf
   else
      buildable:        False
   main-is:             Wpf.hs
-  -- other-modules:       
-  -- other-extensions:    
   build-depends:       base >=4.9 && <4.10, clr-inline, here
   hs-source-dirs:      src
   default-language:    Haskell2010

@@ -6,6 +6,7 @@ description:         clr-host is a library that provides the ability to host (al
                      interface directly to this library to start the CLR, and the other code here is
                      for higher level abstractions to use.
 homepage:            https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-host
+bug-reports:         https://gitlab.com/tim-m89/clr-haskell/issues 
 license:             BSD3
 license-file:        LICENSE
 author:              Tim Matthews
@@ -15,7 +16,11 @@ category:            Development
 build-type:          Custom
 extra-source-files:  src/Driver.cs
 extra-tmp-files:     src/Driver.dll
-cabal-version:       >=1.10
+cabal-version:       >=1.24
+
+source-repository head
+    type:            git
+    location:        https://gitlab.com/tim-m89/clr-haskell/tree/master   
 
 flag enable_dotnet
   description: build with .Net support
