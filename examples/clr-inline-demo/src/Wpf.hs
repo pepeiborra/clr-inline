@@ -30,7 +30,7 @@ main = do
       let t = Thread(fun() ->
         let app = new Application()
         let w = loadXamlWindow($xaml:string)
-        app.MainWindow = w
+        app.MainWindow <- w
         let e = w.FindName("Circle") :?> Ellipse
         e.MouseLeftButtonUp.Add(fun _ ->
           e.Fill <-
@@ -41,7 +41,7 @@ main = do
         )
       t.SetApartmentState(ApartmentState.STA)
       t.IsBackground = false
-      t.Start()
+      ignore <| t.Start()
       wait.WaitOne() |> ignore
       result
          |]
