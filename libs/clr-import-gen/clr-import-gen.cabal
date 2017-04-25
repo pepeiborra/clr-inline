@@ -2,7 +2,7 @@ name:                clr-import-gen
 version:             0.1.0.0
 -- synopsis:
 -- description:
-homepage:            https://gitlab.com/tim-m89/clr-haskell#readme
+homepage:            https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-import-gen
 license:             BSD3
 license-file:        LICENSE
 author:              Tim Matthews
@@ -52,4 +52,4 @@ test-suite clr-import-gen-test
 
 source-repository head
   type:     git
-  location: https://gitlab.com/tim-m89/clr-haskell
+  location: https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-import-gen

@@ -14,7 +14,7 @@ category:            Language, FFI, CLR, .NET
 
 source-repository head
     type:            git
-    location:        https://gitlab.com/tim-m89/clr-haskell/tree/master
+    location:        https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-marshal
 
 library
   hs-source-dirs:      src
