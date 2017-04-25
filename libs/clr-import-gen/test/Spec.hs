@@ -1,9 +1,9 @@
-{-# LANGUAGE OverloadedStrings, TypeInType #-}
+{-# LANGUAGE OverloadedStrings, TypeInType, TypeApplications #-}
 
 import Test.Hspec
 
 import Clr
-
+import Clr.Bindings
 import Clr.Host
 
 import Clr.ImportGen.Definition
@@ -13,6 +13,7 @@ import Clr.ImportGen.Reflection
 
 import Data.Attoparsec.Text
 import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
 import Pipes
 import Pipes.Prelude
 import Pipes.Prelude.Text
@@ -43,7 +44,7 @@ printType typ = do
   name    <- typeFullName typ
   nm      <- typeFullNm typ
   genArgs <- printGenArgs typ
-  rep <- runQ $ typeGetHaskellRepresentation typ :: IO Type
+  rep <- runQ $ typeToHaskellRepr typ :: IO Type
   return $ name `T.append` " -> " `T.append` (T.pack $ Prelude.show $ ppr rep)
 
 main :: IO ()
@@ -56,6 +57,9 @@ main = do
     [ Import "bar" []
     , Import "One.Two.Three" ["something"]
     , Import "NS" ["thisThing", "thatThing"] ] )
-  --startClr
+  startClr
+  mscorlib <- getmscorlib
+  str <- invokeI @"ToString" mscorlib ()
+  TIO.putStrLn str
   --runEffect $ knownTypes >-> Pipes.Prelude.filterM typeIsSupported >-> Pipes.Prelude.mapM printType >-> Pipes.Prelude.Text.stdoutLn
   return ()

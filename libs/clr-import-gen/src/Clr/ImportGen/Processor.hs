@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell, OverloadedStrings #-}
 
 module Clr.ImportGen.Processor where
 
@@ -14,7 +14,7 @@ import System.IO.Unsafe(unsafePerformIO)
 
 import Language.Haskell.TH.Quote
 import Language.Haskell.TH.Lib
-import Language.Haskell.TH.Syntax
+import Language.Haskell.TH.Syntax as TH
 
 import qualified Data.Text as T
 
@@ -36,27 +36,55 @@ newUniqueName prefix = runIO $ do
 ensureClrStarted :: Q ()
 ensureClrStarted = runIO $ startClr
 
-typeGetGenArgVars :: Object T_Type -> Q [Type]
-typeGetGenArgVars typ = do
-  genArgs <- runIO $ toListM $ typeGetGenericArguments typ
-  names   <- runIO $ mapM typeName genArgs
-  return $ map (VarT . mkName . T.unpack) names
+--
+-- A list of each type variable as a TH.Type VarT for each generic parameter of the supplied
+-- CLR instance of System.Type. We use the same name to ensure they are matched up again in
+-- other instance declarations, but with a prefix to ensure it is lower case.
+--
+typeToHaskellGenTypVars :: Object T_Type -> Q [TH.Type]
+typeToHaskellGenTypVars typ = memberToHaskellGenTypVars $ upCast typ
 
-typeGetHaskellRepresentation :: Object T_Type -> Q Type
-typeGetHaskellRepresentation typ = do
+--
+-- A list of each type variable as a TH.Type VarT for each generic parameter of the supplied
+-- CLR instance of System.Reflection.MemberInfo. We use the same name to ensure they are
+-- matched up again in other instance declarations, but with a prefix to ensure it is lower case.
+--
+memberToHaskellGenTypVars :: Object T_MemberInfo -> Q [TH.Type]
+memberToHaskellGenTypVars mem = do
+  genTyps <- runIO $ toListM $ memberGetGenericArguments mem
+  names   <- runIO $ mapM typeName genTyps
+  let names' = map (\name-> "gt_" `T.append` name) names
+  return $ map (VarT . mkName . T.unpack) names'
+
+
+--
+-- The TH.Type (T "name" gt) for the supplied CLR instance of System.Type
+--
+typeToHaskellRepr :: Object T_Type -> Q TH.Type
+typeToHaskellRepr typ = do
   nm <- runIO $ typeFullNm typ >>= return . T.unpack :: Q String
-  genVars <- typeGetGenArgVars typ
+  genVars <- typeToHaskellGenTypVars typ
   return $ ParensT $ ConT (mkName "T") `AppT` (LitT $ StrTyLit nm) `AppT` (ParensT (
     foldr (\a-> \b-> PromotedConsT `AppT` a `AppT` b ) PromotedNilT genVars ))
 
+--
+-- The TH.Type (T "name" gt) for the supplied CLR instance of System.Reflection.MemberInfo
+--
+memberToHaskellRepr :: Object T_MemberInfo -> Q TH.Type
+memberToHaskellRepr mem = do
+  nm <- runIO $ memberInfoNm mem >>= return . T.unpack :: Q String
+  genVars <- memberToHaskellGenTypVars mem
+  return $ ParensT $ ConT (mkName "T") `AppT` (LitT $ StrTyLit nm) `AppT` (ParensT (
+    foldr (\a-> \b-> PromotedConsT `AppT` a `AppT` b ) PromotedNilT genVars ))
+
+defaultRefs :: [T.Text]
+defaultRefs = ["mscorlib"]
 
 defToAssems :: RefImportDef -> Q [Object T_Assembly]
-defToAssems = undefined
-
-assemGetTypesByFQName' :: Object T_Assembly -> [T.Text] -> Q [Object T_Type]
-assemGetTypesByFQName' = undefined
-
-assemGetAllTypesOfNS' = undefined
+defToAssems def = do
+  let refs  = map refToText $ getRefs def
+  let refs' = defaultRefs ++ refs
+  runIO $ mapM assemblyLoad refs'
 
 assemGetTypesMatchingImport :: Object T_Assembly -> Import -> Q [Object T_Type]
 assemGetTypesMatchingImport assem (Import ns typs) = case typs of
