@@ -8,7 +8,7 @@ license-file:        LICENSE
 author:              Tim Matthews
 maintainer:          tim.matthews7@gmail.com
 copyright:           Copyright: (c) 2017 Tim Matthews
-category:            Development
+category:            Language, FFI, CLR, .NET
 build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10

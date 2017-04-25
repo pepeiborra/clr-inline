@@ -12,7 +12,7 @@ license-file:        LICENSE
 author:              Tim Matthews
 maintainer:          tim.matthews7@gmail.com
 copyright:           2016-2017 Tim Matthews
-category:            Development
+category:            Language, FFI, CLR, .NET
 build-type:          Custom
 extra-source-files:  src/Driver.cs
 extra-tmp-files:     src/Driver.dll
@@ -20,7 +20,7 @@ cabal-version:       >=1.24
 
 source-repository head
     type:            git
-    location:        https://gitlab.com/tim-m89/clr-haskell/tree/master   
+    location:        https://gitlab.com/tim-m89/clr-haskell/tree/master
 
 flag enable_dotnet
   description: build with .Net support
