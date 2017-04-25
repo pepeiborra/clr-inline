@@ -1,9 +1,10 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeFamilies #-}
 {-# LANGUAGE KindSignatures, GADTs, TypeInType #-}
 
 module Clr.Object where
 
 import Clr.Marshal
+import Clr.Types
 import Data.Kind
 import Data.Int
 
@@ -28,3 +29,6 @@ instance {-# OVERLAPS #-} Marshal (Object t) (ObjectID t) where
 
 instance {-# OVERLAPPING #-} Unmarshal (ObjectID t) (Object t) where
   unmarshal oid = return $ Object oid
+
+type instance HaskToClr (Object t) = t
+
