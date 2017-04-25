@@ -53,8 +53,8 @@ library
   if flag(enable_dotnet)
     Cpp-options:         -DHAVE_DOTNET
     cc-options:          -DHAVE_DOTNET
-    exposed-modules:     Clr.Host.DotNet
     other-modules:       Clr.Host.BStr.DotNet
+                       , Clr.Host.DotNet
                        , Clr.Host.DotNet.Common
                        , Clr.Host.DotNet.Guid
                        , Clr.Host.DotNet.SafeArray
@@ -64,16 +64,16 @@ library
   if flag(enable_mono)
     Cpp-options:         -DHAVE_MONO
     cc-options:          -DHAVE_MONO
-    exposed-modules:     Clr.Host.Mono
     other-modules:       Clr.Host.BStr.Mono
+                       , Clr.Host.Mono
     Extra-Libraries:     glib-2.0, mono-2.0
   -- If neither .Net / Mono chosen, default to .Net on Windows and Mono otherwise.
   if !flag(enable_dotnet) && !flag(enable_mono)
     if os(windows)
       Cpp-options:         -DHAVE_DOTNET
       cc-options:          -DHAVE_DOTNET
-      exposed-modules:     Clr.Host.DotNet
       other-modules:       Clr.Host.BStr.DotNet
+                         , Clr.Host.DotNet
                          , Clr.Host.DotNet.Common
                          , Clr.Host.DotNet.Guid
                          , Clr.Host.DotNet.SafeArray
@@ -82,8 +82,8 @@ library
     else
       Cpp-options:         -DHAVE_MONO
       cc-options:          -DHAVE_MONO
-      exposed-modules:     Clr.Host.Mono
       other-modules:       Clr.Host.BStr.Mono
+                         , Clr.Host.Mono
       Extra-Libraries:     glib-2.0, mono-2.0
 
 
