@@ -51,7 +51,7 @@ Features
 * Inline F# / C# in Haskell.
 * Automatic unmarshalling of CLR primitive types into Haskell.
 * Reference types support including arrays and generics.
-* Refer to Haskell non-function values inside F# / C# quotations.
+* Refer to (`Quotable`) Haskell values inside F# / C# quotations.
 
 Getting Started
 ===================
