@@ -3,7 +3,7 @@ module Clr.ImportGen.Definition where
 import qualified Data.Text as T
 import Data.List(intercalate)
 
-data Ref    = Ref T.Text
+data Ref    = Ref { refToText :: T.Text }
 data Import = Import T.Text [T.Text]
 
 instance Show Ref where
