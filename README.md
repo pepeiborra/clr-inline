@@ -31,6 +31,7 @@ Project Structure
 * [**clr-host**](https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-host) - Host (also known as embed) the CLR runtime within the current Haskell process, and minimal boostrap interface for the other libraries.
 * [**clr-marshal**](https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-marshal) -  Common dep used by both flavours - marshaling and unmarshaling high level Haskell types to low level bridge types.
 * [**clr-bindings**](https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-bindings) - Glue between the strongly typed flavour and the backend interface of the clr-host library.
+* [**clr-import-gen**](https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-import-gen) - Work in progress for generating the instances required for the typed flavour via a simple import like syntax
 
 ### Utils
 
@@ -40,5 +41,6 @@ License
 ==========
 
 Open source under the permissive BSD3 license. See [LICENSE](https://gitlab.com/tim-m89/clr-haskell/tree/master/LICENSE)
+
 
 
