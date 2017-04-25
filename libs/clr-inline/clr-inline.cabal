@@ -60,6 +60,9 @@ benchmark    benchmark
   hs-source-dirs:      bench
   build-depends:       base, clr-inline, criterion, text
   default-language:    Haskell2010
+  if os(windows) && impl(ghc < 8.2)
+     ghc-options:      -pgml clr-win-linker
+     build-depends: clr-win-linker
 
 test-suite spec
   type: exitcode-stdio-1.0
@@ -68,3 +71,6 @@ test-suite spec
   build-depends:       base, clr-inline, hspec, text
   default-language:    Haskell2010
   other-modules:       InlineSpec
+  if os(windows) && impl(ghc < 8.2)
+     ghc-options:      -pgml clr-win-linker
+     build-depends: clr-win-linker
