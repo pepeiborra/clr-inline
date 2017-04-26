@@ -1,5 +1,5 @@
 name:                clr-typed
-version:             0.1.0.0
+version:             0.1.0.1
 synopsis:            A strongly typed Haskell interface to the CLR type system
 description:         Please see README.md
 homepage:            https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-typed
@@ -11,7 +11,7 @@ maintainer:          tim.matthews7@gmail.com
 copyright:           Copyright: (c) 2016-2017 Tim Matthews
 category:            Language, FFI, CLR, .NET
 build-type:          Simple
-extra-source-files:  test/Bindings.hs
+extra-source-files:  test/Bindings.hs, README.md
 cabal-version:       >=1.10
 
 source-repository head
