@@ -5,6 +5,7 @@ module Clr.Object where
 
 import Clr.Marshal
 import Clr.Types
+import Clr.TypeString
 import Data.Kind
 import Data.Int
 
@@ -18,7 +19,7 @@ newtype ObjectID typ = ObjectID Int64
 -- An object is just its unique identifer + information of its type
 --
 data Object (typ::Type) where
-  Object :: ObjectID typ -> Object typ
+  Object :: (TString typ) => ObjectID typ -> Object typ
 
 
 --
@@ -27,7 +28,7 @@ data Object (typ::Type) where
 instance {-# OVERLAPS #-} Marshal (Object t) (ObjectID t) where
   marshal (Object x) f = f x
 
-instance {-# OVERLAPPING #-} Unmarshal (ObjectID t) (Object t) where
+instance {-# OVERLAPPING #-} (TString t) => Unmarshal (ObjectID t) (Object t) where
   unmarshal oid = return $ Object oid
 
 type instance HaskToClr (Object t) = t
