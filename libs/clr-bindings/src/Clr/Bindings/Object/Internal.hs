@@ -41,8 +41,10 @@ type T_ToString            = T "ToString" '[]
 --
 -- Type members
 --
+type T_BaseType            = T "BaseType" '[]
 type T_FullName            = T "FullName" '[]
 type T_GetGenericArguments = T "GetGenericArguments" '[]
+type T_GetInterfaces       = T "GetInterfaces" '[]
 type T_GetMembers          = T "GetMembers" '[]
 type T_IsAssignableFrom    = T "IsAssignableFrom" '[]
 type T_Namespace           = T "Namespace" '[]
@@ -59,8 +61,10 @@ type instance SuperTypes T_object = '[ ]
 type instance Members T_object = '[ T_ToString, T_GetType ]
 
 -- Doesn't yet conver all members of System.Type. TODO
-type instance Members T_Type   = '[ T_FullName
+type instance Members T_Type   = '[ T_BaseType
+                                  , T_FullName
                                   , T_GetGenericArguments
+                                  , T_GetInterfaces
                                   , T_GetMembers
                                   , T_GetType
                                   , T_IsAssignableFrom
