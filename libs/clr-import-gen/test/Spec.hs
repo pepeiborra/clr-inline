@@ -58,8 +58,15 @@ main = do
     , Import "One.Two.Three" ["something"]
     , Import "NS" ["thisThing", "thatThing"] ] )
   startClr
-  mscorlib <- getmscorlib
-  str <- invokeI @"ToString" mscorlib ()
-  TIO.putStrLn str
   --runEffect $ knownTypes >-> Pipes.Prelude.filterM typeIsSupported >-> Pipes.Prelude.mapM printType >-> Pipes.Prelude.Text.stdoutLn
+  let def = RefImportDef [ Ref "System" ] []
+  assems <- runQ $ defToAssems def
+  assemNames <- Prelude.mapM objectToString assems
+  assemNames `shouldBe` ["mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", "System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"]
+  --
+  let def2 = RefImportDef [] [Import "System" ["Console"]]
+  types <- runQ $ defToTypes def2
+  typeNames <- Prelude.mapM objectToString types
+  typeNames `shouldBe` ["System.Console"]
+  --
   return ()

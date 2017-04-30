@@ -86,6 +86,12 @@ defToAssems def = do
   let refs' = defaultRefs ++ refs
   runIO $ mapM assemblyLoad refs'
 
+defToTypes :: RefImportDef -> Q [Object T_Type]
+defToTypes def = do
+  assems <- defToAssems def
+  let imps = getImps def
+  mapM (\assem-> assemGetTypesMatchingImports assem imps) assems >>= return . concat
+
 assemGetTypesMatchingImport :: Object T_Assembly -> Import -> Q [Object T_Type]
 assemGetTypesMatchingImport assem (Import ns typs) = case typs of
   [] -> runIO $ toListM $ assemGetAllTypesOfNS assem ns
@@ -94,10 +100,10 @@ assemGetTypesMatchingImport assem (Import ns typs) = case typs of
 assemGetTypesMatchingImports :: Object T_Assembly -> [Import] -> Q [Object T_Type]
 assemGetTypesMatchingImports assem imports = mapM (assemGetTypesMatchingImport assem) imports >>= return . concat
 
-declareMembersInstance :: [Object T_MemberInfo] -> Q Dec
+declareMembersInstance :: Object T_Type -> [Object T_MemberInfo] -> Q Dec
 declareMembersInstance members = undefined
 
-memberDeclareCandidates :: Object T_MemberInfo -> Q [Dec]
+memberDeclareCandidates :: Object T_Type -> [Object T_MemberInfo] -> Q [Dec]
 memberDeclareCandidates member = undefined
 
 typeDeclareSupers :: Object T_Type -> Q Dec
