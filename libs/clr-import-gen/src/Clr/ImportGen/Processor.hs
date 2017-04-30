@@ -42,7 +42,11 @@ ensureClrStarted = runIO $ startClr
 -- other instance declarations, but with a prefix to ensure it is lower case.
 --
 typeToHaskellGenTypVars :: Object T_Type -> Q [TH.Type]
-typeToHaskellGenTypVars typ = memberToHaskellGenTypVars $ upCast typ
+typeToHaskellGenTypVars typ = do
+  genTyps <- runIO $ toListM $ typeGetGenericArguments typ
+  names   <- runIO $ mapM typeName genTyps
+  let names' = map (\name-> "gt_" `T.append` name) names
+  return $ map (VarT . mkName . T.unpack) names'
 
 --
 -- A list of each type variable as a TH.Type VarT for each generic parameter of the supplied
