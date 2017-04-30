@@ -48,7 +48,6 @@ type T_IsAssignableFrom    = T "IsAssignableFrom" '[]
 
 type instance Members T_AppDomain  = '[ T_CurrentDomain, T_GetAssemblies ]
 type instance Members T_Assembly   = '[ T_GetTypes, T_Load, T_GetType ]
-type instance Members T_Type       = '[ T_FullName, T_GetMembers, T_Namespace, T_GetGenericArguments, T_IsAssignableFrom, T_GetType ]
 type instance Members T_MemberInfo = '[ T_Name ]
 type instance Members T_MethodInfo = '[ T_GetGenericArguments ]
 
@@ -81,8 +80,6 @@ foreign import ccall "dynamic" makeMemberInfoName            :: FunPtr (ObjectID
 foreign import ccall "dynamic" makeTypeNamespace             :: FunPtr (ObjectID T_Type -> IO BStr) -> (ObjectID T_Type -> IO BStr)
 foreign import ccall "dynamic" makeTypeGetGenericArguments   :: FunPtr (ObjectID T_Type -> IO (ObjectID T_TypeArray)) -> (ObjectID T_Type -> IO (ObjectID T_TypeArray))
 foreign import ccall "dynamic" makeAssemblyGetType           :: FunPtr (ObjectID T_Assembly -> BStr -> IO (ObjectID T_Type)) -> (ObjectID T_Assembly -> BStr -> IO (ObjectID T_Type))
-foreign import ccall "dynamic" makeTypeIsAssignableFrom      :: FunPtr (ObjectID T_Type -> ObjectID T_Type -> IO Bool) -> (ObjectID T_Type -> ObjectID T_Type -> IO Bool)
-foreign import ccall "dynamic" makeTypeGetType               :: FunPtr (BStr -> IO (ObjectID T_Type)) -> (BStr -> IO (ObjectID T_Type))
 foreign import ccall "dynamic" makeMethodGetGenericArguments :: FunPtr (ObjectID T_MethodInfo -> IO (ObjectID T_TypeArray)) -> (ObjectID T_MethodInfo -> IO (ObjectID T_TypeArray))
 
 instance PropertyS T_AppDomain T_CurrentDomain where
@@ -114,12 +111,6 @@ instance MethodResultI1 T_Type T_GetGenericArguments () where
 
 instance MethodResultI1 T_Assembly T_GetType T_string where
   type ResultTypeI1 T_Assembly T_GetType T_string = 'Just T_Type
-
-instance MethodResultI1 T_Type T_IsAssignableFrom T_Type where
-  type ResultTypeI1 T_Type T_IsAssignableFrom T_Type = 'Just T_bool
-
-instance MethodResultS1 T_Type T_GetType T_string where
-  type ResultTypeS1 T_Type T_GetType T_string = 'Just T_Type
 
 instance MethodResultI1 T_MethodInfo T_GetGenericArguments () where
   type ResultTypeI1 T_MethodInfo T_GetGenericArguments () = 'Just T_TypeArray
@@ -154,12 +145,6 @@ instance MethodDynImportI1 T_Type T_GetGenericArguments () where
 instance MethodDynImportI1 T_Assembly T_GetType T_string where
   methodDynImportI1 = makeAssemblyGetType
 
-instance MethodDynImportI1 T_Type T_IsAssignableFrom T_Type where
-  methodDynImportI1 = makeTypeIsAssignableFrom
-
-instance MethodDynImportS1 T_Type T_GetType T_string where
-  methodDynImportS1 = makeTypeGetType
-
 instance MethodDynImportI1 T_MethodInfo T_GetGenericArguments () where
   methodDynImportI1 = makeMethodGetGenericArguments
 
@@ -179,7 +164,7 @@ assemblyLoad assemName = invokeS @T_Load @T_Assembly assemName
 -- assemIsDynamicDriverInternal assem is true if the assembly represents that created on the fly by the driver
 --
 assemIsDynamicDriverInternal :: Object T_Assembly -> IO Bool
-assemIsDynamicDriverInternal assem = invokeI @T_ToString assem () >>= \assemName-> return $ assemName == "DynamicAssembly, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null"
+assemIsDynamicDriverInternal assem = objectToString assem >>= \assemName-> return $ assemName == "DynamicAssembly, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null"
 
 --
 -- assembliesLoaded is a producer of the currently loaded assemblies minus the internal one created by the Driver
@@ -310,24 +295,6 @@ typeIsAssignableFrom t1 t2 = invokeI @T_IsAssignableFrom t1 t2
 --
 typeGetType :: T.Text -> IO (Object T_Type)
 typeGetType = invokeS @T_GetType @T_Type
-
--- TODO: move to Object module
-downCast :: forall ts t t' .
- ( MakeT ts ~ t'
- , t  `Implements` T_object ~ 'True   -- Should be inferred. TODO
- , t' `Implements` t ~ 'True          -- Make sure it is actually down. Would never down cast a dog to a cat for example.
- , TString t                          -- Need to be inferred. TODO
- , TString t'
- ) => Object t -> IO (Maybe (Object t'))
-downCast o = do
-  let o' = upCast o :: Object T_object  -- Note, the resolver needs further work. Without this I would have to make the signature above even more complicated. TODO
-  typ  <- invokeI @T_GetType o' ()
-  typ' <- typeGetType $ T.pack (tString @t')
-  canDownCast <- typ' `typeIsAssignableFrom` typ
-  if canDownCast then
-    return $ Just $ unsafeDownCast o
-  else
-    return Nothing
 
 --
 -- System.Reflection.MethodInfo.GetGenericArguments()

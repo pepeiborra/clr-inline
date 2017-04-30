@@ -25,6 +25,7 @@ library
                      , Clr.Bindings.ImportGen
                      , Clr.Bindings.IEnumerable
                      , Clr.Bindings.Object
+                     , Clr.Bindings.Object.Internal
   build-depends:       base >= 4.7 && < 5, clr-typed, clr-host, clr-marshal, text, template-haskell, pipes
   default-language:    Haskell2010
 

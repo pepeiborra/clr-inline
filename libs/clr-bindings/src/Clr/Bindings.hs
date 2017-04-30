@@ -1,21 +1,22 @@
 module Clr.Bindings
   ( module Clr.Bindings.Box
-  , module Clr.Bindings.DynImports
   , module Clr.Bindings.BStr
+  , module Clr.Bindings.DynImports
+  , module Clr.Bindings.Object
   , BStr(..)
   , saveDynamicAssembly
   ) where
 
 
 import Clr.Marshal
+import Clr.Marshal.Host
 
 import Clr.Host
 import Clr.Host.BStr
 
 import Clr.Bindings.Box
-import Clr.Bindings.DynImports
-import Clr.Marshal.Host
 import Clr.Bindings.BStr
+import Clr.Bindings.DynImports
 import Clr.Bindings.Object
 
 import Data.Word
