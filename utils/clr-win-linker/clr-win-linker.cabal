@@ -1,6 +1,6 @@
 name:                clr-win-linker
 version:             0.1.0.0
-synopsis:            A GHC linker wrapper tool to workaround a GHC >8.2 bug
+synopsis:            A GHC linker wrapper tool to workaround a GHC <8.2 bug
 description:         Please see README.md
 homepage:            https://gitlab.com/tim-m89/clr-haskell/tree/master/utils/clr-win-linker
 license:             BSD3
