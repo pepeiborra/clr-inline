@@ -1,4 +1,4 @@
-image: snoyberg/stackage
+image: snoyberg/stackage:nightly
 before_script:
 # Get latest stack
   - curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C $EXTRA_BIN_DIR '*/stack'
