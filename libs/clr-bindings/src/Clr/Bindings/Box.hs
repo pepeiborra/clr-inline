@@ -3,11 +3,12 @@
 module Clr.Bindings.Box where
 
 import Clr
+
 import Clr.Marshal
 
+import Clr.Host
 import Clr.Host.BStr
 
-import Clr.Marshal.Host
 import Clr.Bindings.BStr
 
 import Data.Int

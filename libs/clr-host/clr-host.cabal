@@ -45,7 +45,11 @@ library
   other-modules:       Clr.Host.Driver
                      , Clr.Host.BStr.Type
   -- Common build deps
-  build-depends:       base >= 4.7 && < 5, bytestring, file-embed
+  build-depends:       base >= 4.7 && < 5
+                     , bytestring
+                     , text
+                     , file-embed
+                     , clr-marshal
   -- Windows extra build deps
   if os(windows)
     build-depends:       Win32
