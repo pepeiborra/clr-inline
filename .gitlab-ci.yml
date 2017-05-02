@@ -17,11 +17,8 @@ build:
       - _cache
       - .stack-work
   script:
-    # explicit list in order to omit clr-inline-demo, which requires Stack 1.4
-    - stack build clr-typed-demo
-    - stack build clr-win-linker
-    - stack build clr-import-gen
-    - stack build --test clr-inline
-    - stack build --bench clr-inline
-    - stack test clr-import-gen
+    - stack build
+    - stack test
+    - stack bench
     - stack exec clr-typed-demo
+    - stack exec clr-inline-demo
