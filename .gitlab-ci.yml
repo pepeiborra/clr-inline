@@ -12,8 +12,10 @@ build:
       - _cache
       - .stack-work
   script:
-    - stack build
-    - stack test
-    - stack bench
+    # explicit enumeration to exclude the clr-typed test suite
+    - stack build clr-typed
+    - stack test clr-import-gen
+    - stack test clr-inline
+    - stack bench clr-inline
     - stack exec clr-typed-demo
     - stack exec clr-inline-demo
