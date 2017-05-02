@@ -9,7 +9,6 @@ module Clr.Bindings
 
 
 import Clr.Marshal
-import Clr.Marshal.Host
 
 import Clr.Host
 import Clr.Host.BStr
