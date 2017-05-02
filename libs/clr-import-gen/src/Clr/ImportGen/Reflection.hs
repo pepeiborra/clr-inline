@@ -14,8 +14,6 @@ import Clr.Bindings.DynImports
 import Clr.Bindings.IEnumerable
 import Clr.Bindings.Object
 
-import Clr.Marshal.Host
-
 import Control.Monad(forM_)
 import Data.Word
 import Foreign.Ptr

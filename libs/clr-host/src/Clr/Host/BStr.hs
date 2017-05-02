@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, BangPatterns, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 
 module Clr.Host.BStr
   ( BStr(..)
@@ -8,6 +8,10 @@ module Clr.Host.BStr
   ) where
 
 import Control.Exception (bracket)
+import Data.Coerce
+import Data.Word
+import Foreign.Ptr
+import Foreign.Storable
 
 import Clr.Host.Config
 import Clr.Host.BStr.Type
@@ -20,8 +24,10 @@ import Clr.Host.BStr.Mono(mono_ptr_to_bstr_hask, mono_free_bstr)
 import Clr.Host.BStr.DotNet(sysAllocStringLen, sysFreeString)
 #endif
 
-import Data.Word
-import Foreign.Ptr
+import Clr.Marshal
+
+import Data.Text
+import Data.Text.Foreign
 
 allocBStr :: (Integral len) => Ptr Word16 -> len -> IO BStr
 allocBStr p l = do
@@ -56,5 +62,28 @@ freeBStr x = do
 
 withBStr :: (Integral len) => Ptr Word16 -> len -> (BStr-> IO a) -> IO a
 withBStr p l = bracket (allocBStr p l) freeBStr
+
+instance Marshal Text BStr where
+  marshal x f = do
+    bstr <- useAsPtr x (\p-> \l-> allocBStr p l)
+    !res <- f bstr
+    freeBStr bstr
+    return res
+
+instance Marshal String BStr where
+  marshal x f = marshal (pack x) f
+
+instance Unmarshal BStr Text where
+  unmarshal x = do
+    let charSize = 2
+    let ptrData   = coerce x              :: Ptr Word16
+    let ptrLen    = plusPtr ptrData (-4)  :: Ptr Word16
+    lenBytes     <- peek ptrLen
+    !t <- fromPtr ptrData $ fromIntegral $ lenBytes `div` charSize
+    freeBStr x
+    return t
+
+instance Unmarshal BStr String where
+  unmarshal x = unmarshal x >>= return . unpack
 
 

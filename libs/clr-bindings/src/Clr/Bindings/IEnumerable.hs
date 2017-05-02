@@ -7,10 +7,10 @@ module Clr.Bindings.IEnumerable where
 
 import Clr
 import Clr.Bridge
-import Clr.Marshal
-import Clr.Marshal.Host
 import Clr.UnmarshalAs
 import Clr.TypeString
+
+import Clr.Marshal
 
 import Clr.Host
 import Clr.Host.BStr

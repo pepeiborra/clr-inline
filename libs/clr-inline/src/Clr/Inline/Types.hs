@@ -7,9 +7,9 @@
 {-# LANGUAGE ViewPatterns           #-}
 module Clr.Inline.Types where
 
+import           Clr.Host
 import           Clr.Host.BStr
 import           Clr.Marshal
-import           Clr.Marshal.Host
 import           Data.Int
 import           Data.IORef
 import           Data.Maybe
