@@ -1,5 +1,5 @@
 before_script:
-  - apt-get update && apt-get install -y make xz-utils
+  - apt-get update && apt-get install -y make xz-utils gcc libc6 clang libgmp-dev perl
   - export STACK_ROOT=`pwd`/.stack
   - curl -L https://github.com/commercialhaskell/stack/releases/download/v1.4.0/stack-1.4.0-linux-x86_64-static.tar.gz | tar xz --wildcards --strip-components=1 -C /usr/bin
   - stack setup
