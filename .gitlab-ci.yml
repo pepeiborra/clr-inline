@@ -12,7 +12,8 @@ before_script:
     - stack build clr-typed
     - stack test clr-import-gen
     - stack test clr-inline
-    - stack bench clr-inline
+    # disable benchmarks temporarily
+    # - stack bench clr-inline
     - stack exec clr-typed-demo
 
 mono4.2.1:
