@@ -25,6 +25,14 @@ mono4.2.1:
       - .stack-work
   <<: *test
 
+mono4.2.1.102:
+  image: mono:4.2.1.102
+  cache:
+    paths:
+      - _cache
+      - .stack-work
+  <<: *test
+
 mono4.2.2:
   image: mono:4.2.2
   cache:
