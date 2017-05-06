@@ -69,4 +69,8 @@ main = do
   typeNames <- Prelude.mapM objectToString types
   typeNames `shouldBe` ["System.Console"]
   --
+  let typ = Prelude.head types
+  membersDec <- runQ $ typeDeclareMembersAndCandidates typ
+  --putStrLn $ Prelude.show $ ppr membersDec
+  --
   return ()

@@ -9,6 +9,7 @@ import Clr.Host
 import Clr.ImportGen.Definition
 import Clr.ImportGen.Reflection
 
+import Control.Monad(foldM)
 import Data.IORef
 import System.IO.Unsafe(unsafePerformIO)
 
@@ -18,7 +19,10 @@ import Language.Haskell.TH.Syntax as TH
 
 import qualified Data.Text as T
 
-import Pipes.Prelude(toListM)
+import qualified Data.Map.Strict as Map
+
+import Pipes
+import Pipes.Prelude(toListM,filterM,)
 
 
 clrNameCounter :: IORef Int
@@ -109,6 +113,30 @@ declareMembersInstance members = undefined
 
 memberDeclareCandidates :: Object T_Type -> [Object T_MemberInfo] -> Q [Dec]
 memberDeclareCandidates member = undefined
+
+membersToRepMap :: [Object T_MemberInfo] -> Q (Map.Map TH.Type [Object T_MemberInfo])
+membersToRepMap = foldM updateMap Map.empty
+  where updateMap :: Map.Map TH.Type [Object T_MemberInfo] -> Object T_MemberInfo -> Q (Map.Map TH.Type [Object T_MemberInfo])
+        updateMap mp member = do
+          rep <- memberToHaskellRepr member
+          return $ Map.insertWith (++) rep [member] mp
+
+memberIsNotSpecial :: Object T_MemberInfo -> IO Bool
+memberIsNotSpecial mem = do
+  name <- memberInfoName mem
+  let isGetter   = "get_"    `T.isPrefixOf` name
+  let isSetter   = "set_"    `T.isPrefixOf` name
+  let isAdder    = "add_"    `T.isPrefixOf` name
+  let isRemover  = "remove_" `T.isPrefixOf` name
+  return $ not isGetter && not isSetter && not isAdder && not isRemover
+
+typeDeclareMembersAndCandidates :: Object T_Type -> Q [Dec]
+typeDeclareMembersAndCandidates typ = do
+  typRep <- typeToHaskellRepr typ
+  members <- runIO $ toListM $ typeGetMembers typ >-> filterM memberIsNotSpecial
+  memberByRep <- membersToRepMap members
+  let membersDec = TySynInstD (mkName "Members") (TySynEqn [typRep] $ Map.foldrWithKey (\memRep-> \mem-> \xs-> memRep `AppT` PromotedConsT `AppT` xs) PromotedNilT memberByRep)
+  return [membersDec]
 
 typeDeclareSupers :: Object T_Type -> Q Dec
 typeDeclareSupers typ = undefined

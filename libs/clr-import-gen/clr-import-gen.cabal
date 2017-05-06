@@ -29,6 +29,7 @@ library
                      , pipes
                      , template-haskell
                      , text
+                     , containers
   default-language:    Haskell2010
 
 test-suite clr-import-gen-test
