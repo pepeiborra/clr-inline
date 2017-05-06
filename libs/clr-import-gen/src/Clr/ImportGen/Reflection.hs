@@ -14,7 +14,9 @@ import Clr.Bindings.DynImports
 import Clr.Bindings.IEnumerable
 import Clr.Bindings.Object
 
-import Control.Monad(forM_)
+import Data.Foldable(forM_)
+import Data.Maybe
+import qualified Data.Traversable as Traverse(mapM)
 import Data.Word
 import Foreign.Ptr
 
@@ -23,14 +25,17 @@ import qualified Data.Text as T
 import Pipes
 import Pipes.Prelude
 
-type T_Assembly        = T "System.Reflection.Assembly" '[]
-type T_AssemblyArray   = T "System.Reflection.Assembly[]" '[]
-type T_AppDomain       = T "System.AppDomain" '[]
-type T_Type            = T "System.Type" '[]
-type T_TypeArray       = T "System.Type[]" '[]
-type T_MemberInfo      = T "System.Reflection.MemberInfo" '[]
-type T_MemberInfoArray = T "System.Reflection.MemberInfo[]" '[]
-type T_MethodInfo      = T "System.Reflection.MethodInfo" '[]
+type T_Assembly           = T "System.Reflection.Assembly" '[]
+type T_AssemblyArray      = T "System.Reflection.Assembly[]" '[]
+type T_AppDomain          = T "System.AppDomain" '[]
+type T_Type               = T "System.Type" '[]
+type T_TypeArray          = T "System.Type[]" '[]
+type T_MemberInfo         = T "System.Reflection.MemberInfo" '[]
+type T_MemberInfoArray    = T "System.Reflection.MemberInfo[]" '[]
+type T_MethodBase         = T "System.Reflection.MethodBase" '[]
+type T_MethodInfo         = T "System.Reflection.MethodInfo" '[]
+type T_ParameterInfo      = T "System.Reflection.ParameterInfo" '[]
+type T_ParameterInfoArray = T "System.Reflection.ParameterInfo[]" '[]
 
 type T_Load                = T "Load" '[]
 type T_CurrentDomain       = T "CurrentDomain" '[]
@@ -43,11 +48,14 @@ type T_Namespace           = T "Namespace" '[]
 type T_GetGenericArguments = T "GetGenericArguments" '[]
 type T_GetType             = T "GetType" '[]
 type T_IsAssignableFrom    = T "IsAssignableFrom" '[]
+type T_GetParameters       = T "GetParameters" '[]
+type T_ParameterType       = T "ParameterType" '[]
 
-type instance Members T_AppDomain  = '[ T_CurrentDomain, T_GetAssemblies ]
-type instance Members T_Assembly   = '[ T_GetTypes, T_Load, T_GetType ]
-type instance Members T_MemberInfo = '[ T_Name ]
-type instance Members T_MethodInfo = '[ T_GetGenericArguments ]
+type instance Members T_AppDomain     = '[ T_CurrentDomain, T_GetAssemblies ]
+type instance Members T_Assembly      = '[ T_GetTypes, T_Load, T_GetType ]
+type instance Members T_MemberInfo    = '[ T_Name ]
+type instance Members T_MethodBase    = '[ T_GetGenericArguments, T_GetParameters ]
+type instance Members T_ParameterInfo = '[ T_ParameterType ]
 
 type instance Candidates T_AppDomain  T_GetAssemblies       = '[ '[ ] ]
 type instance Candidates T_Assembly   T_GetTypes            = '[ '[ ] ]
@@ -57,28 +65,34 @@ type instance Candidates T_Type       T_GetGenericArguments = '[ '[ ] ]
 type instance Candidates T_Assembly   T_GetType             = '[ '[ T_string ] ]
 type instance Candidates T_Type       T_IsAssignableFrom    = '[ '[ T_Type ] ]
 type instance Candidates T_Type       T_GetType             = '[ '[ T_string ] ]
-type instance Candidates T_MethodInfo T_GetGenericArguments = '[ '[ ] ]
+type instance Candidates T_MethodBase T_GetGenericArguments = '[ '[ ] ]
+type instance Candidates T_MethodBase T_GetParameters       = '[ '[ ] ]
 
-type instance SuperTypes T_AppDomain       = '[ T_object ]
-type instance SuperTypes T_Assembly        = '[ T_object ]
-type instance SuperTypes T_AssemblyArray   = '[ T_IEnumerable T_Assembly ]
-type instance SuperTypes T_Type            = '[ T_MemberInfo ]
-type instance SuperTypes T_TypeArray       = '[ T_IEnumerable T_Type ]
-type instance SuperTypes T_MemberInfo      = '[ T_object ]
-type instance SuperTypes T_MemberInfoArray = '[ T_IEnumerable T_MemberInfo ]
-type instance SuperTypes T_MethodInfo      = '[ T_MemberInfo ]
+type instance SuperTypes T_AppDomain          = '[ T_object ]
+type instance SuperTypes T_Assembly           = '[ T_object ]
+type instance SuperTypes T_AssemblyArray      = '[ T_IEnumerable T_Assembly ]
+type instance SuperTypes T_Type               = '[ T_MemberInfo ]
+type instance SuperTypes T_TypeArray          = '[ T_IEnumerable T_Type ]
+type instance SuperTypes T_MemberInfo         = '[ T_object ]
+type instance SuperTypes T_MemberInfoArray    = '[ T_IEnumerable T_MemberInfo ]
+type instance SuperTypes T_MethodBase         = '[ T_MemberInfo ]
+type instance SuperTypes T_MethodInfo         = '[ T_MethodBase ]
+type instance SuperTypes T_ParameterInfo      = '[ T_object ]
+type instance SuperTypes T_ParameterInfoArray = '[ T_IEnumerable T_ParameterInfo ]
 
-foreign import ccall "dynamic" makeAppDomainCurrentDomain    :: FunPtr (IO (ObjectID T_AppDomain)) -> IO (ObjectID T_AppDomain)
-foreign import ccall "dynamic" makeAppDomainGetAssemblies    :: FunPtr (ObjectID T_AppDomain -> IO (ObjectID T_AssemblyArray)) -> (ObjectID T_AppDomain -> IO (ObjectID T_AssemblyArray))
-foreign import ccall "dynamic" makeAssemblyGetTypes          :: FunPtr (ObjectID T_Assembly -> IO (ObjectID T_TypeArray)) -> (ObjectID T_Assembly -> IO (ObjectID T_TypeArray))
-foreign import ccall "dynamic" makeAssemblyLoad              :: FunPtr (BStr -> IO (ObjectID T_Assembly)) -> (BStr -> IO (ObjectID T_Assembly))
-foreign import ccall "dynamic" makeTypeFullName              :: FunPtr (ObjectID T_Type -> IO BStr) -> (ObjectID T_Type -> IO BStr)
-foreign import ccall "dynamic" makeTypeGetMembers            :: FunPtr (ObjectID T_Type -> IO (ObjectID T_MemberInfoArray)) -> (ObjectID T_Type -> IO (ObjectID T_MemberInfoArray))
-foreign import ccall "dynamic" makeMemberInfoName            :: FunPtr (ObjectID T_MemberInfo -> IO BStr) -> (ObjectID T_MemberInfo -> IO BStr)
-foreign import ccall "dynamic" makeTypeNamespace             :: FunPtr (ObjectID T_Type -> IO BStr) -> (ObjectID T_Type -> IO BStr)
-foreign import ccall "dynamic" makeTypeGetGenericArguments   :: FunPtr (ObjectID T_Type -> IO (ObjectID T_TypeArray)) -> (ObjectID T_Type -> IO (ObjectID T_TypeArray))
-foreign import ccall "dynamic" makeAssemblyGetType           :: FunPtr (ObjectID T_Assembly -> BStr -> IO (ObjectID T_Type)) -> (ObjectID T_Assembly -> BStr -> IO (ObjectID T_Type))
-foreign import ccall "dynamic" makeMethodGetGenericArguments :: FunPtr (ObjectID T_MethodInfo -> IO (ObjectID T_TypeArray)) -> (ObjectID T_MethodInfo -> IO (ObjectID T_TypeArray))
+foreign import ccall "dynamic" makeAppDomainCurrentDomain     :: FunPtr (IO (ObjectID T_AppDomain)) -> IO (ObjectID T_AppDomain)
+foreign import ccall "dynamic" makeAppDomainGetAssemblies     :: FunPtr (ObjectID T_AppDomain -> IO (ObjectID T_AssemblyArray)) -> (ObjectID T_AppDomain -> IO (ObjectID T_AssemblyArray))
+foreign import ccall "dynamic" makeAssemblyGetTypes           :: FunPtr (ObjectID T_Assembly -> IO (ObjectID T_TypeArray)) -> (ObjectID T_Assembly -> IO (ObjectID T_TypeArray))
+foreign import ccall "dynamic" makeAssemblyLoad               :: FunPtr (BStr -> IO (ObjectID T_Assembly)) -> (BStr -> IO (ObjectID T_Assembly))
+foreign import ccall "dynamic" makeTypeFullName               :: FunPtr (ObjectID T_Type -> IO BStr) -> (ObjectID T_Type -> IO BStr)
+foreign import ccall "dynamic" makeTypeGetMembers             :: FunPtr (ObjectID T_Type -> IO (ObjectID T_MemberInfoArray)) -> (ObjectID T_Type -> IO (ObjectID T_MemberInfoArray))
+foreign import ccall "dynamic" makeMemberInfoName             :: FunPtr (ObjectID T_MemberInfo -> IO BStr) -> (ObjectID T_MemberInfo -> IO BStr)
+foreign import ccall "dynamic" makeTypeNamespace              :: FunPtr (ObjectID T_Type -> IO BStr) -> (ObjectID T_Type -> IO BStr)
+foreign import ccall "dynamic" makeTypeGetGenericArguments    :: FunPtr (ObjectID T_Type -> IO (ObjectID T_TypeArray)) -> (ObjectID T_Type -> IO (ObjectID T_TypeArray))
+foreign import ccall "dynamic" makeAssemblyGetType            :: FunPtr (ObjectID T_Assembly -> BStr -> IO (ObjectID T_Type)) -> (ObjectID T_Assembly -> BStr -> IO (ObjectID T_Type))
+foreign import ccall "dynamic" makeMethodGetGenericArguments  :: FunPtr (ObjectID T_MethodBase -> IO (ObjectID T_TypeArray)) -> (ObjectID T_MethodBase -> IO (ObjectID T_TypeArray))
+foreign import ccall "dynamic" makeMethodGetParameters        :: FunPtr (ObjectID T_MethodBase -> IO (ObjectID T_ParameterInfoArray)) -> (ObjectID T_MethodBase -> IO (ObjectID T_ParameterInfoArray))
+foreign import ccall "dynamic" makeParameterInfoParameterType :: FunPtr (ObjectID T_ParameterInfo -> IO (ObjectID T_Type)) -> (ObjectID T_ParameterInfo -> IO (ObjectID T_Type))
 
 instance PropertyS T_AppDomain T_CurrentDomain where
   type PropertyTypeS T_AppDomain T_CurrentDomain = T_AppDomain
@@ -110,8 +124,14 @@ instance MethodResultI1 T_Type T_GetGenericArguments () where
 instance MethodResultI1 T_Assembly T_GetType T_string where
   type ResultTypeI1 T_Assembly T_GetType T_string = 'Just T_Type
 
-instance MethodResultI1 T_MethodInfo T_GetGenericArguments () where
-  type ResultTypeI1 T_MethodInfo T_GetGenericArguments () = 'Just T_TypeArray
+instance MethodResultI1 T_MethodBase T_GetGenericArguments () where
+  type ResultTypeI1 T_MethodBase T_GetGenericArguments () = 'Just T_TypeArray
+
+instance MethodResultI1 T_MethodBase T_GetParameters () where
+  type ResultTypeI1 T_MethodBase T_GetParameters () = 'Just T_ParameterInfoArray
+
+instance PropertyI T_ParameterInfo T_ParameterType where
+  type PropertyTypeI T_ParameterInfo T_ParameterType = T_Type
 
 instance PropertyDynImportGetS T_AppDomain T_CurrentDomain where
   propertyDynImportGetS = makeAppDomainCurrentDomain
@@ -143,8 +163,14 @@ instance MethodDynImportI1 T_Type T_GetGenericArguments () where
 instance MethodDynImportI1 T_Assembly T_GetType T_string where
   methodDynImportI1 = makeAssemblyGetType
 
-instance MethodDynImportI1 T_MethodInfo T_GetGenericArguments () where
+instance MethodDynImportI1 T_MethodBase T_GetGenericArguments () where
   methodDynImportI1 = makeMethodGetGenericArguments
+
+instance MethodDynImportI1 T_MethodBase T_GetParameters () where
+  methodDynImportI1 = makeMethodGetParameters
+
+instance PropertyDynImportGetI T_ParameterInfo T_ParameterType where
+  propertyDynImportGetI = makeParameterInfoParameterType
 
 --
 -- AppDomain.CurrentDomain
@@ -295,18 +321,36 @@ typeGetType :: T.Text -> IO (Object T_Type)
 typeGetType = invokeS @T_GetType @T_Type
 
 --
--- System.Reflection.MethodInfo.GetGenericArguments()
+-- System.Reflection.MethodBase.GetGenericArguments()
 --
-methodGetGenericArguments :: Object T_MethodInfo -> Producer (Object T_Type) IO ()
+methodGetGenericArguments :: Object T_MethodBase -> Producer (Object T_Type) IO ()
 methodGetGenericArguments mth = liftIO (invokeI @T_GetGenericArguments mth ()) >>= toProducer
 
 memberGetGenericArguments :: Object T_MemberInfo -> Producer (Object T_Type) IO ()
 memberGetGenericArguments mem = do
-  method <- liftIO $ downCast @T_MethodInfo mem
+  method <- liftIO $ memberToMethodBase mem
   case method of
     Just m  -> methodGetGenericArguments m
     Nothing -> return ()
 
 getmscorlib :: IO (Object T_Assembly)
 getmscorlib = assemblyLoad "mscorlib"
+
+memberToMethodBase :: Object T_MemberInfo -> IO (Maybe (Object T_MethodBase))
+memberToMethodBase = downCast @T_MethodBase
+
+membersToMethodBases :: [Object T_MemberInfo] -> IO [Object T_MethodBase]
+membersToMethodBases members = Traverse.mapM memberToMethodBase members >>= return . catMaybes
+
+--
+-- System.Reflection.MethodBase.GetParameters()
+--
+methodGetParameters :: Object T_MethodBase -> Producer (Object T_ParameterInfo) IO ()
+methodGetParameters method = liftIO (invokeI @T_GetParameters method ()) >>= toProducer
+
+--
+-- System.Reflection.ParameterInfo.ParameterType
+--
+parameterInfoParameterType :: Object T_ParameterInfo -> IO (Object T_Type)
+parameterInfoParameterType param = getPropI @T_ParameterType param
 

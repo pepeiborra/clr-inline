@@ -70,7 +70,10 @@ main = do
   typeNames `shouldBe` ["System.Console"]
   --
   let typ = Prelude.head types
-  membersDec <- runQ $ typeDeclareMembersAndCandidates typ
+  membersDec <- runQ $ typeDeclareMembers typ
   --putStrLn $ Prelude.show $ ppr membersDec
+  --
+  candidatesDec <- runQ $ typeDeclareCandidates typ
+  --putStrLn $ Prelude.show $ ppr candidatesDec
   --
   return ()
