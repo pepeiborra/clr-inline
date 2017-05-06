@@ -14,16 +14,16 @@ import Clr.Bindings.DynImports
 import Clr.Bindings.IEnumerable
 import Clr.Bindings.Object
 
-import Data.Foldable(forM_)
+import Data.Foldable
+import Data.Traversable
 import Data.Maybe
-import qualified Data.Traversable as Traverse(mapM)
 import Data.Word
 import Foreign.Ptr
 
 import qualified Data.Text as T
 
 import Pipes
-import Pipes.Prelude
+import qualified Pipes.Prelude as PP
 
 type T_Assembly           = T "System.Reflection.Assembly" '[]
 type T_AssemblyArray      = T "System.Reflection.Assembly[]" '[]
@@ -194,7 +194,7 @@ assemIsDynamicDriverInternal assem = objectToString assem >>= \assemName-> retur
 -- assembliesLoaded is a producer of the currently loaded assemblies minus the internal one created by the Driver
 --
 assembliesLoaded :: Producer (Object T_Assembly) IO ()
-assembliesLoaded = assembliesLoaded' >-> filterM (\assem-> assemIsDynamicDriverInternal assem >>= return . not)
+assembliesLoaded = assembliesLoaded' >-> PP.filterM (\assem-> assemIsDynamicDriverInternal assem >>= return . not)
 
 --
 -- assembliesLoaded' is a producer of the currently loaded assemblies
@@ -217,7 +217,7 @@ assemGetTypes assem = do
 -- knownTypes is a producer of all the types founds in all the currently loaded assemblies
 --
 knownTypes :: Producer (Object T_Type) IO ()
-knownTypes = for assembliesLoaded assemGetTypes
+knownTypes = Pipes.for assembliesLoaded assemGetTypes
 
 --
 -- System.Type.FullName
@@ -265,7 +265,7 @@ memberInfoNm mi = getPropI @T_Name mi >>= return . simplifyTypeName
 -- assemGetTypesOfNs assem ns, is each type within assem that has a matching namespace of ns
 --
 assemGetAllTypesOfNS :: Object T_Assembly -> T.Text -> Producer (Object T_Type) IO ()
-assemGetAllTypesOfNS assem ns = assemGetTypes assem >-> filterM (\typ-> typeNamespace typ >>= \nsTyp-> return $ nsTyp == ns)
+assemGetAllTypesOfNS assem ns = assemGetTypes assem >-> PP.filterM (\typ-> typeNamespace typ >>= \nsTyp-> return $ nsTyp == ns)
 
 --
 -- simplifyTypeName returns the supplied string upto but not including the "`"
@@ -340,7 +340,7 @@ memberToMethodBase :: Object T_MemberInfo -> IO (Maybe (Object T_MethodBase))
 memberToMethodBase = downCast @T_MethodBase
 
 membersToMethodBases :: [Object T_MemberInfo] -> IO [Object T_MethodBase]
-membersToMethodBases members = Traverse.mapM memberToMethodBase members >>= return . catMaybes
+membersToMethodBases members = mapM memberToMethodBase members >>= return . catMaybes
 
 --
 -- System.Reflection.MethodBase.GetParameters()
