@@ -99,6 +99,12 @@ type family CatMaybes (l :: [Maybe k]) :: [k] where
 -- PrependIf b x xs evaluates to xs when b is false and x : xs when b is true
 --
 type family PrependIf (b :: Bool) (x :: k) (xs :: [k]) :: [k] where
-    PrependIf 'True  x xs = x ': xs
-    PrependIf 'False x xs = xs
+  PrependIf 'True  x xs = x ': xs
+  PrependIf 'False x xs = xs
+
+
+type family Index (x::[t]) (n::Nat) :: t where
+  Index (x ': xs) 0 = x
+  Index (x ': xs) n = Index xs (n-1)
+  Index     xs    n = TypeError (Text "Out of bounds")
 

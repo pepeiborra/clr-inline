@@ -28,6 +28,9 @@ data Object (typ::Type) where
 instance {-# OVERLAPS #-} Marshal (Object t) (ObjectID t) where
   marshal (Object x) f = f x
 
+instance {-# OVERLAPS #-} (TString t) => Marshal (ObjectID t) (Object t) where
+  marshal x f = f (Object x)
+
 instance {-# OVERLAPPING #-} (TString t) => Unmarshal (ObjectID t) (Object t) where
   unmarshal oid = return $ Object oid
 
