@@ -10,8 +10,10 @@ module Clr
   , setPropI
   , getPropS
   , setPropS
+  , delegate
   , Candidates
   , module Clr.Constructor
+  , module Clr.Delegate
   , module Clr.Inheritance
   , module Clr.ListTuple
   , module Clr.Method.Instance
@@ -24,9 +26,11 @@ module Clr
 import Clr.Bridge
 import Clr.Constructor
 import Clr.Curry
+import Clr.Delegate
 import Clr.Inheritance
 import Clr.ListTuple
 import Clr.Marshal
+import Clr.MarshalF
 import Clr.Method.Instance
 import Clr.Method.Static
 import Clr.Object
@@ -147,3 +151,17 @@ setPropS :: forall ms ts m t propertyBridge propertyHask .
             , Marshal propertyHask propertyBridge
             ) => propertyHask -> IO ()
 setPropS x = marshal @propertyHask @propertyBridge @() x (\prop-> rawSetPropS @t @m prop)
+
+
+delegate :: forall ds d ht bt n .
+            ( MakeT ds ~ d
+            , Delegate d
+            , DelegateBridgeType d ~ bt
+            , DelegateArity d ~ n
+            , MarshalF n ht bt
+            , DelegateConstructorN n d
+            , Unmarshal (BridgeType d) (Object d)
+            ) => ht -> IO (Object d)
+delegate f = rawConstructDelegate @n @d (marshalF @n @ht @bt f) >>= unmarshal
+
+

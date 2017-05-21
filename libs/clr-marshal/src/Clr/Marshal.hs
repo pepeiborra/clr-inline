@@ -51,3 +51,9 @@ class Unmarshal a b where
 instance {-# OVERLAPPABLE #-} a ~ b => Unmarshal a b where
   unmarshal = return
 
+--
+-- If we can convert a -> IO b, then we can also convert IO a -> IO b
+--
+instance {-# OVERLAPPABLE #-} (Unmarshal a b) => Unmarshal (IO a) b where
+  unmarshal x = x >>= \x'-> unmarshal x'
+
