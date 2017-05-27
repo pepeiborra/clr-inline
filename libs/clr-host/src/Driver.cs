@@ -232,6 +232,13 @@ namespace Salsa
 
         }
 
+        public static IntPtr NewHandle(IntPtr oId)
+        {
+            Object o = GetObject(oId);
+            return RegisterObject(o);
+        }
+
+
         #endregion
 
         #region Managed delegate references (function pointer in-table)

@@ -24,6 +24,7 @@ import Clr.Bindings.BStr
 
 import Data.Coerce
 import Foreign.Ptr
+import Foreign.ForeignPtr
 
 import Data.Text as T
 
@@ -117,18 +118,33 @@ typeIsAssignableFrom :: Object T_Type -> Object T_Type -> IO (Bool)
 typeIsAssignableFrom t1 t2 = invokeI @T_IsAssignableFrom t1 t2
 
 --
--- Marshaling objects
+-- Marshaling Object <-> GCHandle
 --
-instance {-# OVERLAPS #-} Marshal (Object t) (GCHandle t) where
-  marshal (Object x) f = f $ coerce x
 
-instance {-# OVERLAPS #-} (TString t) => Marshal (GCHandle t) (Object t) where
-  marshal x f = f (Object $ coerce x)
-
-instance {-# OVERLAPPING #-} (TString t) => Unmarshal (GCHandle t) (Object t) where
-  unmarshal oid = return $ Object $ coerce oid
-
+-- clr-typed doesn't know of GCHandle as it is provided by clr-host
 type instance UnmarshalAs (GCHandle t) = (Object t)
-
 type instance BridgeTypeObject t = GCHandle t
+
+-- Calling a CLR function from Haskell
+instance {-# OVERLAPS #-} Marshal (Object t) (GCHandle t) where
+  marshal (Object x) f = withForeignPtr x $ \x'-> f $ coerce x'
+
+-- Calling a Haskell function from the CLR
+instance {-# OVERLAPS #-} (TString t) => Marshal (GCHandle t) (Object t) where
+  marshal x f = do
+    finalizer <- gcHandleFinalizer
+    fp <- newForeignPtr finalizer (coerce x)
+    f $ Object fp
+
+-- Returning from a CLR function that was called from Haskell
+instance {-# OVERLAPPING #-} (TString t) => Unmarshal (GCHandle t) (Object t) where
+  unmarshal x = do
+    finalizer <- gcHandleFinalizer
+    fp <- newForeignPtr finalizer (coerce x)
+    return $ Object fp
+
+-- Returning from a Haskell function that was called by the CLR
+instance {-# OVERLAPPING #-} (TString t) => Unmarshal (Object t) (GCHandle t) where
+  unmarshal (Object x) = withForeignPtr x $ \x'-> newHandle $ coerce x'
+
 

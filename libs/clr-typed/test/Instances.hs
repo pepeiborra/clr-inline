@@ -4,22 +4,24 @@ module Instances where
 
 import Clr
 import Clr.Bridge
-import Clr.Marshal
 import Clr.UnmarshalAs
 import Clr.TypeString
+
+import Clr.Marshal
 
 import Data.Coerce
 import Data.Int
 import Data.Word
+import Foreign.ForeignPtr
+
 import Data.Text
-import Foreign.Ptr
 
 -- Just for testing. Actual use is BStr
 type instance BridgeTypePrim T_string = String
 type instance UnmarshalAs String = String
 
 -- Also just for this test.
-newtype ObjectID t = ObjectID (Ptr Int)
+newtype ObjectID t = ObjectID (ForeignPtr Int)
 type instance BridgeTypeObject t = ObjectID t
 instance {-# OVERLAPS #-} Marshal (Object t) (ObjectID t) where
   marshal (Object x) f = f $ coerce x
@@ -99,7 +101,7 @@ instance MethodInvokeS2 T_Console T_WriteLine T_string T_string where
   rawInvokeS2 = writeLineRaw2
 
 instance Constructor1 T_BaseType () where
-  rawNew1 () = return (ObjectID nullPtr)
+  rawNew1 () = return (ObjectID undefined)
 
 instance MethodResultI1 T_BaseType T_Foo T_string where
   type ResultTypeI1 T_BaseType T_Foo T_string = 'Just T_string
@@ -138,7 +140,7 @@ instance MethodInvokeI1 T_BaseType T_Bar T_int where
   rawInvokeI1 = rawInvokeBaseTypeBarInt32
 
 instance Constructor1 T_DerivedType () where
-  rawNew1 () = return (ObjectID nullPtr)
+  rawNew1 () = return (ObjectID undefined)
 
 instance MethodResultI1 T_DerivedType T_Foo T_string where
   type ResultTypeI1 T_DerivedType T_Foo T_string = 'Just T_string
@@ -159,7 +161,7 @@ instance MethodInvokeI1 T_DerivedType T_Foo T_int where
   rawInvokeI1 = rawInvokeDerivedTypeInt32
 
 instance Constructor1 (T "MyGenType" '[gt0]) () where
-  rawNew1 () = return (ObjectID nullPtr)
+  rawNew1 () = return (ObjectID undefined)
 
 instance MethodResultI1 (T "MyGenType" '[T_string]) T_Add T_string where
   type ResultTypeI1 (T "MyGenType" '[T_string]) T_Add T_string = 'Just T_string
@@ -178,7 +180,7 @@ instance Delegate T_StringIntDel where
   type DelegateResultType T_StringIntDel = 'Just T_int
 
 instance DelegateConstructor1 T_StringIntDel where
-  rawConstructDelegate1 f = return (ObjectID nullPtr :: ObjectID T_StringIntDel)
+  rawConstructDelegate1 f = return (ObjectID undefined :: ObjectID T_StringIntDel)
 
 instance Marshal String Text where
   marshal s f = f $ pack s
