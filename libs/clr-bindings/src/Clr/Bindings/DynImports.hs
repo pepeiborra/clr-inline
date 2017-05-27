@@ -10,6 +10,7 @@ import Clr.Property
 import Clr.TypeString
 
 import Clr.Host
+import Clr.Host.Method
 
 import Data.Kind
 import Foreign.Ptr

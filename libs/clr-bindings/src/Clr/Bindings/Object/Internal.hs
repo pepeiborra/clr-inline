@@ -9,19 +9,23 @@ module Clr.Bindings.Object.Internal
   ) where
 
 import Clr
+import Clr.Bridge
 import Clr.TypeString
+import Clr.UnmarshalAs
+
+import Clr.Marshal
 
 import Clr.Host
 import Clr.Host.BStr
-
-import Clr.Marshal
+import Clr.Host.GCHandle
 
 import Clr.Bindings.DynImports
 import Clr.Bindings.BStr
 
-import Data.Text as T
-
+import Data.Coerce
 import Foreign.Ptr
+
+import Data.Text as T
 
 --
 -- Synonyms for other types referenced here
@@ -71,10 +75,10 @@ type instance Candidates T_object T_GetType           = '[ '[ ] ]
 type instance Candidates T_Type   T_GetType           = '[ '[ T_string ] ]
 type instance Candidates T_Type   T_IsAssignableFrom  = '[ '[ T_Type ] ]
 
-foreign import ccall "dynamic" makeObjToString :: FunPtr (ObjectID t -> IO BStr) -> (ObjectID t -> IO BStr)
-foreign import ccall "dynamic" makeObjGetType  :: FunPtr (ObjectID t -> IO (ObjectID (T "System.Type" '[]))) -> (ObjectID t -> IO (ObjectID (T "System.Type" '[])))
-foreign import ccall "dynamic" makeTypeGetType :: FunPtr (BStr -> IO (ObjectID T_Type)) -> (BStr -> IO (ObjectID T_Type))
-foreign import ccall "dynamic" makeTypeIsAssignableFrom      :: FunPtr (ObjectID T_Type -> ObjectID T_Type -> IO Bool) -> (ObjectID T_Type -> ObjectID T_Type -> IO Bool)
+foreign import ccall "dynamic" makeObjToString          :: FunPtr (GCHandle t -> IO BStr) -> (GCHandle t -> IO BStr)
+foreign import ccall "dynamic" makeObjGetType           :: FunPtr (GCHandle t -> IO (GCHandle (T "System.Type" '[]))) -> (GCHandle t -> IO (GCHandle (T "System.Type" '[])))
+foreign import ccall "dynamic" makeTypeGetType          :: FunPtr (BStr -> IO (GCHandle T_Type)) -> (BStr -> IO (GCHandle T_Type))
+foreign import ccall "dynamic" makeTypeIsAssignableFrom :: FunPtr (GCHandle T_Type -> GCHandle T_Type -> IO Bool) -> (GCHandle T_Type -> GCHandle T_Type -> IO Bool)
 
 instance MethodResultI1 T_object T_ToString () where
   type ResultTypeI1 T_object T_ToString () = 'Just T_string
@@ -111,4 +115,20 @@ typeGetType = invokeS @T_GetType @T_Type
 --
 typeIsAssignableFrom :: Object T_Type -> Object T_Type -> IO (Bool)
 typeIsAssignableFrom t1 t2 = invokeI @T_IsAssignableFrom t1 t2
+
+--
+-- Marshaling objects
+--
+instance {-# OVERLAPS #-} Marshal (Object t) (GCHandle t) where
+  marshal (Object x) f = f $ coerce x
+
+instance {-# OVERLAPS #-} (TString t) => Marshal (GCHandle t) (Object t) where
+  marshal x f = f (Object $ coerce x)
+
+instance {-# OVERLAPPING #-} (TString t) => Unmarshal (GCHandle t) (Object t) where
+  unmarshal oid = return $ Object $ coerce oid
+
+type instance UnmarshalAs (GCHandle t) = (Object t)
+
+type instance BridgeTypeObject t = GCHandle t
 

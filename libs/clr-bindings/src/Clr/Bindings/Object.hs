@@ -13,6 +13,7 @@ import Clr.Marshal
 
 import Clr.Host
 import Clr.Host.BStr
+import Clr.Host.GCHandle
 
 import Clr.Bindings.DynImports
 import Clr.Bindings.BStr
@@ -53,4 +54,5 @@ downCast o = do
     return $ Just $ unsafeDownCast o
   else
     return Nothing
+
 

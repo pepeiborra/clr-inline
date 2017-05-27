@@ -9,6 +9,7 @@ import Clr.TypeString
 
 import Clr.Host
 import Clr.Host.BStr
+import Clr.Host.GCHandle
 
 import Clr.Bindings.DynImports
 import Clr.Bindings.IEnumerable
@@ -68,17 +69,17 @@ type instance SuperTypes T_MemberInfo      = '[ T_object ]
 type instance SuperTypes T_MemberInfoArray = '[ T_IEnumerable T_MemberInfo ]
 type instance SuperTypes T_MethodInfo      = '[ T_MemberInfo ]
 
-foreign import ccall "dynamic" makeAppDomainCurrentDomain    :: FunPtr (IO (ObjectID T_AppDomain)) -> IO (ObjectID T_AppDomain)
-foreign import ccall "dynamic" makeAppDomainGetAssemblies    :: FunPtr (ObjectID T_AppDomain -> IO (ObjectID T_AssemblyArray)) -> (ObjectID T_AppDomain -> IO (ObjectID T_AssemblyArray))
-foreign import ccall "dynamic" makeAssemblyGetTypes          :: FunPtr (ObjectID T_Assembly -> IO (ObjectID T_TypeArray)) -> (ObjectID T_Assembly -> IO (ObjectID T_TypeArray))
-foreign import ccall "dynamic" makeAssemblyLoad              :: FunPtr (BStr -> IO (ObjectID T_Assembly)) -> (BStr -> IO (ObjectID T_Assembly))
-foreign import ccall "dynamic" makeTypeFullName              :: FunPtr (ObjectID T_Type -> IO BStr) -> (ObjectID T_Type -> IO BStr)
-foreign import ccall "dynamic" makeTypeGetMembers            :: FunPtr (ObjectID T_Type -> IO (ObjectID T_MemberInfoArray)) -> (ObjectID T_Type -> IO (ObjectID T_MemberInfoArray))
-foreign import ccall "dynamic" makeMemberInfoName            :: FunPtr (ObjectID T_MemberInfo -> IO BStr) -> (ObjectID T_MemberInfo -> IO BStr)
-foreign import ccall "dynamic" makeTypeNamespace             :: FunPtr (ObjectID T_Type -> IO BStr) -> (ObjectID T_Type -> IO BStr)
-foreign import ccall "dynamic" makeTypeGetGenericArguments   :: FunPtr (ObjectID T_Type -> IO (ObjectID T_TypeArray)) -> (ObjectID T_Type -> IO (ObjectID T_TypeArray))
-foreign import ccall "dynamic" makeAssemblyGetType           :: FunPtr (ObjectID T_Assembly -> BStr -> IO (ObjectID T_Type)) -> (ObjectID T_Assembly -> BStr -> IO (ObjectID T_Type))
-foreign import ccall "dynamic" makeMethodGetGenericArguments :: FunPtr (ObjectID T_MethodInfo -> IO (ObjectID T_TypeArray)) -> (ObjectID T_MethodInfo -> IO (ObjectID T_TypeArray))
+foreign import ccall "dynamic" makeAppDomainCurrentDomain    :: FunPtr (IO (GCHandle T_AppDomain)) -> IO (GCHandle T_AppDomain)
+foreign import ccall "dynamic" makeAppDomainGetAssemblies    :: FunPtr (GCHandle T_AppDomain -> IO (GCHandle T_AssemblyArray)) -> (GCHandle T_AppDomain -> IO (GCHandle T_AssemblyArray))
+foreign import ccall "dynamic" makeAssemblyGetTypes          :: FunPtr (GCHandle T_Assembly -> IO (GCHandle T_TypeArray)) -> (GCHandle T_Assembly -> IO (GCHandle T_TypeArray))
+foreign import ccall "dynamic" makeAssemblyLoad              :: FunPtr (BStr -> IO (GCHandle T_Assembly)) -> (BStr -> IO (GCHandle T_Assembly))
+foreign import ccall "dynamic" makeTypeFullName              :: FunPtr (GCHandle T_Type -> IO BStr) -> (GCHandle T_Type -> IO BStr)
+foreign import ccall "dynamic" makeTypeGetMembers            :: FunPtr (GCHandle T_Type -> IO (GCHandle T_MemberInfoArray)) -> (GCHandle T_Type -> IO (GCHandle T_MemberInfoArray))
+foreign import ccall "dynamic" makeMemberInfoName            :: FunPtr (GCHandle T_MemberInfo -> IO BStr) -> (GCHandle T_MemberInfo -> IO BStr)
+foreign import ccall "dynamic" makeTypeNamespace             :: FunPtr (GCHandle T_Type -> IO BStr) -> (GCHandle T_Type -> IO BStr)
+foreign import ccall "dynamic" makeTypeGetGenericArguments   :: FunPtr (GCHandle T_Type -> IO (GCHandle T_TypeArray)) -> (GCHandle T_Type -> IO (GCHandle T_TypeArray))
+foreign import ccall "dynamic" makeAssemblyGetType           :: FunPtr (GCHandle T_Assembly -> BStr -> IO (GCHandle T_Type)) -> (GCHandle T_Assembly -> BStr -> IO (GCHandle T_Type))
+foreign import ccall "dynamic" makeMethodGetGenericArguments :: FunPtr (GCHandle T_MethodInfo -> IO (GCHandle T_TypeArray)) -> (GCHandle T_MethodInfo -> IO (GCHandle T_TypeArray))
 
 instance PropertyS T_AppDomain T_CurrentDomain where
   type PropertyTypeS T_AppDomain T_CurrentDomain = T_AppDomain

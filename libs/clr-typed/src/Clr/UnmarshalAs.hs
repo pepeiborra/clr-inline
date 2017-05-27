@@ -16,7 +16,6 @@ import Foreign.C
 -- Declares how to automatically convert from the bridge type of methods result to a high level Haskell type
 -- TODO: Can we do without this the end user can choose between String or Text for example?
 type family   UnmarshalAs (x::Type)   :: Type
-type instance UnmarshalAs (ObjectID t) = (Object t)
 type instance UnmarshalAs ()           = ()
 type instance UnmarshalAs Bool         = Bool
 type instance UnmarshalAs Word8        = Word8
