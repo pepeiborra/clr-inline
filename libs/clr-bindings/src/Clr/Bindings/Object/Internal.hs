@@ -132,8 +132,9 @@ instance {-# OVERLAPS #-} Marshal (Object t) (GCHandle t) where
 -- Calling a Haskell function from the CLR
 instance {-# OVERLAPS #-} (TString t) => Marshal (GCHandle t) (Object t) where
   marshal x f = do
+    x' <- newHandle x
     finalizer <- gcHandleFinalizer
-    fp <- newForeignPtr finalizer (coerce x)
+    fp <- newForeignPtr finalizer (coerce x')
     f $ Object fp
 
 -- Returning from a CLR function that was called from Haskell
