@@ -7,11 +7,11 @@
 {-# LANGUAGE ViewPatterns           #-}
 module Clr.Inline.Types where
 
-import           Clr.Host.DriverEntryPoints
+import           Clr.Host.GCHandle
 import           Clr.Host.BStr
 import           Clr.Marshal
+import           Data.Coerce
 import           Data.Int
-import           Data.IORef
 import           Data.Maybe
 import           Data.Proxy
 import           Data.Text            (Text)
@@ -23,27 +23,22 @@ import           System.IO.Unsafe
 
 -- | A pointer to a Clr object.
 --   The only way to access the contents is via clr-inline quotations.
-newtype ClrPtr (name::Symbol)= ClrPtr Int64
+newtype ClrPtr (name::Symbol)= ClrPtr (GCHandle Int)
 
 -- | A wrapper around a 'ClrPtr', which will be released once this
 --   wrapper is no longer referenced.
 --   The only way to access the contents is in clr-inline quotations.
-data Clr (name::Symbol) = Clr (ClrPtr name) (IORef ())
+newtype Clr (name::Symbol) = Clr (ForeignPtr Int)
 
 foreign import ccall "dynamic" releaseObject :: FunPtr (Int64 -> IO ()) -> (Int64 -> IO ())
 
 instance Unmarshal (ClrPtr n) (Clr n) where
-  unmarshal o@(ClrPtr id) = do
-    ref <- newIORef ()
-    _ <- mkWeakIORef ref $ do
-      let f = unsafeDupablePerformIO (unsafeGetPointerToMethod "ReleaseObject")
-      releaseObject f id
-    return (Clr o ref)
+  unmarshal (ClrPtr id) = do
+    ptr <- newForeignPtr (unsafeDupablePerformIO gcHandleFinalizer) (coerce id)
+    return (Clr ptr)
 
 instance Marshal (Clr n) (ClrPtr n) where
-  marshal (Clr ptr ref) f = do
-    () <- readIORef ref
-    f ptr
+  marshal (Clr ptr) f = withForeignPtr ptr $ \p -> f (ClrPtr $ coerce p)
 
 newtype ClrType = ClrType {getClrType :: String} deriving Show
 
