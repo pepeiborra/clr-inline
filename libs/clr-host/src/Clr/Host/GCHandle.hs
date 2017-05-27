@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeFamilies #-}
-{-# LANGUAGE KindSignatures, GADTs, TypeInType #-}
+{-# LANGUAGE GADTs, TypeInType #-}
 
 
 
@@ -14,20 +14,20 @@ newtype GCHandle typ = GCHandle (Ptr Int)
 
 -- | Releases the .NET object indicated by the given object id.
 releaseObject :: GCHandle t -> IO ()
-releaseObject handle = gcHandleFinalizer >>= return . makeReleaseObjectDelegate >>= \f-> f $ coerce handle
+releaseObject handle = fmap makeReleaseObjectDelegate gcHandleFinalizer >>= \f-> f $ coerce handle
 
 type ReleaseObjectDelegate = Ptr Int -> IO ()
-foreign import ccall "dynamic" makeReleaseObjectDelegate :: FunPtr (ReleaseObjectDelegate) -> ReleaseObjectDelegate
+foreign import ccall "dynamic" makeReleaseObjectDelegate :: FunPtr ReleaseObjectDelegate -> ReleaseObjectDelegate
 
 gcHandleFinalizer :: IO (FunPtr (Ptr Int -> IO ()))
 gcHandleFinalizer = unsafeGetPointerToMethod "ReleaseObject"
 
 newHandle :: GCHandle t -> IO (GCHandle t)
 newHandle x = do
-  f <- unsafeGetPointerToMethod "NewHandle" >>= return . makeNewHandleDelegate
+  f <- fmap makeNewHandleDelegate (unsafeGetPointerToMethod "NewHandle")
   y <- f $ coerce x
   return $ coerce y
 
 type NewHandleDelegate = Ptr Int -> IO (Ptr Int)
-foreign import ccall "dynamic" makeNewHandleDelegate :: FunPtr (NewHandleDelegate) -> NewHandleDelegate
+foreign import ccall "dynamic" makeNewHandleDelegate :: FunPtr NewHandleDelegate -> NewHandleDelegate
 
