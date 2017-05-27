@@ -7,7 +7,7 @@
 {-# LANGUAGE ViewPatterns           #-}
 module Clr.Inline.Types where
 
-import           Clr.Host
+import           Clr.Host.DriverEntryPoints
 import           Clr.Host.BStr
 import           Clr.Marshal
 import           Data.Int

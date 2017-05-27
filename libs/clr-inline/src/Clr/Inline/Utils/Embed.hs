@@ -5,7 +5,7 @@
 {-# LANGUAGE TemplateHaskell     #-}
 module Clr.Inline.Utils.Embed where
 
-import           Clr.Host
+import           Clr.Host.DriverEntryPoints
 import           Control.Monad
 import           Data.ByteString            (ByteString)
 import qualified Data.ByteString            as BS

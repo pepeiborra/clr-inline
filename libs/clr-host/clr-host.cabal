@@ -44,10 +44,10 @@ library
                      , Clr.Host.BStr
                      , Clr.Host.Box
                      , Clr.Host.Delegate
+                     , Clr.Host.DriverEntryPoints
                      , Clr.Host.GCHandle
                      , Clr.Host.Method
   other-modules:       Clr.Host.Driver
-                     , Clr.Host.DriverEntryPoints
                      , Clr.Host.BStr.Type
   -- Common build deps
   build-depends:       base >= 4.7 && < 5
