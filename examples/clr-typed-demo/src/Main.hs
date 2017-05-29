@@ -4,6 +4,8 @@ module Main where
 
 import Clr
 import Clr.Host
+import Clr.Host.GCHandle
+import Clr.Host.Box
 import Clr.TypeString
 
 import Clr.Bindings
@@ -49,14 +51,14 @@ type instance Candidates (T_Thread) (T_Join)   = '[ '[ ] ]
 foreign import ccall "dynamic" makeWriteLineType0 :: FunPtr (IO ()) -> IO ()
 foreign import ccall "dynamic" makeWriteLineType1 :: FunPtr (BStr -> IO ()) -> (BStr -> IO ())
 foreign import ccall "dynamic" makeWriteLineType2 :: FunPtr (Int32 -> IO ()) -> (Int32 -> IO ())
-foreign import ccall "dynamic" makeWriteLineType3 :: FunPtr (BStr -> (ObjectID a) -> IO ()) -> (BStr -> (ObjectID a) -> IO ())
-foreign import ccall "dynamic" makeWriteLineType4 :: FunPtr (BStr -> (ObjectID a) -> (ObjectID b) -> IO ()) -> (BStr -> (ObjectID a) -> (ObjectID b) -> IO ())
-foreign import ccall "dynamic" makeListCTor :: FunPtr (IO (ObjectID a)) -> IO (ObjectID a)
-foreign import ccall "dynamic" makeListAdd :: FunPtr (ObjectID a -> BStr -> IO ()) -> (ObjectID a -> BStr -> IO ())
-foreign import ccall "dynamic" makeThreadParameterizedThreadStart :: FunPtr (ObjectID a -> IO (ObjectID b)) -> (ObjectID a -> IO (ObjectID b))
-foreign import ccall "wrapper" wrapParameterizedThreadStart :: (ObjectID a -> IO ()) -> IO (FunPtr (ObjectID a -> IO ()))
-foreign import ccall "dynamic" makeThreadStart :: FunPtr (ObjectID a -> ObjectID b -> IO ()) -> (ObjectID a -> ObjectID b -> IO ())
-foreign import ccall "dynamic" makeThreadJoin :: FunPtr (ObjectID a -> IO ()) -> (ObjectID a -> IO ())
+foreign import ccall "dynamic" makeWriteLineType3 :: FunPtr (BStr -> (GCHandle a) -> IO ()) -> (BStr -> (GCHandle a) -> IO ())
+foreign import ccall "dynamic" makeWriteLineType4 :: FunPtr (BStr -> (GCHandle a) -> (GCHandle b) -> IO ()) -> (BStr -> (GCHandle a) -> (GCHandle b) -> IO ())
+foreign import ccall "dynamic" makeListCTor :: FunPtr (IO (GCHandle a)) -> IO (GCHandle a)
+foreign import ccall "dynamic" makeListAdd :: FunPtr (GCHandle a -> BStr -> IO ()) -> (GCHandle a -> BStr -> IO ())
+foreign import ccall "dynamic" makeThreadParameterizedThreadStart :: FunPtr (GCHandle a -> IO (GCHandle b)) -> (GCHandle a -> IO (GCHandle b))
+foreign import ccall "wrapper" wrapParameterizedThreadStart :: (GCHandle a -> IO ()) -> IO (FunPtr (GCHandle a -> IO ()))
+foreign import ccall "dynamic" makeThreadStart :: FunPtr (GCHandle a -> GCHandle b -> IO ()) -> (GCHandle a -> GCHandle b -> IO ())
+foreign import ccall "dynamic" makeThreadJoin :: FunPtr (GCHandle a -> IO ()) -> (GCHandle a -> IO ())
 
 instance MethodResultS1 T_Console T_WriteLine arg0 where
   type ResultTypeS1 T_Console T_WriteLine arg0 = 'Nothing

@@ -45,9 +45,6 @@ namespace Salsa
                 new AssemblyName("DynamicAssembly"), AssemblyBuilderAccess.RunAndSave);
             _dynamicModuleBuilder = _assemblyBuilder.DefineDynamicModule("DynamicModule", "Dynamic.dll");
             _stubsTypeBuilder = _dynamicModuleBuilder.DefineType("Stubs");
-
-            _inTable.Add(_nextId++, true);  // ObjectId 1
-            _inTable.Add(_nextId++, false); // ObjectId 2
         }
 
         public static IntPtr Boot()
@@ -197,75 +194,50 @@ namespace Salsa
         #region Foreign object references (object in-table)
 
         /// <summary>
-        /// Maps object identifiers to .NET references.  Allows foreign object identifiers
-        /// to be dereferenced to .NET object references.  Also ensures that .NET objects
-        /// referred to from Haskell are kept alive.
-        /// </summary>
-        static Dictionary<long, object> _inTable = new Dictionary<long, Object>();
-
-        static long _nextId = 1;
-
-        /// <summary>
         /// Registers the given object in the 'in table' and returns the object id
         /// that was assigned to it.
         /// </summary>
-        public static long RegisterObject(object o)
+        public static IntPtr RegisterObject(object o)
         {
             if (o == null)
-                return 0;
+                return IntPtr.Zero;
 
-            if (o is bool?) // HACK for Nullable<bool>
-            {
-                bool b = (bool)o;
-                return b ? 1 : 2;
-            }
+            GCHandle handle = GCHandle.Alloc(o);
 
-            lock (_inTable)
-            {
-                _inTable.Add(_nextId, o);
-                return _nextId++;
-            }
+            return GCHandle.ToIntPtr(handle);
+
         }
 
-        public static object GetObject(long oId)
+        public static object GetObject(IntPtr oId)
         {
-            if (oId == 0) // 0 represents a null reference
+            if (oId == IntPtr.Zero) // 0 represents a null reference
                 return null;
 
-            if (oId == 1) // 1 represents boxed true
-                return true; // TODO: Return pre-boxed instance?
-            if (oId == 2) // 0 represents boxed false
-                return false;
+            GCHandle handle = GCHandle.FromIntPtr(oId);
 
-            lock (_inTable)
-            {
-                object o;
-                if (_inTable.TryGetValue(oId, out o))
-                    return o;
-                else
-                {
-                    throw new ArgumentException("No object exists with id: " + oId);
-                    // FIXME: This exception will occur in the current implementation of the
-                    //        bridge if a Haskell garbage collection (and finalization) runs
-                    //        while a Haskell-implemented delegate is returning an object.
-                    //        Given that this condition tends not to occur with the current
-                    //        implementation of the GHC RTS, and that most delegates in .NET
-                    //        don't return a value at all, I'm leaving the fix for later.
-                }
-            }
+            return handle.Target;
         }
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void ReleaseObjectDelegate(long oId);
+        public delegate void ReleaseObjectDelegate(IntPtr oId);
         private static ReleaseObjectDelegate _ReleaseObjectDelegate = ReleaseObject;
 
-        public static void ReleaseObject(long oId)
+        public static void ReleaseObject(IntPtr oId)
         {
-            lock (_inTable)
-            {
-                _inTable.Remove(oId);
-            }
+            if (oId == IntPtr.Zero) // 0 represents a null reference
+                return;
+
+            GCHandle handle = GCHandle.FromIntPtr(oId);
+            handle.Free();
+
         }
+
+        public static IntPtr NewHandle(IntPtr oId)
+        {
+            Object o = GetObject(oId);
+            return RegisterObject(o);
+        }
+
 
         #endregion
 
@@ -360,7 +332,7 @@ namespace Salsa
 
             // Generate a dynamic method that does the following:
             //
-            //     Int64 [classType]New([args...])
+            //     IntPtr [classType]New([args...])
             //     {
             //         [classType] o = new [classType]([args... using GetObject ... ]);
             //         (box o if it is a value type)
@@ -369,7 +341,7 @@ namespace Salsa
 
             // Signature of the stub method returned (as a delegate) by this function
             DelegateSignature methodSignature = new DelegateSignature(
-                typeof(Int64),
+                typeof(IntPtr),
                 con == null ? Type.EmptyTypes :
                               ConvertToStubTypes(Util.MapParametersToTypes(con.GetParameters())));
 
@@ -473,7 +445,7 @@ namespace Salsa
 
             // Generate a dynamic method that does the following:
             //
-            //     Int64 [delegateType]New(IntPtr funPtr)
+            //     IntPtr [delegateType]New(IntPtr funPtr)
             //     {
             //         [wrapperType] wrapper = new [wrapperType](funPtr);
             //         Delegate d = new [delegateType](wrapper.Invoke);
@@ -484,7 +456,7 @@ namespace Salsa
             // method accepts an IntPtr to a Haskell function and returns an instantiated
             // .NET delegate for it)
             DelegateSignature methodSignature = new DelegateSignature(
-                typeof(Int64), new Type[] { typeof(IntPtr) });
+                typeof(IntPtr), new Type[] { typeof(IntPtr) });
 
             return GenerateDynamicMethod(delegateType.Name + "New", methodSignature,
                 delegate(ILGenerator ilg)
@@ -597,7 +569,7 @@ namespace Salsa
         {
             // Signature of the stub method returned (as a delegate) by this function
             DelegateSignature methodSignature = new DelegateSignature(
-                typeof(Int64), new Type[] { ConvertToStubType(typeToBox) });
+                typeof(IntPtr), new Type[] { ConvertToStubType(typeToBox) });
 
             return GenerateDynamicMethod("box_" + typeToBox.Name, methodSignature,
                 delegate(ILGenerator ilg)
@@ -641,7 +613,7 @@ namespace Salsa
         private static Type ConvertToStubType(Type type)
         {
             if (IsMarshaledByIndex(type))
-                return typeof(Int64);
+                return typeof(IntPtr);
             else
                 return type;
         }
@@ -665,7 +637,7 @@ namespace Salsa
         /// </summary>
         /// <remarks>
         /// For example, when called for the 'Button' type, code is emitted to convert an
-        /// Int64 object identifier into a Button; but when called with the 'String' type
+        /// IntPtr object identifier into a Button; but when called with the 'String' type
         /// no code is emitted at all since the stub type matches the desired .NET type
         /// exactly.
         /// </remarks>
@@ -899,8 +871,22 @@ namespace Salsa
                     EmitToStub(ilg, delegateSignature.ParameterTypes[i]);
                 }
 
-                ilg.Emit(OpCodes.Callvirt, thunkDelegateType.GetMethod("Invoke"));
-                EmitFromStub(ilg, delegateSignature.ReturnType);
+                if(IsMarshaledByIndex(delegateSignature.ReturnType))
+                {
+                    ilg.Emit(OpCodes.Callvirt, thunkDelegateType.GetMethod("Invoke"));
+                    ilg.Emit(OpCodes.Stloc_0);
+                    ilg.Emit(OpCodes.Ldloc_0);
+                    EmitFromStub(ilg, delegateSignature.ReturnType);
+                    ilg.Emit(OpCodes.Stloc_1);
+                    ilg.Emit(OpCodes.Ldloc_0);
+                    ilg.Emit(OpCodes.Call, MemberInfos.Driver_ReleaseObject);
+                    ilg.Emit(OpCodes.Ldloc_1);
+                }
+                else
+                {
+                    ilg.Emit(OpCodes.Callvirt, thunkDelegateType.GetMethod("Invoke"));
+                    EmitFromStub(ilg, delegateSignature.ReturnType);
+                }
                 ilg.Emit(OpCodes.Ret);
             }
 
@@ -1118,6 +1104,9 @@ namespace Salsa
 
         public static readonly MethodInfo Driver_RegisterObject =
             typeof(Driver).GetMethod("RegisterObject", BindingFlags.Static | BindingFlags.Public);
+
+        public static readonly MethodInfo Driver_ReleaseObject =
+            typeof(Driver).GetMethod("ReleaseObject", BindingFlags.Static | BindingFlags.Public);
 
         public static readonly MethodInfo Driver_GetObject =
             typeof(Driver).GetMethod("GetObject", BindingFlags.Static | BindingFlags.Public);

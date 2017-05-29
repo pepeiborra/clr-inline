@@ -14,9 +14,11 @@ import Clr.Marshal
 
 import Clr.Host
 import Clr.Host.BStr
+import Clr.Host.GCHandle
 
 import Clr.Bindings.BStr
 import Clr.Bindings.DynImports
+import Clr.Bindings.Object
 
 import Data.Kind
 import Data.Type.Bool
@@ -46,13 +48,13 @@ type instance Candidates  T_IEnumerator'   T_MoveNext      = '[ '[] ]
 type instance SuperTypes (T_IEnumerable t) = '[ T_IEnumerable', T_object ]
 type instance SuperTypes (T_IEnumerator t) = '[ T_IEnumerator', T_object ]
 
-foreign import ccall "dynamic" makeGetEnumerator      :: FunPtr (ObjectID a -> IO (ObjectID b)) -> (ObjectID a -> IO (ObjectID b))
-foreign import ccall "dynamic" makeEnumeratorMoveNext :: FunPtr (ObjectID (T_IEnumerator') -> IO Bool) -> (ObjectID (T_IEnumerator') -> IO Bool)
+foreign import ccall "dynamic" makeGetEnumerator      :: FunPtr (GCHandle a -> IO (GCHandle b)) -> (GCHandle a -> IO (GCHandle b))
+foreign import ccall "dynamic" makeEnumeratorMoveNext :: FunPtr (GCHandle (T_IEnumerator') -> IO Bool) -> (GCHandle (T_IEnumerator') -> IO Bool)
 
-foreign import ccall "dynamic" makeEnumeratorCurrentBStr  :: FunPtr (ObjectID (T_IEnumerator elem) -> IO BStr) -> (ObjectID (T_IEnumerator elem) -> IO BStr)
-foreign import ccall "dynamic" makeEnumeratorCurrentBool  :: FunPtr (ObjectID (T_IEnumerator elem) -> IO Bool) -> (ObjectID (T_IEnumerator elem) -> IO Bool)
+foreign import ccall "dynamic" makeEnumeratorCurrentBStr  :: FunPtr (GCHandle (T_IEnumerator elem) -> IO BStr) -> (GCHandle (T_IEnumerator elem) -> IO BStr)
+foreign import ccall "dynamic" makeEnumeratorCurrentBool  :: FunPtr (GCHandle (T_IEnumerator elem) -> IO Bool) -> (GCHandle (T_IEnumerator elem) -> IO Bool)
 -- TODO: makeEnumCurrent_ for every other prim type
-foreign import ccall "dynamic" makeEnumeratorCurrentObj   :: FunPtr (ObjectID (T_IEnumerator elem) -> IO (ObjectID elem)) -> (ObjectID (T_IEnumerator elem) -> IO (ObjectID elem))
+foreign import ccall "dynamic" makeEnumeratorCurrentObj   :: FunPtr (GCHandle (T_IEnumerator elem) -> IO (GCHandle elem)) -> (GCHandle (T_IEnumerator elem) -> IO (GCHandle elem))
 
 instance MethodResultI1 (T_IEnumerable t) (T_GetEnumerator) () where
   type ResultTypeI1 (T_IEnumerable t) (T_GetEnumerator) () = 'Just (T_IEnumerator t)

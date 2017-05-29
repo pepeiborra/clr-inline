@@ -20,7 +20,7 @@ import Foreign.Ptr
 --
 type family BridgeType (x::Type) :: Type where
   BridgeType () = ()
-  BridgeType t  = If (IsPrimType t) (BridgeTypePrim t) (ObjectID t)
+  BridgeType t  = If (IsPrimType t) (BridgeTypePrim t) (BridgeTypeObject t)
 
 --
 -- Maybe on bridge types, choosing () for Nothing
@@ -48,6 +48,13 @@ type instance BridgeTypePrim (T "System.Char"    '[]) = Char
 type instance BridgeTypePrim (T "System.Single"  '[]) = CFloat
 type instance BridgeTypePrim (T "System.Double"  '[]) = CDouble
 type instance BridgeTypePrim (T "System.Boolean" '[]) = Bool
+
+
+--
+-- Bridge type of Object is left uninstantiated in this package
+--
+
+type family BridgeTypeObject (x::Type)
 
 --
 -- Bridge type that operates on lists

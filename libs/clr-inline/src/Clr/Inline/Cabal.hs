@@ -1,6 +1,5 @@
 module Clr.Inline.Cabal (ensureFSharp, ensureCSharp) where
 
-import Clr.Host.Config
 import Clr.Inline.Config
 import Distribution.Simple
 import Distribution.Simple.LocalBuildInfo
@@ -31,6 +30,7 @@ fsharpCompiler, csharpCompiler :: Program
 csharpCompiler = simpleProgram (configCSharpPath defaultConfig)
 fsharpCompiler = simpleProgram (configFSharpPath defaultConfig)
 
+check :: Program -> (gh -> cf -> IO LocalBuildInfo) -> gh -> cf -> IO LocalBuildInfo
 check pgm base gh cf = do
   lbi <- base gh cf
   _ <- requireProgram Verbosity.normal pgm (withPrograms lbi)

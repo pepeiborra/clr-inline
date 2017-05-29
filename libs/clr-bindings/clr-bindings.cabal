@@ -19,11 +19,10 @@ source-repository head
 library
   hs-source-dirs:      src
   exposed-modules:     Clr.Bindings
-                     , Clr.Bindings.Box
                      , Clr.Bindings.BStr
                      , Clr.Bindings.DynImports
-                     , Clr.Bindings.ImportGen
                      , Clr.Bindings.IEnumerable
+                     , Clr.Bindings.ImportGen
                      , Clr.Bindings.Object
                      , Clr.Bindings.Object.Internal
                      , Clr.Bindings.WrapImports
