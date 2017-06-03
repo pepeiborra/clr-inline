@@ -41,23 +41,20 @@ type family TupleToList (t::Type) :: [Type] where
   TupleToList (a,b,c,d,e,f,g,h,i)     = '[a, b, c, d, e, f, g, h, i]
   TupleToList (a,b,c,d,e,f,g,h,i,j)   = '[a, b, c, d, e, f, g, h, i, j]
   TupleToList (a,b,c,d,e,f,g,h,i,j,k) = '[a, b, c, d, e, f, g, h, i, j, k]
-  TupleToList (a)                     = '[a]
+  TupleToList (a)                     = '[a]  -- NB: "(a)" denotes anything that didn't match above, this could be either a non-tuple or a tuple bigger than what above could match on
 
 --
 -- Size of a tuple
 --
 type family TupleSize (x::tupleKind) :: Nat where
-  TupleSize (a,b,c,d,e,f,g,h,i,j,k) = 11
-  TupleSize (a,b,c,d,e,f,g,h,i,j) = 10
-  TupleSize (a,b,c,d,e,f,g,h,i) = 9
-  TupleSize (a,b,c,d,e,f,g,h) = 8
-  TupleSize (a,b,c,d,e,f,g) = 7
-  TupleSize (a,b,c,d,e,f) = 6
-  TupleSize (a,b,c,d,e) = 5
-  TupleSize (a,b,c,d) = 4
-  TupleSize (a,b,c) = 3
-  TupleSize (a,b) = 2
-  TupleSize (a) = 1
+  TupleSize a = ListSize (TupleToList a) -- NB: the size of '()' is considered 0, and anything non tuple or bigger than what 'TupleToList' matches on is 1.
+
+--
+-- ArgCount is like TupleSize, except evaluates to 1 for '()', which only makes sens given how it is currently used
+--
+type family ArgCount (x::tupleKind) :: Nat where
+  ArgCount () = 1
+  ArgCount a  = TupleSize a
 
 --
 -- Size of a list

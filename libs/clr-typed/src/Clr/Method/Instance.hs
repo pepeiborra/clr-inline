@@ -81,7 +81,7 @@ instance (MethodInvokeI3 t m a0 a1 a2) => MethodI 3 t m '[a0, a1, a2] where
 
 invokeI :: forall ms m tBase tDerived argsClrUnResolved argsClr argsHask argCount argsBridge resultBridge resultHask .
             ( MakeT ms ~ m
-            , TupleSize argsHask ~ argCount
+            , ArgCount argsHask ~ argCount
             , ResolveBaseType tDerived m ~ tBase
             , tDerived `Implements` tBase ~ 'True
             , HaskToClrL (TupleToList argsHask) ~ argsClrUnResolved

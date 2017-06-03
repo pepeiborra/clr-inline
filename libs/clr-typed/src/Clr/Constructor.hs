@@ -59,7 +59,7 @@ instance (Constructor3 t a0 a1 a2) => Constructor 3 t '[a0, a1, a2] where
 
 new :: forall ts t argsClrUnResolved argsClr argsHask argCount argsBridge resultBridge .
         ( MakeT ts ~ t
-        , TupleSize argsHask ~ argCount
+        , ArgCount argsHask ~ argCount
         , HaskToClrL (TupleToList argsHask) ~ argsClrUnResolved
         , ResolveMember argsClrUnResolved (Candidates t t) ~ argsClr
         , Constructor argCount t argsClr

@@ -82,7 +82,7 @@ instance (MethodInvokeS3 t m a0 a1 a2) => MethodS 3 t m '[a0, a1, a2] where
 invokeS :: forall ms ts m t argsClrUnResolved argsClr argsHask argCount argsBridge resultBridge resultHask .
             ( MakeT ms ~ m
             , MakeT ts ~ t
-            , TupleSize argsHask ~ argCount
+            , ArgCount argsHask ~ argCount
             , HaskToClrL (TupleToList argsHask) ~ argsClrUnResolved
             , ResolveMember argsClrUnResolved (Candidates t m) ~ argsClr
             , MethodS argCount t m argsClr
