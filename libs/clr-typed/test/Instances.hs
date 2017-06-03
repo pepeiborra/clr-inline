@@ -4,8 +4,9 @@ module Instances where
 
 import Clr
 import Clr.Bridge
-import Clr.UnmarshalAs
+import Clr.Resolver
 import Clr.TypeString
+import Clr.UnmarshalAs
 
 import Clr.Marshal
 

@@ -10,6 +10,7 @@ module Clr.Bindings.Object.Internal
 
 import Clr
 import Clr.Bridge
+import Clr.Resolver
 import Clr.TypeString
 import Clr.UnmarshalAs
 

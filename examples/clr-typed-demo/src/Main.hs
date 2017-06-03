@@ -3,10 +3,12 @@
 module Main where
 
 import Clr
+import Clr.Resolver
+import Clr.TypeString
+
 import Clr.Host
 import Clr.Host.GCHandle
 import Clr.Host.Box
-import Clr.TypeString
 
 import Clr.Bindings
 import Clr.Bindings.IEnumerable

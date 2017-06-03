@@ -10,10 +10,18 @@ module Clr.Method.Instance
   , MethodInvokeI1(..)
   , MethodInvokeI2(..)
   , MethodInvokeI3(..)
+  , invokeI
   ) where
 
 import Clr.Bridge
 import Clr.Curry
+import Clr.Inheritance
+import Clr.ListTuple
+import Clr.Marshal
+import Clr.Object
+import Clr.Resolver
+import Clr.Types
+import Clr.UnmarshalAs
 
 import GHC.TypeLits
 import Data.Kind
@@ -66,4 +74,26 @@ instance (MethodInvokeI2 t m a0 a1) => MethodI 2 t m '[a0, a1] where
 instance (MethodInvokeI3 t m a0 a1 a2) => MethodI 3 t m '[a0, a1, a2] where
   type ResultTypeI 3 t m '[a0, a1, a2] = ResultTypeI3 t m a0 a1 a2
   rawInvokeI = rawInvokeI3 @t @m @a0 @a1 @a2
+
+--
+-- API
+--
+
+invokeI :: forall ms m tBase tDerived argsClrUnResolved argsClr argsHask argCount argsBridge resultBridge resultHask .
+            ( MakeT ms ~ m
+            , TupleSize argsHask ~ argCount
+            , ResolveBaseType tDerived m ~ tBase
+            , tDerived `Implements` tBase ~ 'True
+            , HaskToClrL (TupleToList argsHask) ~ argsClrUnResolved
+            , ResolveMember argsClrUnResolved (Candidates tBase m) ~ argsClr
+            , MethodI argCount tBase m argsClr
+            , ListToTuple (BridgeTypeL argsClr) ~ argsBridge
+            , BridgeTypeM (ResultTypeI argCount tBase m argsClr) ~ resultBridge
+            , Marshal argsHask argsBridge
+            , Marshal (Object tBase) (BridgeType tBase)
+            , UnmarshalAs resultBridge ~ resultHask
+            , Unmarshal resultBridge resultHask
+            , Curry argCount (argsBridge -> IO resultBridge) (CurryT' argCount argsBridge (IO resultBridge))
+            ) => Object tDerived -> argsHask -> IO resultHask
+invokeI obj x = marshal @argsHask @argsBridge @resultBridge x (\tup-> marshal @(Object tBase) @(BridgeType tBase) @resultBridge (upCast obj) (\obj'-> uncurryN @argCount (rawInvokeI @argCount @tBase @m @argsClr obj') tup)) >>= unmarshal
 

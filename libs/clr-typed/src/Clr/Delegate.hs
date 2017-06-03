@@ -7,6 +7,12 @@ module Clr.Delegate where
 import Clr.Bridge
 import Clr.Curry
 import Clr.ListTuple
+import Clr.Marshal
+import Clr.MarshalF
+import Clr.Object
+import Clr.Resolver
+import Clr.Types
+import Clr.UnmarshalAs
 
 import GHC.TypeLits
 import Data.Kind
@@ -61,3 +67,19 @@ instance ( DelegateArity t ~ 3
          , DelegateConstructor3 t
          ) => DelegateConstructorN 3 t where
   rawConstructDelegate = rawConstructDelegate3 @t
+
+--
+-- API
+--
+
+delegate :: forall ds d ht bt n .
+            ( MakeT ds ~ d
+            , Delegate d
+            , DelegateBridgeType d ~ bt
+            , DelegateArity d ~ n
+            , MarshalF n ht bt
+            , DelegateConstructorN n d
+            , Unmarshal (BridgeType d) (Object d)
+            ) => ht -> IO (Object d)
+delegate f = rawConstructDelegate @n @d (marshalF @n @ht @bt f) >>= unmarshal
+
