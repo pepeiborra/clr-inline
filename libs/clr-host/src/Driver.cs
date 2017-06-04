@@ -860,6 +860,12 @@ namespace Salsa
                     MethodAttributes.Public, delegateSignature.ReturnType, delegateSignature.ParameterTypes);
                 ILGenerator ilg = invokeMethod.GetILGenerator();
 
+                if(IsMarshaledByIndex(delegateSignature.ReturnType))
+                {
+                    LocalBuilder lb0 = ilg.DeclareLocal(typeof(IntPtr));
+                    LocalBuilder lb1 = ilg.DeclareLocal(delegateSignature.ReturnType);
+                }
+
                 // Load _thunkDelegate (for calling it later)
                 ilg.Emit(OpCodes.Ldarg_0);
                 ilg.Emit(OpCodes.Ldfld, thunkDelegateField);
@@ -871,9 +877,12 @@ namespace Salsa
                     EmitToStub(ilg, delegateSignature.ParameterTypes[i]);
                 }
 
+                // Make the call
+                ilg.Emit(OpCodes.Callvirt, thunkDelegateType.GetMethod("Invoke"));
+
                 if(IsMarshaledByIndex(delegateSignature.ReturnType))
                 {
-                    ilg.Emit(OpCodes.Callvirt, thunkDelegateType.GetMethod("Invoke"));
+                    // Get the actual object from the handle, then release the handle
                     ilg.Emit(OpCodes.Stloc_0);
                     ilg.Emit(OpCodes.Ldloc_0);
                     EmitFromStub(ilg, delegateSignature.ReturnType);
@@ -883,10 +892,8 @@ namespace Salsa
                     ilg.Emit(OpCodes.Ldloc_1);
                 }
                 else
-                {
-                    ilg.Emit(OpCodes.Callvirt, thunkDelegateType.GetMethod("Invoke"));
                     EmitFromStub(ilg, delegateSignature.ReturnType);
-                }
+
                 ilg.Emit(OpCodes.Ret);
             }
 
