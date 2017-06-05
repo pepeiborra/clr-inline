@@ -21,6 +21,7 @@ library
   exposed-modules:     Clr.Bindings
                      , Clr.Bindings.BStr
                      , Clr.Bindings.DynImports
+                     , Clr.Bindings.Exception
                      , Clr.Bindings.IEnumerable
                      , Clr.Bindings.ImportGen
                      , Clr.Bindings.Object

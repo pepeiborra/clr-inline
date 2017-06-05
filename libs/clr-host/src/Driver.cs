@@ -1035,6 +1035,20 @@ namespace Salsa
 
         #endregion
 
+        public RetT RunCatchHandler<RetT, ExT>(TryDelegate<RetT> tryDelegate, CatchDelegate<RetT, ExT> catchDelegate) where ExT : System.Exception
+        {
+            RetT result;
+            try
+            {
+                result = tryDelegate();
+            }
+            catch(ExT ex)
+            {
+                result = catchDelegate(ex);
+            }
+            return result;
+        }
+
         private static Dictionary<String, Assembly> LoadedAssemblies = new Dictionary<String, Assembly>();
 
         /// Helper function to load an assembly from bytes
@@ -1082,6 +1096,10 @@ namespace Salsa
     /// A delegate for code the emits IL instructions on demand.
     /// </summary>
     public delegate void ILWriterDelegate(ILGenerator ilg);
+
+    public delegate RetT TryDelegate<RetT>();
+
+    public delegate RetT CatchDelegate<RetT, ExT>(ExT ex);
 
     /// <summary>
     /// Stores references to commonly used reflection object instances.
