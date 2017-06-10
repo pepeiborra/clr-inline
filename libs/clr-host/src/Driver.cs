@@ -129,15 +129,17 @@ namespace Salsa
             if (methodName == ".ctor")
             {
                 ConstructorInfo con = StringToType(className).GetConstructor(
-                    StringToTypes(parameterTypeNames));
+                    StringToTypes(parameterTypeNames,';'));
                 return GenerateConstructorStub(con);
             }
             else
             {
                 Type typ = StringToType(className);
                 MethodInfo meth;
-                if (parameterTypeNames != null)
-                    meth = typ.GetMethod(methodName, StringToTypes(parameterTypeNames));
+                if (methodName.Contains("`"))
+                    meth = GetGenericMethod(typ, methodName);
+                else if (parameterTypeNames != null)
+                    meth = typ.GetMethod(methodName, StringToTypes(parameterTypeNames,';'));
                 else
                     meth = typ.GetMethod(methodName);
                 if(meth == null) {
@@ -1035,7 +1037,7 @@ namespace Salsa
 
         #endregion
 
-        public RetT RunCatchHandler<RetT, ExT>(TryDelegate<RetT> tryDelegate, CatchDelegate<RetT, ExT> catchDelegate) where ExT : System.Exception
+        public static RetT RunCatchHandler<RetT, ExT>(TryDelegate<RetT> tryDelegate, CatchDelegate<RetT, ExT> catchDelegate) where ExT : System.Exception
         {
             RetT result;
             try
@@ -1078,11 +1080,26 @@ namespace Salsa
             return t;
         }
 
-        public static Type[] StringToTypes(string s)
+        public static Type[] StringToTypes(string s, char seperator)
         {
             return Util.MapArray<string, Type>(delegate(string t)
                                                { return StringToType(t); },
-                                               s.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
+                                               s.Split(new char[] { seperator }, StringSplitOptions.RemoveEmptyEntries));
+        }
+
+        public static MethodInfo GetGenericMethod(Type typ, string s)
+        {
+            int i = s.IndexOf('`');
+            string methodName = s.Substring(0, i);
+
+            i = s.IndexOf('[', i);
+            string genParamsStr = s.Substring(i+1, s.Length -i -2);
+            Type[] genParams = StringToTypes(genParamsStr, ',');
+
+            MethodInfo method = typ.GetMethod(methodName);
+            MethodInfo generic = method.MakeGenericMethod(genParams);
+
+            return generic;
         }
     }
 
