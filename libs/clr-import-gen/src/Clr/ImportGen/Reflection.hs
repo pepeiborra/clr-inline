@@ -5,6 +5,7 @@ module Clr.ImportGen.Reflection where
 import Prelude hiding (concat, mapM, sequence)
 
 import Clr
+import Clr.Resolver
 import Clr.TypeString
 
 import Clr.Host
@@ -85,19 +86,19 @@ instance PropertyS T_AppDomain T_CurrentDomain where
   type PropertyTypeS T_AppDomain T_CurrentDomain = T_AppDomain
 
 instance MethodResultI1 T_AppDomain T_GetAssemblies () where
-  type ResultTypeI1 T_AppDomain T_GetAssemblies () = 'Just T_AssemblyArray
+  type ResultTypeI1 T_AppDomain T_GetAssemblies () = T_AssemblyArray
 
 instance MethodResultI1 T_Assembly T_GetTypes () where
-  type ResultTypeI1 T_Assembly T_GetTypes () = 'Just T_TypeArray
+  type ResultTypeI1 T_Assembly T_GetTypes () = T_TypeArray
 
 instance MethodResultS1 T_Assembly T_Load T_string where
-  type ResultTypeS1 T_Assembly T_Load T_string = 'Just T_Assembly
+  type ResultTypeS1 T_Assembly T_Load T_string = T_Assembly
 
 instance PropertyI T_Type T_FullName where
   type PropertyTypeI T_Type T_FullName = T_string
 
 instance MethodResultI1 T_Type T_GetMembers () where
-  type ResultTypeI1 T_Type T_GetMembers () = 'Just T_MemberInfoArray
+  type ResultTypeI1 T_Type T_GetMembers () = T_MemberInfoArray
 
 instance PropertyI T_MemberInfo T_Name where
   type PropertyTypeI T_MemberInfo T_Name = T_string
@@ -106,13 +107,13 @@ instance PropertyI T_Type T_Namespace where
   type PropertyTypeI T_Type T_Namespace = T_string
 
 instance MethodResultI1 T_Type T_GetGenericArguments () where
-  type ResultTypeI1 T_Type T_GetGenericArguments () = 'Just T_TypeArray
+  type ResultTypeI1 T_Type T_GetGenericArguments () = T_TypeArray
 
 instance MethodResultI1 T_Assembly T_GetType T_string where
-  type ResultTypeI1 T_Assembly T_GetType T_string = 'Just T_Type
+  type ResultTypeI1 T_Assembly T_GetType T_string = T_Type
 
 instance MethodResultI1 T_MethodInfo T_GetGenericArguments () where
-  type ResultTypeI1 T_MethodInfo T_GetGenericArguments () = 'Just T_TypeArray
+  type ResultTypeI1 T_MethodInfo T_GetGenericArguments () = T_TypeArray
 
 instance PropertyDynImportGetS T_AppDomain T_CurrentDomain where
   propertyDynImportGetS = makeAppDomainCurrentDomain
@@ -177,7 +178,7 @@ assembliesLoaded = assembliesLoaded' >-> filterM (\assem-> assemIsDynamicDriverI
 assembliesLoaded' :: Producer (Object T_Assembly) IO ()
 assembliesLoaded' = do
   domain <- liftIO $ currentDomain
-  assems <- liftIO $ invokeI @T_GetAssemblies domain ()
+  assems <- liftIO $ (invokeI @T_GetAssemblies domain () :: IO (Object T_AssemblyArray))
   toProducer assems
 
 --
@@ -185,7 +186,7 @@ assembliesLoaded' = do
 --
 assemGetTypes :: Object T_Assembly -> Producer (Object T_Type) IO ()
 assemGetTypes assem = do
-  typs <- liftIO $ invokeI @T_GetTypes assem ()
+  typs <- liftIO $ (invokeI @T_GetTypes assem () :: IO (Object T_TypeArray))
   toProducer typs
 
 --
@@ -204,7 +205,7 @@ typeFullName typ = getPropI @T_FullName typ
 -- System.Type.GetMembers()
 --
 typeGetMembers :: Object T_Type -> Producer (Object T_MemberInfo) IO ()
-typeGetMembers typ = liftIO (invokeI @T_GetMembers typ ()) >>= toProducer
+typeGetMembers typ = liftIO (invokeI @T_GetMembers typ () :: IO (Object T_MemberInfoArray)) >>= toProducer
 
 --
 -- typeName is System.Reflection.MemberInfo.Name on a parameter of System.Type
@@ -270,7 +271,7 @@ typeIsSupported typ = do
 -- System.Type.GetGenericArguments()
 --
 typeGetGenericArguments :: Object T_Type -> Producer (Object T_Type) IO ()
-typeGetGenericArguments typ = liftIO (invokeI @T_GetGenericArguments typ ()) >>= toProducer
+typeGetGenericArguments typ = liftIO (invokeI @T_GetGenericArguments typ () :: IO (Object T_TypeArray)) >>= toProducer
 
 --
 -- System.Reflection.Assembly.GetType(System.String)
@@ -299,7 +300,7 @@ typeGetType = invokeS @T_GetType @T_Type
 -- System.Reflection.MethodInfo.GetGenericArguments()
 --
 methodGetGenericArguments :: Object T_MethodInfo -> Producer (Object T_Type) IO ()
-methodGetGenericArguments mth = liftIO (invokeI @T_GetGenericArguments mth ()) >>= toProducer
+methodGetGenericArguments mth = liftIO (invokeI @T_GetGenericArguments mth () :: IO (Object T_TypeArray)) >>= toProducer
 
 memberGetGenericArguments :: Object T_MemberInfo -> Producer (Object T_Type) IO ()
 memberGetGenericArguments mem = do

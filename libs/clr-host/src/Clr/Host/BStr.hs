@@ -63,27 +63,55 @@ freeBStr x = do
 withBStr :: (Integral len) => Ptr Word16 -> len -> (BStr-> IO a) -> IO a
 withBStr p l = bracket (allocBStr p l) freeBStr
 
-instance Marshal Text BStr where
+bstrToPtrData :: BStr -> Ptr Word16
+bstrToPtrData = coerce
+
+bstrToPtrLen :: BStr -> Ptr Word16
+bstrToPtrLen bstr = plusPtr (bstrToPtrData bstr) (-4)
+
+bstrLenBytes :: BStr -> IO Word16
+bstrLenBytes = peek . bstrToPtrLen
+
+bstrLenChars :: BStr -> IO Word16
+bstrLenChars bstr = do
+  let charSize = 2
+  lenBytes <- bstrLenBytes bstr
+  return $ lenBytes `div` charSize
+
+bstrToText :: BStr -> IO Text
+bstrToText bstr = do
+  let ptrData = bstrToPtrData bstr
+  lenChars   <- bstrLenChars  bstr
+  fromPtr ptrData $ fromIntegral lenChars
+
+instance {-# OVERLAPPING #-} Marshal Text BStr where
   marshal x f = do
     bstr <- useAsPtr x (\p-> \l-> allocBStr p l)
     !res <- f bstr
     freeBStr bstr
     return res
 
-instance Marshal String BStr where
+instance {-# OVERLAPPING #-} Marshal String BStr where
   marshal x f = marshal (pack x) f
 
-instance Unmarshal BStr Text where
+instance {-# OVERLAPPING #-} Marshal BStr Text where
+  marshal x f = bstrToText x >>= f
+
+instance {-# OVERLAPPING #-} Marshal BStr String where
+  marshal x f = marshal x $ \t-> f (unpack t)
+
+instance {-# OVERLAPPING #-} Unmarshal BStr Text where
   unmarshal x = do
-    let charSize = 2
-    let ptrData   = coerce x              :: Ptr Word16
-    let ptrLen    = plusPtr ptrData (-4)  :: Ptr Word16
-    lenBytes     <- peek ptrLen
-    !t <- fromPtr ptrData $ fromIntegral $ lenBytes `div` charSize
+    !t <- bstrToText x
     freeBStr x
     return t
 
-instance Unmarshal BStr String where
-  unmarshal x = unmarshal x >>= return . unpack
+instance {-# OVERLAPPING #-} Unmarshal BStr String where
+  unmarshal x = unpack <$> unmarshal x
 
+instance {-# OVERLAPPING #-} Unmarshal Text BStr where
+  unmarshal x = useAsPtr x (\p-> \l-> allocBStr p l)
+
+instance {-# OVERLAPPING #-} Unmarshal String BStr where
+  unmarshal x = unmarshal $ pack x
 

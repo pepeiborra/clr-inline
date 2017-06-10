@@ -3,13 +3,16 @@
 module Main where
 
 import Clr
+import Clr.Resolver
+import Clr.TypeString
+
 import Clr.Host
 import Clr.Host.GCHandle
 import Clr.Host.Box
-import Clr.TypeString
 
 import Clr.Bindings
 import Clr.Bindings.IEnumerable
+import Clr.Bindings.Exception
 
 import Data.Int(Int32, Int64)
 import Foreign.Ptr(Ptr, FunPtr)
@@ -25,17 +28,24 @@ type T_Console                  = T "System.Console" '[]
 type T_List t                   = T "System.Collections.Generic.List" '[t]
 type T_Thread                   = T "System.Threading.Thread" '[]
 type T_ParameterizedThreadStart = T "System.Threading.ParameterizedThreadStart" '[]
+type T_File                     = T "System.IO.File" '[]
+type T_Exception                = T "System.Exception" '[]
+type T_FileNotFoundException    = T "System.IO.FileNotFoundException" '[]
 
 type T_Add       = T "Add" '[]
 type T_WriteLine = T "WriteLine" '[]
 type T_Start     = T "Start" '[]
 type T_Join      = T "Join" '[]
+type T_ReadAllText = T "ReadAllText" '[]
 
 type instance SuperTypes (T_List t) = '[ T_IEnumerable t, T_IEnumerable', T_object ]
 type instance SuperTypes (T_Thread) = '[ T_object ]
+type instance SuperTypes (T_File) = '[ T_object ]
+type instance SuperTypes (T_FileNotFoundException) = '[ T_Exception ]
 
 type instance Members (T_List t) = '[ T_Add ]
 type instance Members  T_Thread  = '[ T_Start, T_Join ]
+type instance Members  T_File  = '[ T_ReadAllText ]
 
 type instance Candidates (T_List t) T_Add      = '[ '[t] ]
 type instance Candidates T_Console T_WriteLine = '[ '[                              ]
@@ -47,6 +57,7 @@ type instance Candidates (T_List t) (T_List t) = '[ '[] ]
 type instance Candidates (T_Thread) (T_Thread) = '[ '[ T_ParameterizedThreadStart ] ]
 type instance Candidates (T_Thread) (T_Start)  = '[ '[ T_object ] ]
 type instance Candidates (T_Thread) (T_Join)   = '[ '[ ] ]
+type instance Candidates (T_File) (T_ReadAllText)   = '[ '[ T_string ] ]
 
 foreign import ccall "dynamic" makeWriteLineType0 :: FunPtr (IO ()) -> IO ()
 foreign import ccall "dynamic" makeWriteLineType1 :: FunPtr (BStr -> IO ()) -> (BStr -> IO ())
@@ -59,24 +70,28 @@ foreign import ccall "dynamic" makeThreadParameterizedThreadStart :: FunPtr (GCH
 foreign import ccall "wrapper" wrapParameterizedThreadStart :: (GCHandle a -> IO ()) -> IO (FunPtr (GCHandle a -> IO ()))
 foreign import ccall "dynamic" makeThreadStart :: FunPtr (GCHandle a -> GCHandle b -> IO ()) -> (GCHandle a -> GCHandle b -> IO ())
 foreign import ccall "dynamic" makeThreadJoin :: FunPtr (GCHandle a -> IO ()) -> (GCHandle a -> IO ())
+foreign import ccall "dynamic" makeFileReadAllText :: FunPtr (BStr -> IO BStr) -> (BStr -> IO BStr)
 
 instance MethodResultS1 T_Console T_WriteLine arg0 where
-  type ResultTypeS1 T_Console T_WriteLine arg0 = 'Nothing
+  type ResultTypeS1 T_Console T_WriteLine arg0 = T_void
 
 instance MethodResultS2 T_Console T_WriteLine arg0 arg1 where
-  type ResultTypeS2 T_Console T_WriteLine arg0 arg1 = 'Nothing
+  type ResultTypeS2 T_Console T_WriteLine arg0 arg1 = T_void
 
 instance MethodResultS3 T_Console T_WriteLine arg0 arg1 arg2 where
-  type ResultTypeS3 T_Console T_WriteLine arg0 arg1 arg2 = 'Nothing
+  type ResultTypeS3 T_Console T_WriteLine arg0 arg1 arg2 = T_void
 
 instance MethodResultI1 (T_List T_string) T_Add arg0 where
-  type ResultTypeI1 (T_List T_string) T_Add arg0 = 'Nothing
+  type ResultTypeI1 (T_List T_string) T_Add arg0 = T_void
 
 instance MethodResultI1 T_Thread T_Start arg0 where
-  type ResultTypeI1 T_Thread T_Start arg0 = 'Nothing
+  type ResultTypeI1 T_Thread T_Start arg0 = T_void
 
 instance MethodResultI1 T_Thread T_Join () where
-  type ResultTypeI1 T_Thread T_Join () = 'Nothing
+  type ResultTypeI1 T_Thread T_Join () = T_void
+
+instance MethodResultS1 T_File T_ReadAllText T_string where
+  type ResultTypeS1 T_File T_ReadAllText T_string = T_string
 
 instance MethodDynImportS1 T_Console T_WriteLine () where
   methodDynImportS1 = makeWriteLineType0
@@ -107,7 +122,7 @@ instance WrapperImport T_ParameterizedThreadStart where
 
 instance Delegate T_ParameterizedThreadStart where
   type DelegateArgTypes   T_ParameterizedThreadStart = '[ T_object ]
-  type DelegateResultType T_ParameterizedThreadStart = 'Nothing
+  type DelegateResultType T_ParameterizedThreadStart = T_void
 
 instance MethodDynImportI1 T_Thread T_Start T_object where
   methodDynImportI1 = makeThreadStart
@@ -115,8 +130,21 @@ instance MethodDynImportI1 T_Thread T_Start T_object where
 instance MethodDynImportI1 T_Thread T_Join () where
   methodDynImportI1 = makeThreadJoin
 
+instance MethodDynImportS1 T_File T_ReadAllText T_string where
+  methodDynImportS1 = makeFileReadAllText
+
 onThreadStart :: Object T_object -> IO ()
 onThreadStart obj = putStrLn "Haskell being used as a delegate and called from the CLR!"
+
+someThingBad :: IO T.Text
+someThingBad = do
+  t1 <- invokeS @T_ReadAllText @T_File "someNonExistentFile.txt"
+  putStrLn "Why am I here? TODO"
+  {- exception handler no longer armed here
+  !t2 <- invokeS @T_ReadAllText @T_File "someNonExistentFile.txt" :: IO String
+  -}
+  putStrLn "Or here? TODO"
+  return t1
 
 main :: IO ()
 main = do
@@ -139,6 +167,9 @@ main = do
   thread <- new @T_Thread d                                                     -- And then used as you would normally
   invokeI @"Start" thread "SomeParam"
   invokeI @"Join" thread ()
+
+  let handler = \(ex::Object T_FileNotFoundException)-> putStrLn "Woops" >> return (T.pack "")
+  s <- catch someThingBad handler
 
   return ()
 

@@ -7,34 +7,39 @@ module Clr.Delegate where
 import Clr.Bridge
 import Clr.Curry
 import Clr.ListTuple
+import Clr.Marshal
+import Clr.MarshalF
+import Clr.Object
+import Clr.Resolver
+import Clr.Types
 
 import GHC.TypeLits
 import Data.Kind
 
 class Delegate t where
   type DelegateArgTypes   t :: [Type]
-  type DelegateResultType t :: Maybe Type
+  type DelegateResultType t :: Type
 
 type family DelegateArgN (t::Type) (n::Nat) :: Type where
   DelegateArgN t n = (DelegateArgTypes t) `Index` n
 
 class Delegate t => DelegateConstructor0 (t::Type) where
-  rawConstructDelegate0 :: (IO (BridgeTypeM (DelegateResultType t))) -> (IO (BridgeType t))
+  rawConstructDelegate0 :: (IO (BridgeType (DelegateResultType t))) -> (IO (BridgeType t))
 
 class Delegate t => DelegateConstructor1 (t::Type) where
-  rawConstructDelegate1 :: (BridgeType (DelegateArgN t 0)  -> IO (BridgeTypeM (DelegateResultType t))) -> (IO (BridgeType t))
+  rawConstructDelegate1 :: (BridgeType (DelegateArgN t 0)  -> IO (BridgeType (DelegateResultType t))) -> (IO (BridgeType t))
 
 class Delegate t => DelegateConstructor2 (t::Type) where
-  rawConstructDelegate2 :: (BridgeType (DelegateArgN t 0)  -> BridgeType (DelegateArgN t 1) -> IO (BridgeTypeM (DelegateResultType t))) -> (IO (BridgeType t))
+  rawConstructDelegate2 :: (BridgeType (DelegateArgN t 0)  -> BridgeType (DelegateArgN t 1) -> IO (BridgeType (DelegateResultType t))) -> (IO (BridgeType t))
 
 class Delegate t => DelegateConstructor3 (t::Type) where
-  rawConstructDelegate3 :: (BridgeType (DelegateArgN t 0)  -> BridgeType (DelegateArgN t 1) -> BridgeType (DelegateArgN t 2) -> IO (BridgeTypeM (DelegateResultType t))) -> (IO (BridgeType t))
+  rawConstructDelegate3 :: (BridgeType (DelegateArgN t 0)  -> BridgeType (DelegateArgN t 1) -> BridgeType (DelegateArgN t 2) -> IO (BridgeType (DelegateResultType t))) -> (IO (BridgeType t))
 
 type family DelegateArity (t::Type) :: Nat where
   DelegateArity t = ListSize (DelegateArgTypes t)
 
 type family DelegateBridgeType (t::Type) :: Type where
-  DelegateBridgeType t = CurryT' (DelegateArity t) (BridgeTypes (DelegateArgTypes t)) (IO (BridgeTypeM (DelegateResultType t)))
+  DelegateBridgeType t = CurryT' (DelegateArity t) (BridgeTypes (DelegateArgTypes t)) (IO (BridgeType (DelegateResultType t)))
 
 class Delegate t => DelegateConstructorN (n::Nat) (t::Type) where
   rawConstructDelegate :: DelegateBridgeType t -> IO (BridgeType t)
@@ -61,3 +66,19 @@ instance ( DelegateArity t ~ 3
          , DelegateConstructor3 t
          ) => DelegateConstructorN 3 t where
   rawConstructDelegate = rawConstructDelegate3 @t
+
+--
+-- API
+--
+
+delegate :: forall ds d ht bt n .
+            ( MakeT ds ~ d
+            , Delegate d
+            , DelegateBridgeType d ~ bt
+            , DelegateArity d ~ n
+            , MarshalF n ht bt
+            , DelegateConstructorN n d
+            , Unmarshal (BridgeType d) (Object d)
+            ) => ht -> IO (Object d)
+delegate f = rawConstructDelegate @n @d (marshalF @n @ht @bt f) >>= unmarshal
+

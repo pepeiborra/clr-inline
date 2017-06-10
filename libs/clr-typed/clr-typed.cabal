@@ -27,11 +27,10 @@ library
                      , Clr.Delegate
                      , Clr.Inheritance
                      , Clr.ListTuple
-                     , Clr.UnmarshalAs
                      , Clr.Method.Instance
                      , Clr.Method.Static
-                     , Clr.Property
                      , Clr.Object
+                     , Clr.Property
                      , Clr.Resolver
                      , Clr.Resolver.BetterConversion
                      , Clr.Resolver.ImplicitConversions

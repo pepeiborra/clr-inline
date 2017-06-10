@@ -129,15 +129,17 @@ namespace Salsa
             if (methodName == ".ctor")
             {
                 ConstructorInfo con = StringToType(className).GetConstructor(
-                    StringToTypes(parameterTypeNames));
+                    StringToTypes(parameterTypeNames,';'));
                 return GenerateConstructorStub(con);
             }
             else
             {
                 Type typ = StringToType(className);
                 MethodInfo meth;
-                if (parameterTypeNames != null)
-                    meth = typ.GetMethod(methodName, StringToTypes(parameterTypeNames));
+                if (methodName.Contains("`"))
+                    meth = GetGenericMethod(typ, methodName);
+                else if (parameterTypeNames != null)
+                    meth = typ.GetMethod(methodName, StringToTypes(parameterTypeNames,';'));
                 else
                     meth = typ.GetMethod(methodName);
                 if(meth == null) {
@@ -860,6 +862,12 @@ namespace Salsa
                     MethodAttributes.Public, delegateSignature.ReturnType, delegateSignature.ParameterTypes);
                 ILGenerator ilg = invokeMethod.GetILGenerator();
 
+                if(IsMarshaledByIndex(delegateSignature.ReturnType))
+                {
+                    LocalBuilder lb0 = ilg.DeclareLocal(typeof(IntPtr));
+                    LocalBuilder lb1 = ilg.DeclareLocal(delegateSignature.ReturnType);
+                }
+
                 // Load _thunkDelegate (for calling it later)
                 ilg.Emit(OpCodes.Ldarg_0);
                 ilg.Emit(OpCodes.Ldfld, thunkDelegateField);
@@ -871,9 +879,12 @@ namespace Salsa
                     EmitToStub(ilg, delegateSignature.ParameterTypes[i]);
                 }
 
+                // Make the call
+                ilg.Emit(OpCodes.Callvirt, thunkDelegateType.GetMethod("Invoke"));
+
                 if(IsMarshaledByIndex(delegateSignature.ReturnType))
                 {
-                    ilg.Emit(OpCodes.Callvirt, thunkDelegateType.GetMethod("Invoke"));
+                    // Get the actual object from the handle, then release the handle
                     ilg.Emit(OpCodes.Stloc_0);
                     ilg.Emit(OpCodes.Ldloc_0);
                     EmitFromStub(ilg, delegateSignature.ReturnType);
@@ -883,10 +894,8 @@ namespace Salsa
                     ilg.Emit(OpCodes.Ldloc_1);
                 }
                 else
-                {
-                    ilg.Emit(OpCodes.Callvirt, thunkDelegateType.GetMethod("Invoke"));
                     EmitFromStub(ilg, delegateSignature.ReturnType);
-                }
+
                 ilg.Emit(OpCodes.Ret);
             }
 
@@ -1028,6 +1037,20 @@ namespace Salsa
 
         #endregion
 
+        public static RetT RunCatchHandler<RetT, ExT>(TryDelegate<RetT> tryDelegate, CatchDelegate<RetT, ExT> catchDelegate) where ExT : System.Exception
+        {
+            RetT result;
+            try
+            {
+                result = tryDelegate();
+            }
+            catch(ExT ex)
+            {
+                result = catchDelegate(ex);
+            }
+            return result;
+        }
+
         private static Dictionary<String, Assembly> LoadedAssemblies = new Dictionary<String, Assembly>();
 
         /// Helper function to load an assembly from bytes
@@ -1057,11 +1080,26 @@ namespace Salsa
             return t;
         }
 
-        public static Type[] StringToTypes(string s)
+        public static Type[] StringToTypes(string s, char seperator)
         {
             return Util.MapArray<string, Type>(delegate(string t)
                                                { return StringToType(t); },
-                                               s.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
+                                               s.Split(new char[] { seperator }, StringSplitOptions.RemoveEmptyEntries));
+        }
+
+        public static MethodInfo GetGenericMethod(Type typ, string s)
+        {
+            int i = s.IndexOf('`');
+            string methodName = s.Substring(0, i);
+
+            i = s.IndexOf('[', i);
+            string genParamsStr = s.Substring(i+1, s.Length -i -2);
+            Type[] genParams = StringToTypes(genParamsStr, ',');
+
+            MethodInfo method = typ.GetMethod(methodName);
+            MethodInfo generic = method.MakeGenericMethod(genParams);
+
+            return generic;
         }
     }
 
@@ -1075,6 +1113,10 @@ namespace Salsa
     /// A delegate for code the emits IL instructions on demand.
     /// </summary>
     public delegate void ILWriterDelegate(ILGenerator ilg);
+
+    public delegate RetT TryDelegate<RetT>();
+
+    public delegate RetT CatchDelegate<RetT, ExT>(ExT ex);
 
     /// <summary>
     /// Stores references to commonly used reflection object instances.

@@ -6,7 +6,6 @@ module Clr.Bindings.BStr where
 import Clr
 import Clr.Bridge
 import Clr.Marshal
-import Clr.UnmarshalAs
 
 import Clr.Host.BStr
 
@@ -19,13 +18,4 @@ import Foreign.Storable
 
 
 type instance BridgeTypePrim (T "System.String" '[]) = BStr
-
---
--- NB: This next line specifies that all methods
--- returning a System.String, get the result
--- converted to a Text. This needs a bit of work,
--- but polymorphism in the return type is going
--- to make compilation a lot harder. TODO.
---
-type instance UnmarshalAs BStr = Text
 
