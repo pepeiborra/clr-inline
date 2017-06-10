@@ -12,7 +12,6 @@ import Clr
 import Clr.Bridge
 import Clr.Resolver
 import Clr.TypeString
-import Clr.UnmarshalAs
 
 import Clr.Marshal
 
@@ -123,7 +122,6 @@ typeIsAssignableFrom t1 t2 = invokeI @T_IsAssignableFrom t1 t2
 --
 
 -- clr-typed doesn't know of GCHandle as it is provided by clr-host
-type instance UnmarshalAs (GCHandle t) = (Object t)
 type instance BridgeTypeObject t = GCHandle t
 
 -- Calling a CLR function from Haskell
