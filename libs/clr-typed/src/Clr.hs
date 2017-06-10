@@ -36,5 +36,4 @@ import Clr.Object
 import Clr.Property
 import Clr.Resolver
 import Clr.Types
-import Clr.UnmarshalAs
 

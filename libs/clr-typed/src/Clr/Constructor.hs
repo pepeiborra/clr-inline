@@ -17,7 +17,6 @@ import Clr.Marshal
 import Clr.Object
 import Clr.Resolver
 import Clr.Types
-import Clr.UnmarshalAs
 
 import GHC.TypeLits
 import Data.Kind

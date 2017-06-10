@@ -47,22 +47,22 @@ instance HandleUnit (x -> r) x r where
 -- which is specified by implementing a _DynImport_ class
 --
 class MethodDynImportI1 t m arg0 where
-  methodDynImportI1 :: DynamicImportType (BridgeType t -> IngoreUnitType (BridgeType arg0) (IO (BridgeTypeM (ResultTypeI1 t m arg0))))
+  methodDynImportI1 :: DynamicImportType (BridgeType t -> IngoreUnitType (BridgeType arg0) (IO (BridgeType (ResultTypeI1 t m arg0))))
 
 class MethodDynImportI2 t m arg0 arg1 where
-  methodDynImportI2 :: DynamicImportType (BridgeType t -> BridgeType arg0 -> BridgeType arg1 -> IO (BridgeTypeM (ResultTypeI2 t m arg0 arg1)))
+  methodDynImportI2 :: DynamicImportType (BridgeType t -> BridgeType arg0 -> BridgeType arg1 -> IO (BridgeType (ResultTypeI2 t m arg0 arg1)))
 
 class MethodDynImportI3 t m arg0 arg1 arg2 where
-  methodDynImportI3 :: DynamicImportType (BridgeType t -> BridgeType arg0 -> BridgeType arg1 -> BridgeType arg2 -> IO (BridgeTypeM (ResultTypeI3 t m arg0 arg1 arg2)))
+  methodDynImportI3 :: DynamicImportType (BridgeType t -> BridgeType arg0 -> BridgeType arg1 -> BridgeType arg2 -> IO (BridgeType (ResultTypeI3 t m arg0 arg1 arg2)))
 
 class MethodDynImportS1 t m arg0 where
-  methodDynImportS1 :: DynamicImportType (IngoreUnitType (BridgeType arg0) (IO (BridgeTypeM (ResultTypeS1 t m arg0))))
+  methodDynImportS1 :: DynamicImportType (IngoreUnitType (BridgeType arg0) (IO (BridgeType (ResultTypeS1 t m arg0))))
 
 class MethodDynImportS2 t m arg0 arg1 where
-  methodDynImportS2 :: DynamicImportType (BridgeType arg0 -> BridgeType arg1 -> IO (BridgeTypeM (ResultTypeS2 t m arg0 arg1)))
+  methodDynImportS2 :: DynamicImportType (BridgeType arg0 -> BridgeType arg1 -> IO (BridgeType (ResultTypeS2 t m arg0 arg1)))
 
 class MethodDynImportS3 t m arg0 arg1 arg2 where
-  methodDynImportS3 :: DynamicImportType (BridgeType arg0 -> BridgeType arg1 -> BridgeType arg2 -> IO (BridgeTypeM (ResultTypeS3 t m arg0 arg1 arg2)))
+  methodDynImportS3 :: DynamicImportType (BridgeType arg0 -> BridgeType arg1 -> BridgeType arg2 -> IO (BridgeType (ResultTypeS3 t m arg0 arg1 arg2)))
 
 class ConstructorDynImport1 t arg0 where
   constructorDynImport1 :: DynamicImportType (IngoreUnitType (BridgeType arg0) (IO (BridgeType t)))
@@ -95,12 +95,12 @@ instance ( TString t
          , TString arg0
          , MethodResultI1 t m arg0
          , MethodDynImportI1 t m arg0
-         , HandleUnit (IngoreUnitType (BridgeType arg0) (IO (BridgeTypeM (ResultTypeI1 t m arg0)))) (BridgeType arg0) (IO (BridgeTypeM (ResultTypeI1 t m arg0)))
+         , HandleUnit (IngoreUnitType (BridgeType arg0) (IO (BridgeType (ResultTypeI1 t m arg0)))) (BridgeType arg0) (IO (BridgeType (ResultTypeI1 t m arg0)))
          ) => MethodInvokeI1 t m arg0 where
   rawInvokeI1 obj x = do
     fp   <- getMethodStub (tString @t) (tString @m) (tString @arg0)
     let f = methodDynImportI1 @t @m @arg0 fp
-    handleUnit @(IngoreUnitType (BridgeType arg0) (IO (BridgeTypeM (ResultTypeI1 t m arg0)))) @(BridgeType arg0) @(IO (BridgeTypeM (ResultTypeI1 t m arg0))) (f obj) x
+    handleUnit @(IngoreUnitType (BridgeType arg0) (IO (BridgeType (ResultTypeI1 t m arg0)))) @(BridgeType arg0) @(IO (BridgeType (ResultTypeI1 t m arg0))) (f obj) x
 
 instance ( TString t
          , TString m
@@ -126,12 +126,12 @@ instance ( TString t
          , TString arg0
          , MethodResultS1 t m arg0
          , MethodDynImportS1 t m arg0
-         , HandleUnit (IngoreUnitType (BridgeType arg0) (IO (BridgeTypeM (ResultTypeS1 t m arg0)))) (BridgeType arg0) (IO (BridgeTypeM (ResultTypeS1 t m arg0)))
+         , HandleUnit (IngoreUnitType (BridgeType arg0) (IO (BridgeType (ResultTypeS1 t m arg0)))) (BridgeType arg0) (IO (BridgeType (ResultTypeS1 t m arg0)))
          ) => MethodInvokeS1 t m arg0 where
   rawInvokeS1 x = do
     fp   <- getMethodStub (tString @t) (tString @m) (tString @arg0)
     let f = methodDynImportS1 @t @m @arg0 fp
-    handleUnit @(IngoreUnitType (BridgeType arg0) (IO (BridgeTypeM (ResultTypeS1 t m arg0)))) @(BridgeType arg0) @(IO (BridgeTypeM (ResultTypeS1 t m arg0))) f x
+    handleUnit @(IngoreUnitType (BridgeType arg0) (IO (BridgeType (ResultTypeS1 t m arg0)))) @(BridgeType arg0) @(IO (BridgeType (ResultTypeS1 t m arg0))) f x
 
 instance ( TString t
          , TString m

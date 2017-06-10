@@ -83,16 +83,16 @@ foreign import ccall "dynamic" makeTypeGetType          :: FunPtr (BStr -> IO (G
 foreign import ccall "dynamic" makeTypeIsAssignableFrom :: FunPtr (GCHandle T_Type -> GCHandle T_Type -> IO Bool) -> (GCHandle T_Type -> GCHandle T_Type -> IO Bool)
 
 instance MethodResultI1 T_object T_ToString () where
-  type ResultTypeI1 T_object T_ToString () = 'Just T_string
+  type ResultTypeI1 T_object T_ToString () = T_string
 
 instance MethodResultI1 T_object T_GetType () where
-  type ResultTypeI1 T_object T_GetType () = 'Just T_Type
+  type ResultTypeI1 T_object T_GetType () = T_Type
 
 instance MethodResultS1 T_Type T_GetType T_string where
-  type ResultTypeS1 T_Type T_GetType T_string = 'Just T_Type
+  type ResultTypeS1 T_Type T_GetType T_string = T_Type
 
 instance MethodResultI1 T_Type T_IsAssignableFrom T_Type where
-  type ResultTypeI1 T_Type T_IsAssignableFrom T_Type = 'Just T_bool
+  type ResultTypeI1 T_Type T_IsAssignableFrom T_Type = T_bool
 
 instance MethodDynImportI1 T_object T_ToString () where
   methodDynImportI1 = makeObjToString

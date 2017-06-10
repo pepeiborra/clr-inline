@@ -58,13 +58,13 @@ foreign import ccall "dynamic" makeEnumeratorCurrentBool  :: FunPtr (GCHandle (T
 foreign import ccall "dynamic" makeEnumeratorCurrentObj   :: FunPtr (GCHandle (T_IEnumerator elem) -> IO (GCHandle elem)) -> (GCHandle (T_IEnumerator elem) -> IO (GCHandle elem))
 
 instance MethodResultI1 (T_IEnumerable t) (T_GetEnumerator) () where
-  type ResultTypeI1 (T_IEnumerable t) (T_GetEnumerator) () = 'Just (T_IEnumerator t)
+  type ResultTypeI1 (T_IEnumerable t) (T_GetEnumerator) () = (T_IEnumerator t)
 
 instance MethodDynImportI1 (T_IEnumerable t) (T_GetEnumerator) () where
   methodDynImportI1 = makeGetEnumerator
 
 instance MethodResultI1 T_IEnumerator' T_MoveNext () where
-  type ResultTypeI1 T_IEnumerator' T_MoveNext () = 'Just T_bool
+  type ResultTypeI1 T_IEnumerator' T_MoveNext () = T_bool
 
 instance MethodDynImportI1 T_IEnumerator' T_MoveNext () where
   methodDynImportI1 = makeEnumeratorMoveNext

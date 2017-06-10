@@ -23,13 +23,6 @@ type family BridgeType (x::Type) :: Type where
   BridgeType t  = If (IsPrimType t) (BridgeTypePrim t) (BridgeTypeObject t)
 
 --
--- Maybe on bridge types, choosing () for Nothing
---
-type family BridgeTypeM (x::Maybe Type) :: Type where
-  BridgeTypeM 'Nothing  = ()
-  BridgeTypeM ('Just x) = BridgeType x
-
---
 -- Bridge types of each primitive
 --
 type family BridgeTypePrim (x::Type)
@@ -48,6 +41,7 @@ type instance BridgeTypePrim (T "System.Char"    '[]) = Char
 type instance BridgeTypePrim (T "System.Single"  '[]) = CFloat
 type instance BridgeTypePrim (T "System.Double"  '[]) = CDouble
 type instance BridgeTypePrim (T "System.Boolean" '[]) = Bool
+type instance BridgeTypePrim (T "System.Void"    '[]) = ()
 
 
 --

@@ -9,7 +9,8 @@ import Clr
 import Clr.Bridge
 import Clr.Curry
 import Clr.Resolver
-import Clr.UnmarshalAs
+import Clr.TypeString
+import Clr.Types
 
 import Clr.Bindings.BStr
 import Clr.Bindings.DynImports
@@ -26,6 +27,8 @@ import GHC.TypeLits
 import Data.Kind
 import Foreign.Ptr
 
+import Data.Text
+
 
 type T_Driver               = T "Salsa.Driver" '[]
 type T_TryDelegate   a      = T "Salsa.TryDelegate" '[a]
@@ -33,8 +36,13 @@ type T_CatchDelegate a ex   = T "Salsa.CatchDelegate" '[a, ex]
 
 type T_RunCatchHandler a ex = T "RunCatchHandler" '[a, ex]
 
-instance MethodResultS2 T_Driver (T_RunCatchHandler a ex) tryD catchD where
-  type ResultTypeS2 T_Driver (T_RunCatchHandler a ex) tryD catchD = 'Just a
+type instance Candidates T_Driver (T_RunCatchHandler a ex) = '[ '[ T_TryDelegate a, T_CatchDelegate a ex] ]
+
+type instance SuperTypes (T_TryDelegate a) = '[ T_object ]
+type instance SuperTypes (T_CatchDelegate a ex) = '[ T_object ]
+
+instance MethodResultS2 T_Driver (T_RunCatchHandler a ex) (T_TryDelegate a) (T_CatchDelegate a ex) where
+  type ResultTypeS2 T_Driver (T_RunCatchHandler a ex) (T_TryDelegate a) (T_CatchDelegate a ex) = a
 
 instance {-# OVERLAPS #-} (IsPrimType a ~ 'False, BridgeType a ~ GCHandle a) => MethodDynImportS2 T_Driver (T_RunCatchHandler a ex) (T_TryDelegate a) (T_CatchDelegate a ex) where
   methodDynImportS2 = makeRunCatchHandlerObj
@@ -53,11 +61,11 @@ foreign import ccall "dynamic" makeRunCatchHandlerBStr :: FunPtr (GCHandle tryD 
 
 instance Delegate (T_TryDelegate a) where
   type DelegateArgTypes   (T_TryDelegate a)      = '[]
-  type DelegateResultType (T_TryDelegate a)      = 'Just a
+  type DelegateResultType (T_TryDelegate a)      = a
 
 instance Delegate (T_CatchDelegate a ex) where
   type DelegateArgTypes   (T_CatchDelegate a ex) = '[ ex ]
-  type DelegateResultType (T_CatchDelegate a ex) = 'Just a
+  type DelegateResultType (T_CatchDelegate a ex) = a
 
 instance {-# OVERLAPS #-} (IsPrimType a ~ 'False, BridgeType a ~ GCHandle a) => WrapperImport (T_TryDelegate a) where
   wrapperImport = wrapTryDelegateObj
@@ -71,38 +79,57 @@ instance {-# OVERLAPS #-} WrapperImport (T_TryDelegate T_string) where
 instance {-# OVERLAPS #-} (BridgeType ex ~ GCHandle ex) => WrapperImport (T_CatchDelegate T_string ex) where
   wrapperImport = wrapCatchDelegateBStr
 
-catch :: forall dTry dCatch driver catchHandler bTry bCatch retHask retClr ex argsClrUnResolved argsClr argsBridge resultBridge .
-          ( ex `Implements` (T "System.Exception" '[]) ~ 'True
-          , dTry   ~ (T "Salsa.TryDelegate"   '[retClr])
-          , dCatch ~ (T "Salsa.CatchDelegate" '[retClr, ex])
-          , driver ~ (T "Salsa.Driver" '[])
-          , catchHandler ~ (T "RunCatchHander" '[retClr, ex])
-          , Delegate dTry
-          , Delegate dCatch
-          , DelegateArity dTry   ~ 0
-          , DelegateArity dCatch ~ 1
-          , DelegateBridgeType dTry   ~ bTry
-          , DelegateBridgeType dCatch ~ bCatch
-          , MarshalF 0 (             IO retHask) (bTry  )
-          , MarshalF 1 (Object ex -> IO retHask) (bCatch)
-          , DelegateConstructorN 0 dTry
-          , DelegateConstructorN 1 dCatch
-          , Unmarshal (BridgeType dTry  ) (Object dTry  )
-          , Unmarshal (BridgeType dCatch) (Object dCatch)
-          , HaskToClrL (TupleToList (IO retHask, (Object ex -> IO retHask))) ~ argsClrUnResolved
-          , ResolveMember argsClrUnResolved (Candidates driver catchHandler) ~ argsClr
-          , MethodS 2 driver catchHandler argsClr
-          , ListToTuple (BridgeTypeL argsClr) ~ argsBridge
-          , BridgeTypeM (ResultTypeS 2 driver catchHandler argsClr) ~ resultBridge
-          , Marshal (IO retHask, (Object ex -> IO retHask)) argsBridge
-          , UnmarshalAs resultBridge ~ retHask
-          , Unmarshal resultBridge retHask
-          , Curry 2 (argsBridge -> IO resultBridge) (CurryT' 2 argsBridge (IO resultBridge))
-          ) => IO retHask -> (Object ex -> IO retHask) -> IO retHask
+catch :: --forall haskArgs haskResult haskTry haskCatch
+           --     t_dTry t_dCatch t_handler t_ex t_args t_result
+             --   b_try b_catch b_args b_result .
+          ( _
+          ) => IO haskResult -> (Object t_ex -> IO haskResult) -> IO haskResult
 catch tryF catchF = do
-  tryD   <- delegate @dTry   tryF
-  catchD <- delegate @dCatch catchF
-  result <- invokeS @driver @catchHandler (tryD, catchD)
-  return result
+  tryD   <- makeTryDelegate tryF
+  catchD <- makeCatchDelegate catchF
+  runCatchHandler (tryD, catchD)
+
+makeTryDelegate :: forall t_dTry b_try t_result haskResult .
+                    ( t_dTry ~ (T_TryDelegate t_result)
+                    , Delegate t_dTry
+                    , DelegateArity t_dTry ~ 0
+                    , DelegateConstructorN 0 t_dTry
+                    , DelegateBridgeType t_dTry ~ b_try
+                    , DelegateResultType t_dTry ~ t_result
+                    , MarshalF 0 (IO haskResult) b_try
+                    , TString t_result
+                    ) => IO haskResult -> IO (Object (T_TryDelegate t_result))
+makeTryDelegate f = delegate @t_dTry f
+
+makeCatchDelegate :: forall t_dCatch b_catch t_result haskResult t_ex .
+                      ( t_dCatch ~ (T_CatchDelegate t_result t_ex)
+                      , Delegate t_dCatch
+                      , DelegateArity t_dCatch ~ 1
+                      , DelegateConstructorN 1 t_dCatch
+                      , DelegateBridgeType t_dCatch ~ b_catch
+                      , DelegateResultType t_dCatch ~ t_result
+                      , MarshalF 1 (Object t_ex -> IO haskResult) b_catch
+                      , TString t_result
+                      , TString t_ex
+                      , t_ex `Implements` (T "System.Exception" '[]) ~ 'True
+                      , IsPrimType t_ex ~ 'False
+                      , BridgeType t_ex ~ GCHandle t_ex
+                      , t_result ~ HaskToClr haskResult
+                      , Unmarshal haskResult (BridgeType t_result)
+                      ) => (Object t_ex -> IO haskResult) -> IO (Object (T_CatchDelegate t_result t_ex))
+makeCatchDelegate f = delegate @t_dCatch f
 
 
+runCatchHandler :: forall b_result haskResult t_result t_ex t_args t_dTry t_dCatch t_handler b_args .
+                    ( t_ex `Implements` (T "System.Exception" '[]) ~ 'True
+                    , t_dTry    ~ (T "Salsa.TryDelegate"   '[t_result])
+                    , t_dCatch  ~ (T "Salsa.CatchDelegate" '[t_result, t_ex])
+                    , t_handler ~ (T_RunCatchHandler t_result t_ex)
+                    , t_args ~ '[ t_dTry, t_dCatch ]
+                    , BridgeTypes t_args ~ b_args
+                    , ResolveMember t_args (Candidates T_Driver t_handler) ~ t_args
+                    , MethodS 2 T_Driver t_handler t_args
+                    , BridgeType t_result ~ b_result
+                    , Unmarshal b_result haskResult
+                    ) => (Object (T_TryDelegate t_result), Object (T_CatchDelegate t_result t_ex))  -> IO haskResult
+runCatchHandler (tryDel, catchDel) = invokeS @t_handler @T_Driver @b_result @haskResult (tryDel, catchDel)

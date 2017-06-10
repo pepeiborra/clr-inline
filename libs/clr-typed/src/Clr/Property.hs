@@ -12,7 +12,6 @@ import Clr.Marshal
 import Clr.Object
 import Clr.Resolver
 import Clr.Types
-import Clr.UnmarshalAs
 
 import GHC.TypeLits
 import Data.Kind
@@ -59,7 +58,7 @@ class PropertyS (t::Type) (m::Type) => PropertySetS (t::Type) (m::Type) where
 --
 -- Instance properties
 --
-getPropI :: forall ms m tBase tDerived propertyBridge propertyHask .
+getPropI :: forall ms propertyBridge propertyHask m tBase tDerived .
             ( MakeT ms ~ m
             , ResolveBaseType tDerived m ~ tBase
             , tDerived `Implements` tBase ~ 'True
@@ -67,12 +66,11 @@ getPropI :: forall ms m tBase tDerived propertyBridge propertyHask .
             , PropertyGetI tBase m
             , BridgeType (PropertyTypeI tBase m) ~ propertyBridge
             , Marshal (Object tBase) (BridgeType tBase)
-            , UnmarshalAs propertyBridge ~ propertyHask
             , Unmarshal propertyBridge propertyHask
             ) => Object tDerived -> IO propertyHask
 getPropI obj = marshal @(Object tBase) @(BridgeType tBase) @propertyBridge (upCast obj) (\obj'-> (rawGetPropI @tBase @m obj')) >>= unmarshal
 
-setPropI :: forall ms m tBase tDerived propertyBridge propertyHask .
+setPropI :: forall ms propertyBridge propertyHask m tBase tDerived .
             ( MakeT ms ~ m
             , ResolveBaseType tDerived m ~ tBase
             , tDerived `Implements` tBase ~ 'True
@@ -87,18 +85,17 @@ setPropI obj x = marshal @(Object tBase) @(BridgeType tBase) @() (upCast obj) (\
 --
 -- Static properties
 --
-getPropS :: forall ms ts m t propertyBridge propertyHask .
+getPropS :: forall ms ts propertyBridge propertyHask m t .
             ( MakeT ms ~ m
             , MakeT ts ~ t
             , PropertyS t m
             , PropertyGetS t m
             , BridgeType (PropertyTypeS t m) ~ propertyBridge
-            , UnmarshalAs propertyBridge ~ propertyHask
             , Unmarshal propertyBridge propertyHask
             ) => IO propertyHask
 getPropS = rawGetPropS @t @m >>= unmarshal
 
-setPropS :: forall ms ts m t propertyBridge propertyHask .
+setPropS :: forall ms ts propertyBridge propertyHask m t .
             ( MakeT ms ~ m
             , MakeT ts ~ t
             , PropertyS t m
