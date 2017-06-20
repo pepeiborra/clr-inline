@@ -23,8 +23,11 @@ import Clr.Host.GCHandle
 import Clr.Marshal
 import Clr.MarshalF
 
+import Control.Concurrent
 import GHC.TypeLits
+import qualified Control.Exception as Ex
 import Data.Kind
+import Data.Typeable
 import Foreign.Ptr
 
 import Data.Text
@@ -56,7 +59,7 @@ foreign import ccall "wrapper" wrapCatchDelegateObj :: (GCHandle ex -> IO (GCHan
 foreign import ccall "wrapper" wrapTryDelegateBStr :: (IO BStr) -> IO (FunPtr (IO BStr))
 foreign import ccall "wrapper" wrapCatchDelegateBStr :: (GCHandle ex -> IO BStr) -> IO (FunPtr (GCHandle ex -> IO BStr))
 
-foreign import ccall "dynamic" makeRunCatchHandlerObj :: FunPtr (GCHandle tryD -> GCHandle catchD -> IO (GCHandle a)) -> (GCHandle tryD -> GCHandle catchD -> IO (GCHandle a))
+foreign import ccall "dynamic"  makeRunCatchHandlerObj :: FunPtr (GCHandle tryD -> GCHandle catchD -> IO (GCHandle a)) -> (GCHandle tryD -> GCHandle catchD -> IO (GCHandle a))
 foreign import ccall "dynamic" makeRunCatchHandlerBStr :: FunPtr (GCHandle tryD -> GCHandle catchD -> IO BStr) -> (GCHandle tryD -> GCHandle catchD -> IO BStr)
 
 instance Delegate (T_TryDelegate a) where
@@ -78,6 +81,11 @@ instance {-# OVERLAPS #-} WrapperImport (T_TryDelegate T_string) where
 
 instance {-# OVERLAPS #-} (BridgeType ex ~ GCHandle ex) => WrapperImport (T_CatchDelegate T_string ex) where
   wrapperImport = wrapCatchDelegateBStr
+
+data CatchResult (a::Type) = CatchResult {getResult :: a}
+    deriving (Show, Typeable)
+
+instance (Show a, Typeable a) => Ex.Exception (CatchResult a)
 
 catch :: --forall haskArgs haskResult haskTry haskCatch
            --     t_dTry t_dCatch t_handler t_ex t_args t_result
@@ -102,21 +110,21 @@ makeTryDelegate :: forall t_dTry b_try t_result haskResult .
 makeTryDelegate f = delegate @t_dTry f
 
 makeCatchDelegate :: forall t_dCatch b_catch t_result haskResult t_ex .
-                      ( t_dCatch ~ (T_CatchDelegate t_result t_ex)
-                      , Delegate t_dCatch
-                      , DelegateArity t_dCatch ~ 1
-                      , DelegateConstructorN 1 t_dCatch
-                      , DelegateBridgeType t_dCatch ~ b_catch
-                      , DelegateResultType t_dCatch ~ t_result
-                      , MarshalF 1 (Object t_ex -> IO haskResult) b_catch
-                      , TString t_result
-                      , TString t_ex
-                      , t_ex `Implements` (T "System.Exception" '[]) ~ 'True
-                      , IsPrimType t_ex ~ 'False
-                      , BridgeType t_ex ~ GCHandle t_ex
-                      , t_result ~ HaskToClr haskResult
-                      , Unmarshal haskResult (BridgeType t_result)
-                      ) => (Object t_ex -> IO haskResult) -> IO (Object (T_CatchDelegate t_result t_ex))
+                    ( t_dCatch ~ (T_CatchDelegate t_result t_ex)
+                    , Delegate t_dCatch
+                    , DelegateArity t_dCatch ~ 1
+                    , DelegateConstructorN 1 t_dCatch
+                    , DelegateBridgeType t_dCatch ~ b_catch
+                    , DelegateResultType t_dCatch ~ t_result
+                    , MarshalF 1 (Object t_ex -> IO haskResult) b_catch
+                    , TString t_result
+                    , TString t_ex
+                    , t_ex `Implements` (T "System.Exception" '[]) ~ 'True
+                    , IsPrimType t_ex ~ 'False
+                    , BridgeType t_ex ~ GCHandle t_ex
+                    , t_result ~ HaskToClr haskResult
+                    , Unmarshal haskResult (BridgeType t_result)
+                    ) => (Object t_ex -> IO haskResult) -> IO (Object (T_CatchDelegate t_result t_ex))
 makeCatchDelegate f = delegate @t_dCatch f
 
 
