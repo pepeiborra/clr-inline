@@ -140,6 +140,7 @@ someThingBad :: IO T.Text
 someThingBad = do
   putStrLn "about to do something stupid"
   t1 <- invokeS @T_ReadAllText @T_File "someNonExistentFile.txt"
+  putStrLn "you won't see me"
   return t1
 
 main :: IO ()
