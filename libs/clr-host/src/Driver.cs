@@ -1037,7 +1037,7 @@ namespace Salsa
 
         #endregion
 
-        public static RetT RunCatchHandler<RetT, ExT>(TryDelegate<RetT> tryDelegate, CatchDelegate<RetT, ExT> catchDelegate) where ExT : System.Exception
+        public static RetT RunCatchHandlerRaw<RetT, ExT>(TryDelegate<RetT> tryDelegate, CatchDelegate<RetT, ExT> catchDelegate) where ExT : System.Exception
         {
             RetT result;
             try
@@ -1048,6 +1048,15 @@ namespace Salsa
             {
                 result = catchDelegate(ex);
             }
+            return result;
+        }
+
+        public static RetT RunCatchHandler<RetT, ExT>(TryDelegate<RetT> tryDelegate, CatchDelegate<RetT, ExT> catchDelegate) where ExT : System.Exception
+        {
+            RetT result = default(RetT);
+            Thread thread = new Thread(() => result = RunCatchHandlerRaw(tryDelegate, catchDelegate));
+            thread.Start();
+            thread.Join();
             return result;
         }
 

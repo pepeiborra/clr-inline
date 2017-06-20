@@ -138,12 +138,9 @@ onThreadStart obj = putStrLn "Haskell being used as a delegate and called from t
 
 someThingBad :: IO T.Text
 someThingBad = do
+  putStrLn "about to do something stupid"
   t1 <- invokeS @T_ReadAllText @T_File "someNonExistentFile.txt"
-  putStrLn "Why am I here? TODO"
-  {- exception handler no longer armed here
-  !t2 <- invokeS @T_ReadAllText @T_File "someNonExistentFile.txt" :: IO String
-  -}
-  putStrLn "Or here? TODO"
+  putStrLn "you won't see me"
   return t1
 
 main :: IO ()
@@ -170,6 +167,8 @@ main = do
 
   let handler = \(ex::Object T_FileNotFoundException)-> putStrLn "Woops" >> return (T.pack "")
   s <- catch someThingBad handler
+
+  putStrLn "good thing we recovered"
 
   return ()
 
