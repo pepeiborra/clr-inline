@@ -10,9 +10,11 @@ import           Clr.Inline.Quoter
 import           Clr.Inline.Utils
 import           Clr.Inline.Utils.Embed
 import           Clr.Inline.Types
+import           Control.Lens hiding ((<.>))
 import           Control.Monad
 import           Control.Monad.Trans.Writer
 import qualified Data.ByteString                 as BS
+import           Data.List
 import qualified Data.Map as Map
 import           Data.Proxy
 import           Language.Haskell.TH.Syntax
@@ -24,6 +26,9 @@ import           Text.Printf
 
 name :: Proxy "fsharp"
 name = Proxy
+
+paramNames :: [String]
+paramNames = [printf "x%d" x | x <- [0::Int ..] ]
 
 genCode :: ClrInlinedGroup "fsharp" -> String
 genCode ClrInlinedGroup {units, mod} =
@@ -40,9 +45,17 @@ genCode ClrInlinedGroup {units, mod} =
         let argsString =
               case Map.toList args of
                 [] -> "()"
-                other -> unwords [printf "(%s:%s)" a t | (a, ClrType t) <- other]
-        yield $ printf   "  static member %s %s =" (getMethodName exp) argsString
+                other -> unwords [printf "(%s:%s)" a argType
+                                 | (a, argDetails) <- other
+                                 , let argType = case argDetails of
+                                                   Value (ClrType t) -> t
+                                                   Delegate _ args res -> printf "System.Func<%s>" (intercalate "," (map getClrType args ++ [getClrType res]))
+                                 ]
         yield $ printf "#line %d \"%s\"" (fst $ loc_start loc) (loc_filename loc)
+        yield $ printf   "  static member %s %s =" (getMethodName exp) argsString
+        iforMOf_ (ifolded<._Delegate) args $ \ argName (_,args,_) -> do
+          let params = take (length args) paramNames
+          yield $ printf "    let %s %s = %s.Invoke(%s) in" argName (unwords params) argName (intercalate "," params)
         forM_ (lines body) $ \l ->
           yield $ printf "        %s" l
 

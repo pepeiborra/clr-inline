@@ -157,8 +157,13 @@ namespace Salsa
         /// </summary>
         public static IntPtr GetDelegateConstructorStub(string delegateTypeName)
         {
-            Type delegateType = StringToType(delegateTypeName);
-            return GenerateDelegateConstructorStub(delegateType);
+            try {
+                Type delegateType = StringToType (delegateTypeName);
+                return GenerateDelegateConstructorStub (delegateType);
+            }
+            catch (Exception innerException) {
+                throw new ArgumentException ("Not a valid delegatetype: " + delegateTypeName, innerException);
+            }
         }
 
         /// <summary>
@@ -734,7 +739,7 @@ namespace Salsa
 
         private static Type GetDelegateWrapperType(Type delegateType)
         {
-            string wrapperTypeName = delegateType.Name + "Wrapper";
+            string wrapperTypeName = delegateType.FullName + "Wrapper";
             lock (_delegateWrapperTypes)
             {
                 Type type;

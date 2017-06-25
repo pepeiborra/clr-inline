@@ -1,3 +1,4 @@
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -13,13 +14,19 @@ module Clr.Inline.Quoter where
 import Clr.Host.DriverEntryPoints (unsafeGetPointerToMethod)
 import Clr.Host.Method (GetMethodStubDelegate, makeGetMethodStubDelegate)
 import Clr.Host.BStr
+import Clr.Host.Delegate
+import Clr.Host.GCHandle
 import Clr.Marshal
+import Clr.MarshalF
 import Clr.Inline.State
 import Clr.Inline.Types
 import Clr.Inline.Utils.Parse
 import Clr.Inline.Utils.Embed
 import Control.Lens
+import Control.Monad
 import Data.Char
+import Data.List
+import Data.List.Split
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
@@ -31,12 +38,30 @@ import Language.Haskell.TH.Syntax
 import System.IO.Unsafe
 import Text.Printf
 
+data ArgDetails name a
+  = Value { _quotedType :: a}
+  | Delegate { _delegateName :: name
+            ,  _quotedArgs :: [a]
+            ,  _quotedReturn :: a}
+makeLenses ''ArgDetails
+makePrisms ''ArgDetails
+
+quotes :: Traversal (ArgDetails name a) (ArgDetails name a')  a a'
+quotes f (Value q) = Value <$> f q
+quotes f (Delegate n aa r) = Delegate n <$> traverse f aa <*> f r
+
+parseArgDetails :: String -> ArgDetails () String
+parseArgDetails quote =
+  case splitOn "->" quote of
+    segments@(_:_:_) -> uncurry (Delegate ()) (segments ^?! _Snoc)
+    _ -> Value quote
+
 data ClrInlinedExpDetails (language :: Symbol) argType = ClrInlinedExpDetails
   { language :: Proxy language
   , unitId :: Int
   , stubName :: Name
   , body :: String
-  , args :: Map String argType
+  , args :: Map String (ArgDetails Name argType)
   , loc  :: Loc
   , returnType :: String
   }
@@ -71,21 +96,25 @@ getFullClassName language mod =
 toClrArg :: String -> String
 toClrArg x = "arg_" ++ x
 
-
 getValueName :: String -> Q Name
 getValueName a = fromMaybe (error $ "Identifier not in scope: " ++ a) <$> lookupValueName a
 
 generateFFIStub :: KnownSymbol language => ClrInlinedExpDetails language String -> Q [Dec]
 generateFFIStub ClrInlinedExpDetails{..} = do
-  resTy <- [t| IO $(lookupQuotableMarshalType returnType)|]
-  argsTyped <- traverse lookupQuotableMarshalType args
-  let funTy = return $ foldr (\t u -> ArrowT `AppT` t `AppT` u) resTy (Map.elems argsTyped)
+  let resTy = [t| IO $(lookupQuotableMarshalType returnType)|]
+      argTy (Value q) = lookupQuotableMarshalType q
+      -- The representation of a delegate is GCHandle Int
+      argTy Delegate{} = [t| GCHandle Int |]
+      mkFunTy = foldrOf folded (\t u -> arrowT `appT` argTy t `appT` u)
   -- This is what we'd like to write:
   -- [d| foreign import ccall "dynamic" $stubName :: $([t|FunPtr $funTy -> $funTy|]) |]
   -- Unfort. splicing languages into foreign import decl is not supported, so we have to write:
   -- TODO Convert every type to its Marshalled counterpart
-  ffiStub <- ForeignD . ImportF CCall Safe "dynamic" stubName <$> [t|FunPtr $funTy -> $funTy|]
-  return [ffiStub]
+  ffiStub <- let funTy = mkFunTy resTy args in ForeignD . ImportF CCall Safe "dynamic" stubName <$> [t|FunPtr $funTy -> $funTy|]
+  delegateStubs <- forM (toListOf (folded._Delegate) args) $ \(stubName, argTys, resTy) ->
+                       let funTy = lookupDelegateMarshalType argTys resTy
+                       in ForeignD . ImportF CCall Safe "wrapper" stubName <$> [t| $funTy -> IO(FunPtr $funTy) |]
+  return $ ffiStub : delegateStubs
 
 getMethodStubRaw :: (GetMethodStubDelegate a)
 getMethodStubRaw = unsafeDupablePerformIO $ makeGetMethodStubDelegate <$> unsafeGetPointerToMethod "GetMethodStub"
@@ -93,19 +122,42 @@ getMethodStubRaw = unsafeDupablePerformIO $ makeGetMethodStubDelegate <$> unsafe
 invoke :: String -> String -> FunPtr a
 invoke c m = unsafeDupablePerformIO $ marshal c $ \c -> marshal m $ \m -> return $ getMethodStubRaw c m (BStr nullPtr)
 
-generateClrCall :: KnownSymbol language => Module -> ClrInlinedExpDetails language a -> ExpQ
+createFuncDelegate :: [String] -> (f -> IO (FunPtr f)) -> IO (f -> IO (GCHandle Int))
+createFuncDelegate types = getDelegateConstructorStub clrtype
+  where
+    clrtype = printf "System.Func`%d[%s]" (length types) (intercalate "," types)
+
+generateClrCall :: KnownSymbol language => Module -> ClrInlinedExpDetails language String -> ExpQ
 generateClrCall mod exp@ClrInlinedExpDetails{..} = do
+  argsWithDelegates <- iforMOf (itraversed <. _Delegate) args $ \n (stubN,args,res) -> do
+     delName <- newName (printf "delegate_%s" n)
+     argClrTypes <- mapM (fmap getClrType . lookupQuotableClrType) args
+     resClrType <- getClrType <$> lookupQuotableClrType res
+     DoE (init -> stmts) <-
+          [| do wrapper <- createFuncDelegate (argClrTypes ++ [resClrType]) $(varE stubN)
+                $(varP delName) <- wrapper $ marshalF' (Proxy :: $([t| Proxy $(litT$ numTyLit$ genericLength args)|])) $(varE =<< getValueName n)
+                return ()
+            |]
+     return ((delName, stmts), args, res)
   let argExps =
-        [ [| marshal $(varE =<< getValueName a)|]
-        | a <- Map.keys args
+        [ case argDetails of
+            Value{}                              -> [| marshal $(varE =<< getValueName a)|]
+            Delegate{_delegateName = (d,_stmts)} -> [| \k -> k $(varE d) |]
+        | (a, argDetails) <- Map.toList argsWithDelegates
         ]
       roll m f = [|$m . ($f .)|]
-  [| do unembedBytecode
-        let stub = invoke $(liftString $ getFullClassName language mod) $(liftString $ getMethodName exp)
-        let stub_f = $(varE stubName) stub
-        result <- $(foldr roll [|id|] argExps) stub_f
-        unmarshalAuto (Proxy :: $([t| Proxy $(litT $ strTyLit returnType) |])) result
-    |]
+      delegateStmts = concatOf (folded._Delegate._1._2) argsWithDelegates
+  DoE (splitAt 3 -> (part1, part2)) <-
+      [| do unembedBytecode
+            let stub = invoke $(liftString $ getFullClassName language mod) $(liftString $ getMethodName exp)
+            let stub_f = $(varE stubName) stub
+            result <- $(foldr roll [|id|] argExps) stub_f
+            unmarshalAuto (Proxy :: $([t| Proxy $(litT $ strTyLit returnType) |])) result
+       |]
+  return $ DoE (part1 ++ delegateStmts ++ part2)
+
+marshalF' :: forall (n::Nat) from to . MarshalF n from to => Proxy n -> from -> to
+marshalF' Proxy = marshalF @n
 
 -- | Runs after the whole module has been loaded and is responsible for generating:
 --     - A clr assembly with all the inline code, embedding it into the module.
@@ -115,9 +167,8 @@ clrGenerator
 clrGenerator language hsmod compile = do
   FinalizerState {wrappers} <- getFinalizerState @(ClrInlinedUnit language String)
   typedWrappers <-
-        mapMOf (traversed . _ClrInlinedExp . _args) (fmap (Map.mapKeysMonotonic toClrArg) . traverse lookupQuotableClrType) wrappers
+        mapMOf (traversed . _ClrInlinedExp . _args) (fmap (Map.mapKeysMonotonic toClrArg) . traverseOf (traverse.quotes) lookupQuotableClrType) wrappers
   let mod = ClrInlinedGroup hsmod typedWrappers
-  _ <- runIO $ compile mod
   -- Embed the bytecodes
   embedBytecode (symbolVal language) =<< runIO (compile mod)
 
@@ -133,16 +184,18 @@ clrQuoteExp
 clrQuoteExp language clrCompile body = do
   count <- getFinalizerCount @(ClrInlinedUnit language String)
   mod <- thisModule
-  stubName <- newName $ printf "%s_stub_%d" (symbolVal language) count
+  let stubString = printf "%s_stub_%d" (symbolVal language) count
+  stubName <- newName stubString
   loc <- location
   let ParseResult parsedBody resultType antis = parse toClrArg body
+  argDetails <- iforM antis $ \i x -> traverseOf (_Delegate._1) (\_ -> newName $ printf "%s_%s" stubString i) (parseArgDetails x)
   let inlinedUnit =
         ClrInlinedExpDetails
           language
           count
           stubName
           (normaliseLineEndings parsedBody)
-          antis
+          argDetails
           loc
           resultType
   pushWrapperGen (clrGenerator language mod clrCompile) $ return (ClrInlinedExp inlinedUnit :: ClrInlinedUnit language String)

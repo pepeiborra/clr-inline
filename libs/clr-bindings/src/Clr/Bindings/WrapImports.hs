@@ -20,8 +20,7 @@ import Foreign.Ptr
 --
 -- WrapperImportType t is the type of a function from a `t` to a `FunPtr t`
 --
-type family WrapperImportType t where
-  WrapperImportType t = t -> IO (FunPtr t)
+type WrapperImportType t = t -> IO (FunPtr t)
 
 class WrapperImport t where
   wrapperImport :: WrapperImportType (DelegateBridgeType t)
