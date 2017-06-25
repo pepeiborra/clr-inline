@@ -33,7 +33,7 @@ getDelegateConstructorStub delegateTypeName wrapper = do
 getDelegateConstructorStubRaw :: IO (GetDelegateConstructorStubDelegate f t)
 getDelegateConstructorStubRaw =  unsafeGetPointerToMethod "GetDelegateConstructorStub" >>= return . makeGetDelegateConstructorStubDelegate
 
-type GetDelegateConstructorStubDelegate f t = BStr -> IO (FunPtr (FunPtr f -> IO (GCHandle t)))
+type GetDelegateConstructorStubDelegate f t = BStr -> IO (FunPtr (DelegateConstructor f t))
 foreign import ccall "dynamic" makeGetDelegateConstructorStubDelegate :: FunPtr (GetDelegateConstructorStubDelegate f t) -> (GetDelegateConstructorStubDelegate f t)
 
 type DelegateConstructor f t = FunPtr f -> IO (GCHandle t)

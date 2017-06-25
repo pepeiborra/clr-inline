@@ -9,6 +9,7 @@ import Control.Concurrent
 import Control.Monad
 import Clr.Inline
 import Data.Int
+import Data.String
 import Data.Text as Text (pack)
 import Data.Word
 import Test.Hspec
@@ -24,8 +25,7 @@ open System
 open System.Collections.Generic
 |]
 
-type SystemDateTime = Clr "System.DateTime"
-type DateTime = Clr "DateTime"
+type DateTime = Clr "System.DateTime"
 
 main = hspec spec
 
@@ -41,8 +41,19 @@ h_b = False
 h_s = "Hello from Haskell"
 h_t = Text.pack h_s
 
+topHandler =
+    [csharp|
+           AppDomain currentDomain = default(AppDomain);
+           currentDomain = AppDomain.CurrentDomain;
+           currentDomain.UnhandledException += (sender, args) => {
+                 Console.WriteLine(((Exception)args.ExceptionObject).GetBaseException().ToString());
+                 if(((Exception)args.ExceptionObject).GetBaseException().StackTrace == null)
+                     Console.WriteLine("Stack trace is null");
+                 };
+           |]
+
 spec :: Spec
-spec = beforeAll_ startClr $ do
+spec = beforeAll_ (startClr >> topHandler) $ do
 
   it "F# inlines pick up imports" $
     [fsharp| ignore <| Dictionary<int,int>() |]
@@ -148,6 +159,26 @@ spec = beforeAll_ startClr $ do
                         return a;
                         }|]
       [csharp|int{return ($i_array:int[])[2];}|] `shouldReturn` 2
+
+  it "F# lambdas over structs are handled" $ do
+      let addOneDay (x :: DateTime) =
+            [fsharp| System.DateTime{ ($x:System.DateTime).AddDays(1.0)}|]
+      [fsharp| int{
+                let d = ($addOneDay:System.DateTime->System.DateTime) (DateTime(2017,1,1)) in d.Day
+             }|] `shouldReturn` 2
+
+  it "F# lambdas over value types are handled" $ do
+      let addOne x = x + 1
+      [fsharp| int{ ($addOne:int->int) 1}|] `shouldReturn` 2
+
+  it "F# lambdas over strings are handled" $ do
+      let addOne x = x ++ "1"
+      [fsharp| string{
+             match box ($addOne:string->string) with
+             | null -> "null"
+             | :? (string->string) as f -> f "success"
+             | other -> other.GetType().ToString()
+             }|] `shouldReturn` "success1"
 
 gcUntil cond = do
   let loop 10 = error "gc: tried too many times"

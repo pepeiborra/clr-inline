@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
@@ -32,15 +33,29 @@ newtype Clr (name::Symbol) = Clr (ForeignPtr Int)
 
 foreign import ccall "dynamic" releaseObject :: FunPtr (Int64 -> IO ()) -> (Int64 -> IO ())
 
+-- Returning from a CLR function that was called from Haskell
 instance Unmarshal (ClrPtr n) (Clr n) where
   unmarshal (ClrPtr id) = do
     ptr <- newForeignPtr (unsafeDupablePerformIO gcHandleFinalizer) (coerce id)
     return (Clr ptr)
 
+-- Returning from a Haskell function that was called by the CLR
+instance {-# OVERLAPPING #-} Unmarshal (Clr t) (ClrPtr t) where
+  unmarshal (Clr x) = withForeignPtr x $ \x'-> ClrPtr <$> newHandle (coerce x')
+
+-- Calling a CLR function from Haskell
 instance Marshal (Clr n) (ClrPtr n) where
   marshal (Clr ptr) f = withForeignPtr ptr $ \p -> f (ClrPtr $ coerce p)
 
+-- Calling a Haskell function from the CLR
+instance {-# OVERLAPPING #-} Marshal (ClrPtr t) (Clr t) where
+  marshal (ClrPtr x) f = do
+    x' <- newHandle x
+    fp <- newForeignPtr (unsafeDupablePerformIO gcHandleFinalizer) (coerce x')
+    f $ Clr fp
+
 newtype ClrType = ClrType {getClrType :: String} deriving Show
+type MarshalType = Type
 
 newtype TextBStr = TextBStr BStr
 instance Unmarshal TextBStr Text where unmarshal (TextBStr t) = unmarshal t
@@ -86,7 +101,7 @@ lookupQuotableClrType s = lookupQuotable extractClrType s
       general [InstanceD _ _ (_ `AppT` quote `AppT` clr `AppT` _ `AppT` _) _] | quote == clr = ClrType s
       general _ = error $ "Overlapping instances for Quotable " ++ s
 
-lookupQuotableMarshalType :: String -> Q Type
+lookupQuotableMarshalType :: String -> Q MarshalType
 lookupQuotableMarshalType s = lookupQuotable extractMarshalType s
   where
     extractMarshalType instances = fromMaybe (general instances) $ listToMaybe $ mapMaybe specific instances
@@ -95,6 +110,10 @@ lookupQuotableMarshalType s = lookupQuotable extractMarshalType s
     specific _ = Nothing
     general [InstanceD _ _ (_ `AppT` quote `AppT` clr `AppT` AppT (ConT clrPtr) _ `AppT` _) _] | quote == clr && clrPtr == ''ClrPtr = AppT (ConT clrPtr) (LitT (StrTyLit s))
     general _ = error $ "Overlapping instances for Quotable " ++ s
+
+lookupDelegateMarshalType :: [String] -> String -> Q MarshalType
+lookupDelegateMarshalType args resTy =
+      foldr (\t u -> arrowT `appT` lookupQuotableMarshalType t `appT` u) [t| IO $(lookupQuotableMarshalType resTy)|] args
 
 unmarshalAuto :: Quotable quote clr a unmarshal => Proxy quote -> a -> IO unmarshal
 unmarshalAuto _ = unmarshal
