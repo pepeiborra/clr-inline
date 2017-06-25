@@ -21,6 +21,7 @@ type family CurryT' (n::Nat) x r :: Type where
   CurryT' 3 (a,b,c) r = a -> b -> c -> r
   CurryT' 2 (a,b) r = a -> b -> r
   CurryT' 1 a r = a -> r
+  CurryT' 0 a r = r
 
 --
 -- Curry is like that from the tuple package, except that we use id

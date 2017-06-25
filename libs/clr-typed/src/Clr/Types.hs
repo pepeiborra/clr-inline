@@ -67,7 +67,8 @@ type PrimTypes = '[ T "System.String"  '[]
                   , T "System.UIntPtr" '[]
                   , T "System.Char"    '[]
                   , T "System.Single"  '[]
-                  , T "System.Double"  '[] ]
+                  , T "System.Double"  '[]
+                  , T "System.Void"    '[] ]
 
 type family IsPrimType (t::Type) :: Bool where
   IsPrimType t = t `Elem` PrimTypes
@@ -119,6 +120,7 @@ type T_object  = T "System.Object"  '[]
 type T_string  = T "System.String"  '[]
 type T_char    = T "System.Char"    '[]
 type T_bool    = T "System.Boolean" '[]
+type T_void    = T "System.Void"    '[]
 
 --
 -- Declaration of all compile type chooseable members of a particular type

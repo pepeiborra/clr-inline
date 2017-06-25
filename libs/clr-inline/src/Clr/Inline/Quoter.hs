@@ -10,7 +10,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Clr.Inline.Quoter where
 
-import Clr.Host (GetMethodStubDelegate, makeGetMethodStubDelegate, unsafeGetPointerToMethod)
+import Clr.Host.DriverEntryPoints (unsafeGetPointerToMethod)
+import Clr.Host.Method (GetMethodStubDelegate, makeGetMethodStubDelegate)
 import Clr.Host.BStr
 import Clr.Marshal
 import Clr.Inline.State

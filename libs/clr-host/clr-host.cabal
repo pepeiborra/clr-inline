@@ -42,6 +42,11 @@ library
   exposed-modules:     Clr.Host
                      , Clr.Host.Config
                      , Clr.Host.BStr
+                     , Clr.Host.Box
+                     , Clr.Host.Delegate
+                     , Clr.Host.DriverEntryPoints
+                     , Clr.Host.GCHandle
+                     , Clr.Host.Method
   other-modules:       Clr.Host.Driver
                      , Clr.Host.BStr.Type
   -- Common build deps

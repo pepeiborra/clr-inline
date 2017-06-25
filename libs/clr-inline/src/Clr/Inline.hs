@@ -4,6 +4,7 @@ module Clr.Inline
   , fsharp
   , fsharp'
   , startClr
+  , GCHandle(..)
   , Quotable
   -- * Reexports for generated code
   , FunPtr
@@ -17,5 +18,6 @@ import           Clr.CSharp.Inline
 import           Clr.FSharp.Inline
 import           Clr.Host
 import           Clr.Host.BStr
+import           Clr.Host.GCHandle
 import           Clr.Inline.Types
 import           Foreign

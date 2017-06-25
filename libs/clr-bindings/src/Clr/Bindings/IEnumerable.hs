@@ -7,16 +7,18 @@ module Clr.Bindings.IEnumerable where
 
 import Clr
 import Clr.Bridge
-import Clr.UnmarshalAs
+import Clr.Resolver
 import Clr.TypeString
 
 import Clr.Marshal
 
 import Clr.Host
 import Clr.Host.BStr
+import Clr.Host.GCHandle
 
 import Clr.Bindings.BStr
 import Clr.Bindings.DynImports
+import Clr.Bindings.Object
 
 import Data.Kind
 import Data.Type.Bool
@@ -46,22 +48,22 @@ type instance Candidates  T_IEnumerator'   T_MoveNext      = '[ '[] ]
 type instance SuperTypes (T_IEnumerable t) = '[ T_IEnumerable', T_object ]
 type instance SuperTypes (T_IEnumerator t) = '[ T_IEnumerator', T_object ]
 
-foreign import ccall "dynamic" makeGetEnumerator      :: FunPtr (ObjectID a -> IO (ObjectID b)) -> (ObjectID a -> IO (ObjectID b))
-foreign import ccall "dynamic" makeEnumeratorMoveNext :: FunPtr (ObjectID (T_IEnumerator') -> IO Bool) -> (ObjectID (T_IEnumerator') -> IO Bool)
+foreign import ccall "dynamic" makeGetEnumerator      :: FunPtr (GCHandle a -> IO (GCHandle b)) -> (GCHandle a -> IO (GCHandle b))
+foreign import ccall "dynamic" makeEnumeratorMoveNext :: FunPtr (GCHandle (T_IEnumerator') -> IO Bool) -> (GCHandle (T_IEnumerator') -> IO Bool)
 
-foreign import ccall "dynamic" makeEnumeratorCurrentBStr  :: FunPtr (ObjectID (T_IEnumerator elem) -> IO BStr) -> (ObjectID (T_IEnumerator elem) -> IO BStr)
-foreign import ccall "dynamic" makeEnumeratorCurrentBool  :: FunPtr (ObjectID (T_IEnumerator elem) -> IO Bool) -> (ObjectID (T_IEnumerator elem) -> IO Bool)
+foreign import ccall "dynamic" makeEnumeratorCurrentBStr  :: FunPtr (GCHandle (T_IEnumerator elem) -> IO BStr) -> (GCHandle (T_IEnumerator elem) -> IO BStr)
+foreign import ccall "dynamic" makeEnumeratorCurrentBool  :: FunPtr (GCHandle (T_IEnumerator elem) -> IO Bool) -> (GCHandle (T_IEnumerator elem) -> IO Bool)
 -- TODO: makeEnumCurrent_ for every other prim type
-foreign import ccall "dynamic" makeEnumeratorCurrentObj   :: FunPtr (ObjectID (T_IEnumerator elem) -> IO (ObjectID elem)) -> (ObjectID (T_IEnumerator elem) -> IO (ObjectID elem))
+foreign import ccall "dynamic" makeEnumeratorCurrentObj   :: FunPtr (GCHandle (T_IEnumerator elem) -> IO (GCHandle elem)) -> (GCHandle (T_IEnumerator elem) -> IO (GCHandle elem))
 
 instance MethodResultI1 (T_IEnumerable t) (T_GetEnumerator) () where
-  type ResultTypeI1 (T_IEnumerable t) (T_GetEnumerator) () = 'Just (T_IEnumerator t)
+  type ResultTypeI1 (T_IEnumerable t) (T_GetEnumerator) () = (T_IEnumerator t)
 
 instance MethodDynImportI1 (T_IEnumerable t) (T_GetEnumerator) () where
   methodDynImportI1 = makeGetEnumerator
 
 instance MethodResultI1 T_IEnumerator' T_MoveNext () where
-  type ResultTypeI1 T_IEnumerator' T_MoveNext () = 'Just T_bool
+  type ResultTypeI1 T_IEnumerator' T_MoveNext () = T_bool
 
 instance MethodDynImportI1 T_IEnumerator' T_MoveNext () where
   methodDynImportI1 = makeEnumeratorMoveNext
@@ -97,7 +99,6 @@ getEnumerator x = getEnumerator' $ upCast x
 ienumCurrent :: forall elem propertyBridge propertyHask .
   ( PropertyGetI (T_IEnumerator elem) T_Current
   , BridgeType (PropertyTypeI (T_IEnumerator elem) T_Current) ~ propertyBridge
-  , UnmarshalAs propertyBridge ~ propertyHask
   , Unmarshal propertyBridge propertyHask
   ) => Object (T_IEnumerator elem) -> IO propertyHask
 ienumCurrent ienum = getPropI @T_Current ienum
@@ -111,7 +112,6 @@ toProducer :: forall t elem elemBridge elemHask .
   , TString elem
   , PropertyGetI (T_IEnumerator elem) T_Current
   , BridgeType (PropertyTypeI (T_IEnumerator elem) T_Current) ~ elemBridge
-  , UnmarshalAs elemBridge ~ elemHask
   , Unmarshal elemBridge elemHask
   ) => Object t -> Producer elemHask IO ()
 toProducer ienumerable = do
@@ -121,7 +121,6 @@ toProducer ienumerable = do
 toProducer' :: forall elem elemBridge elemHask .
   ( PropertyGetI (T_IEnumerator elem) T_Current
   , BridgeType (PropertyTypeI (T_IEnumerator elem) T_Current) ~ elemBridge
-  , UnmarshalAs elemBridge ~ elemHask
   , Unmarshal elemBridge elemHask
   ) => Object (T_IEnumerator elem) -> Producer elemHask IO ()
 toProducer' ienumerator = do
@@ -138,7 +137,6 @@ toListM :: forall t elem elemBridge elemHask .
   , TString elem
   , PropertyGetI (T_IEnumerator elem) T_Current
   , BridgeType (PropertyTypeI (T_IEnumerator elem) T_Current) ~ elemBridge
-  , UnmarshalAs elemBridge ~ elemHask
   , Unmarshal elemBridge elemHask
   ) => Object t -> IO [elemHask]
 toListM ienumerable = Pipes.Prelude.toListM $ toProducer ienumerable
