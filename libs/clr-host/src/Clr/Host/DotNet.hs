@@ -37,6 +37,7 @@ foreign import ccall "dotNetHost.c getICorRuntimeHost" getICorRuntimeHost :: IO 
 foreign import ccall "dotNetHost.c getICLRRuntimeHost" getICLRRuntimeHost :: IO ICLRRuntimeHost
 foreign import ccall "dotNetHost.c setHostRefs"        setHostRefs        :: ICorRuntimeHost -> ICLRRuntimeHost -> IO ()
 
+foreign import ccall __unregister_hs_exception_handler :: IO ()
 
 -- | 'start_ICorRuntimeHost' calls the Start method of the given ICorRuntimeHost interface.
 start_ICorRuntimeHost :: ICorRuntimeHost -> IO ()
@@ -64,6 +65,8 @@ foreign import stdcall "dynamic" makeStartCLR :: FunPtr Start_ICLRRuntimeHost ->
 
 startHostDotNet :: IO (FunPtr (Ptr Word16 -> IO (FunPtr a)))
 startHostDotNet = do
+  -- Disable the top level VEH. This can interfere with .NET exceptions.
+  __unregister_hs_exception_handler
   -- Load the 'mscoree' dynamic library into the process.  This is the
   -- 'stub' library for the .NET execution engine, and is used to load an
   -- appropriate version of the real runtime via a call to
