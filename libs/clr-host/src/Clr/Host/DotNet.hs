@@ -42,8 +42,12 @@ foreign import ccall __unregister_hs_exception_handler :: IO ()
 unregister_hs_exception_handler = __unregister_hs_exception_handler
 #else
 -- symbol has extra leading underscore on 32 bit apprently
-foreign import ccall ___unregister_hs_exception_handler :: IO ()
-unregister_hs_exception_handler = ___unregister_hs_exception_handler
+--foreign import ccall ___unregister_hs_exception_handler :: IO ()
+--unregister_hs_exception_handler = ___unregister_hs_exception_handler
+
+-- Infact just leave as NO-OP until a 32 bit dev want to investigate the further linker issues
+unregister_hs_exception_handler :: IO ()
+unregister_hs_exception_handler = return ()
 #endif
 
 -- | 'start_ICorRuntimeHost' calls the Start method of the given ICorRuntimeHost interface.
