@@ -6,7 +6,17 @@
 {-# LANGUAGE TypeInType             #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE ViewPatterns           #-}
-module Clr.Inline.Types where
+module Clr.Inline.Types
+  ( ClrPtr(..)
+  , Clr(..)
+  , ClrType(..)
+  , Quotable
+  , TextBStr(..)
+  , lookupDelegateMarshalType
+  , lookupQuotableClrType
+  , lookupQuotableMarshalType
+  , lookupQuotableUnmarshalType
+  ) where
 
 import           Clr.Host.GCHandle
 import           Clr.Host.BStr
@@ -14,13 +24,14 @@ import           Clr.Marshal
 import           Data.Coerce
 import           Data.Int
 import           Data.Maybe
-import           Data.Proxy
+import           Data.Monoid
 import           Data.Text            (Text)
 import           Data.Word
 import           Foreign
 import           GHC.TypeLits
 import           Language.Haskell.TH
 import           System.IO.Unsafe
+import           Text.Printf
 
 -- | A pointer to a Clr object.
 --   The only way to access the contents is via clr-inline quotations.
@@ -30,8 +41,6 @@ newtype ClrPtr (name::Symbol)= ClrPtr (GCHandle Int)
 --   wrapper is no longer referenced.
 --   The only way to access the contents is in clr-inline quotations.
 newtype Clr (name::Symbol) = Clr (ForeignPtr Int)
-
-foreign import ccall "dynamic" releaseObject :: FunPtr (Int64 -> IO ()) -> (Int64 -> IO ())
 
 -- Returning from a CLR function that was called from Haskell
 instance Unmarshal (ClrPtr n) (Clr n) where
@@ -62,8 +71,8 @@ instance Unmarshal TextBStr Text where unmarshal (TextBStr t) = unmarshal t
 instance Marshal Text TextBStr where marshal x f = marshal x (f . TextBStr)
 
 -- | Extensible mapping between quotable CLR types and Haskell types
-class Unmarshal marshal haskell =>
-         Quotable (quoted::Symbol) (clr::Symbol)    marshal     haskell | marshal -> haskell clr
+class Unmarshal marshal unmarshal =>
+         Quotable (quoted::Symbol) (clr::Symbol)    marshal     unmarshal
 instance Quotable "bool"           "System.Boolean" Bool        Bool
 instance Quotable "double"         "System.Double"  Double      Double
 instance Quotable "int"            "System.Int32"   Int         Int
@@ -80,8 +89,9 @@ instance Quotable "word64"         "System.UInt64"  Word64      Word64
 instance Quotable "string"         "System.String"  BStr        String
 instance Quotable "text"           "System.String"  TextBStr    Text
 instance Quotable "void"           "System.Void"    ()          ()
+instance Quotable "unit" "Microsoft.FSharp.Core.Unit" ()        ()
 -- | All reference types are handled by this instance.
-instance Quotable a                a                (ClrPtr a)  (Clr a)
+instance Quotable a a (ClrPtr a)  (Clr a)
 
 lookupQuotable :: Show a => ([InstanceDec] -> a) -> String -> Q a
 lookupQuotable extract quote = do
@@ -92,28 +102,45 @@ lookupQuotable extract quote = do
   instances <- reifyInstances ''Quotable [ ty, VarT a, VarT b, VarT c ]
   return $ extract instances
 
+handleOverlappingInstances :: String -> String -> [Dec] -> a
+handleOverlappingInstances msg s instances = error $ printf "Overlapping %s instances for Quotable %s: %s" msg s (show names) -- (show instances)
+  where
+    names = [ quote | InstanceD _ _ (_ `AppT` quote `AppT` _ `AppT` _ `AppT` _) _ <- instances ]
+
+extractMostSpecificInstance s msg f1 f2 instances =
+  fromMaybe (handleOverlappingInstances msg s instances) . getFirst $
+  foldMap (apply f1) instances <> foldMap (apply f2) instances
+  where
+    apply f (InstanceD _ _ (_ `AppT` quote `AppT` clr `AppT` marshal `AppT` unmarshal) _) = First $ f quote clr marshal unmarshal
+    apply _ _ = error "unreachable"
+
 lookupQuotableClrType :: String -> Q ClrType
-lookupQuotableClrType s = lookupQuotable extractClrType s
+lookupQuotableClrType s = lookupQuotable extract s
     where
-      extractClrType instances = fromMaybe (general instances) $ listToMaybe $ mapMaybe specific instances
-      specific (InstanceD _ _ (_ `AppT` _ `AppT` LitT (StrTyLit s) `AppT` _ `AppT` _) _) = Just $ ClrType s
-      specific _ = Nothing
-      general [InstanceD _ _ (_ `AppT` quote `AppT` clr `AppT` _ `AppT` _) _] | quote == clr = ClrType s
-      general _ = error $ "Overlapping instances for Quotable " ++ s
+      extract = extractMostSpecificInstance s "Clr" specific general
+      specific _ (LitT (StrTyLit s)) _ _ = Just $ ClrType s
+      specific _ _ _ _ = Nothing
+      general quote@VarT{} clr@VarT{} _ _ | quote == clr = Just $ ClrType s
+      general _ _ _ _ = Nothing
 
 lookupQuotableMarshalType :: String -> Q MarshalType
-lookupQuotableMarshalType s = lookupQuotable extractMarshalType s
+lookupQuotableMarshalType s = lookupQuotable extract s
   where
-    extractMarshalType instances = fromMaybe (general instances) $ listToMaybe $ mapMaybe specific instances
-    specific (InstanceD _ _ (_ `AppT` quote `AppT` clr `AppT` _ `AppT` _) _) | quote == clr = Nothing
-    specific (InstanceD _ _ (_ `AppT` _ `AppT` _ `AppT` marshalTy `AppT` _) _) = Just marshalTy
-    specific _ = Nothing
-    general [InstanceD _ _ (_ `AppT` quote `AppT` clr `AppT` AppT (ConT clrPtr) _ `AppT` _) _] | quote == clr && clrPtr == ''ClrPtr = AppT (ConT clrPtr) (LitT (StrTyLit s))
-    general _ = error $ "Overlapping instances for Quotable " ++ s
+    extract = extractMostSpecificInstance s "Marshal" specific general
+    specific LitT{} LitT{} marshalTy _ = Just marshalTy
+    specific _ _ _ _ = Nothing
+    general quote@VarT{} clr@VarT{} (con `AppT` v)  _ | quote == clr && quote == v= Just $ AppT con (LitT (StrTyLit s))
+    general _ _ _ _ = Nothing
 
-lookupDelegateMarshalType :: [String] -> String -> Q MarshalType
+lookupDelegateMarshalType :: [String] -> TypeQ -> Q MarshalType
 lookupDelegateMarshalType args resTy =
-      foldr (\t u -> arrowT `appT` lookupQuotableMarshalType t `appT` u) [t| IO $(lookupQuotableMarshalType resTy)|] args
+      foldr (\t u -> arrowT `appT` lookupQuotableMarshalType t `appT` u) [t| IO $(resTy) |] args
 
-unmarshalAuto :: Quotable quote clr a unmarshal => Proxy quote -> a -> IO unmarshal
-unmarshalAuto _ = unmarshal
+lookupQuotableUnmarshalType :: String -> Q Type
+lookupQuotableUnmarshalType s = lookupQuotable extract s
+  where
+    extract = extractMostSpecificInstance s "Unmarshal" specific general
+    specific LitT{} LitT{} _ unmarshalTy = Just unmarshalTy
+    specific _ _ _ _ = Nothing
+    general quote@VarT{} clr@VarT{} _ (con `AppT` v) | quote == clr && quote == v = Just $ AppT con (LitT (StrTyLit s))
+    general _ _ _ _ = Nothing

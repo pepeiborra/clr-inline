@@ -3,11 +3,14 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# OPTIONS  -Wno-missing-signatures #-}
 module InlineSpec where
 
 import Control.Concurrent
 import Control.Monad
+import Control.Lens
 import Clr.Inline
+import Clr.Inline.Utils.Parse
 import Data.Int
 import Data.String
 import Data.Text as Text (pack)
@@ -28,6 +31,37 @@ open System.Collections.Generic
 type DateTime = Clr "System.DateTime"
 
 main = hspec spec
+
+spec = do
+  describe "Parsing antiquotes" parseSpec
+  describe "QuasiQuoting" qqSpec
+
+shouldParseTo program result = do
+  let p = view tokenized program
+  p `shouldBe` result
+
+shouldRoundtripAndParseTo program result = do
+  let p = view tokenized program
+  p `shouldBe` result
+  review tokenized p `shouldBe` program
+
+parseSpec :: Spec
+parseSpec = do
+  it "$foo"        $ "$foo"        `shouldRoundtripAndParseTo` [Antiquote False "foo" Nothing]
+  it "$foo:int"    $ "$foo:int"    `shouldRoundtripAndParseTo` [Antiquote False "foo" (Just (Con "int"))]
+  it "$foo:unit"   $ "$foo:unit"   `shouldRoundtripAndParseTo` [Antiquote False "foo" (Just Unit)]
+  it "$(foo:unit)" $ "$(foo:unit)" `shouldRoundtripAndParseTo` [Antiquote True  "foo" (Just Unit)]
+  it "($foo:unit)" $ "($foo:unit)" `shouldRoundtripAndParseTo` [Other "(", Antiquote False "foo" (Just Unit), Other ")"]
+  it "$$foo"       $ "$$foo"       `shouldParseTo` [Other "$foo"]
+-- it "\"$foo\""    $ "\"$foo\""    `shouldRoundtripAndParseTo` [Other "\"$foo\""] TODO
+  it "1 $ 2"       $ "1 $ 2"       `shouldRoundtripAndParseTo` [Other "1 $ 2"]
+  it "1 $ 2"       $ "1 $ 2"       `shouldRoundtripAndParseTo` [Other "1 $ 2"]
+  it "a->b"        $ "a->b"        `shouldRoundtripAndParseTo` [Other "a->b"]
+  it "$a->b"       $ "$a->b"       `shouldRoundtripAndParseTo` [Antiquote False "a" Nothing, Other "->b"]
+  it "$foo:a->b"   $ "$foo:a->b"   `shouldRoundtripAndParseTo` [Antiquote False "foo" (Just (Fun [Con "a"] (Con "b")))]
+  it "$foo:unit->b" $ "$foo:unit->b" `shouldRoundtripAndParseTo` [Antiquote False "foo" (Just (Fun [Unit] (Con "b")))]
+  it "$foo:unit->unit" $ "$foo:unit->unit" `shouldRoundtripAndParseTo` [Antiquote False "foo" (Just (Fun [Unit] Unit))]
+
 
 h_i   = 2 :: Int
 h_i16 = 2 :: Int16
@@ -52,9 +86,8 @@ topHandler =
                  };
            |]
 
-spec :: Spec
-spec = beforeAll_ (startClr >> topHandler) $ do
-
+qqSpec :: Spec
+qqSpec = beforeAll_ (startClr >> topHandler) $ do
   it "F# inlines pick up imports" $
     [fsharp| ignore <| Dictionary<int,int>() |]
 
@@ -110,6 +143,9 @@ spec = beforeAll_ (startClr >> topHandler) $ do
   it "F# handles two antiquotations" $
     [fsharp|bool{$h_i32:int32 + $h_i:int = 4}|] `shouldReturn` True
 
+  it "Types are optional in repeated occurrences of an antiquotation" $
+    [fsharp|bool{$h_i32:int32 = $h_i32}|] `shouldReturn` True
+
   it "F# tuples are handled correctly" $ do
     tuple <- [fsharp| int*bool{8,true}|]
     [fsharp| bool{snd $tuple:int*bool}|] `shouldReturn` True
@@ -160,7 +196,7 @@ spec = beforeAll_ (startClr >> topHandler) $ do
                         }|]
       [csharp|int{return ($i_array:int[])[2];}|] `shouldReturn` 2
 
-  it "F# lambdas over structs are handled" $ do
+  it "F# lambdas over struct types are handled" $ do
       let addOneDay (x :: DateTime) =
             [fsharp| System.DateTime{ ($x:System.DateTime).AddDays(1.0)}|]
       [fsharp| int{
@@ -179,6 +215,14 @@ spec = beforeAll_ (startClr >> topHandler) $ do
              | :? (string->string) as f -> f "success"
              | other -> other.GetType().ToString()
              }|] `shouldReturn` "success1"
+
+  it "Unit lambdas from monadic actions" $ do
+      let action :: IO String = return "hello"
+      [fsharp| string{ $action:unit->string ()}|] `shouldReturn` "hello"
+
+  it "Unit unit lambdas" $ do
+      let action :: IO () = return ()
+      [fsharp| void{ $action:unit->unit ()} |] `shouldReturn` ()
 
 gcUntil cond = do
   let loop 10 = error "gc: tried too many times"
