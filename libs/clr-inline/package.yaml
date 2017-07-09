@@ -1,0 +1,60 @@
+name: clr-inline
+version: '0.1.0.0'
+synopsis: Quasiquoters for inline C# and F#
+description: Please see README.md
+category: Language, FFI, CLR, .NET
+author: Jose Iborra
+maintainer: pepeiborra@gmail.com
+copyright: 2017 Jose Iborra
+license: BSD3
+homepage: https://gitlab.com/tim-m89/clr-haskell
+git: https://gitlab.com/tim-m89/clr-haskell/tree/master
+bug-reports: https://gitlab.com/tim-m89/clr-haskell/issues
+extra-source-files:
+- CHANGELOG.md
+- README.md
+dependencies:
+- text
+- base >=4.9 && <4.10
+- bytestring
+- Cabal
+- case-insensitive
+- clr-host
+- clr-marshal
+- containers
+- directory
+- extra
+- filepath
+- here
+- lens
+- parsec
+- process
+- split
+- template-haskell
+- temporary
+- transformers
+library:
+  source-dirs: src
+  ghc-options:
+  - -Wall
+  - -Wno-name-shadowing
+  exposed-modules:
+  - Clr.Inline
+  - Clr.Inline.Cabal
+  - Clr.Inline.Config
+tests:
+  spec:
+    main: Spec.hs
+    source-dirs:
+    - src
+    - test
+    dependencies:
+    - hspec
+benchmarks:
+  benchmark:
+    main: Main.hs
+    source-dirs: bench
+    dependencies:
+    - base
+    - clr-inline
+    - criterion

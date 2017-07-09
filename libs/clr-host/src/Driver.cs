@@ -162,7 +162,7 @@ namespace Salsa
                 return GenerateDelegateConstructorStub (delegateType);
             }
             catch (Exception innerException) {
-                throw new ArgumentException ("Not a valid delegatetype: " + delegateTypeName, innerException);
+                throw new ArgumentException ("Not a valid delegate type: " + delegateTypeName, innerException);
             }
         }
 
@@ -1090,7 +1090,9 @@ namespace Salsa
         public static Type StringToType(string s)
         {
             Type t = Type.GetType(s);
-            t = t ?? Type.GetType(s,(assName => GetLoadedAssembly(assName)), ((ass, tn, ci) => ass.GetType(tn,ci)), true);
+            t = t ?? Type.GetType(s,(assName => GetLoadedAssembly(assName)), ((ass, tn, ci) => ass==null ? null : ass.GetType(tn,ci)), true);
+            if(t == null)
+                throw new ArgumentException("Type not in scope: " + s);
             return t;
         }
 

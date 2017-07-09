@@ -49,15 +49,22 @@ genCode ClrInlinedGroup {units, mod} =
                                  | (a, argDetails) <- other
                                  , let argType = case argDetails of
                                                    Value (ClrType t) -> t
-                                                   Delegate _ args res -> printf "System.Func<%s>" (intercalate "," (map getClrType args ++ [getClrType res]))
+                                                   Delegate _ []   Nothing -> "System.Action"
+                                                   Delegate _ args Nothing -> printf "System.Action<%s>" (intercalate "," (map getClrType args))
+                                                   Delegate _ args (Just res) -> printf "System.Func<%s>" (intercalate "," (map getClrType args ++ [getClrType res]))
                                  ]
         yield $ printf "#line %d \"%s\"" (fst $ loc_start loc) (loc_filename loc)
         yield $ printf   "  static member %s %s =" (getMethodName exp) argsString
         iforMOf_ (ifolded<._Delegate) args $ \ argName (_,args,_) -> do
           let params = take (length args) paramNames
-          yield $ printf "    let %s %s = %s.Invoke(%s) in" argName (unwords params) argName (intercalate "," params)
+              formalParams = case params of [] -> "()" ; aa -> unwords aa
+              actualParams = intercalate "," params
+          yield $ printf "    let %s %s = %s.Invoke(%s) in" argName formalParams argName actualParams
+        yield "     ("
+        yield $ printf "#line %d \"%s\"" (fst $ loc_start loc) (loc_filename loc)
         forM_ (lines body) $ \l ->
           yield $ printf "        %s" l
+        yield "     )"
 
 compile :: ClrInlineConfig -> ClrInlinedGroup "fsharp" -> IO ClrBytecode
 compile ClrInlineConfig {..} m@ClrInlinedGroup {..} = do

@@ -1,53 +1,155 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE LambdaCase #-}
 module Clr.Inline.Utils.Parse where
 
 import Control.Lens
+import qualified Data.CaseInsensitive as CI
 import Data.Char
 import Data.List.Extra
 import Data.Map (Map)
+import Data.Maybe
 import qualified Data.Map as Map
+import Text.Parsec.Combinator
+import Text.Parsec.Pos
+import Text.Parsec.Prim
+import Prelude hiding (getChar)
 
-data Token =
+type Parser a = Parsec [Token] () a
+
+data Token = Char Char | Dollar | Arrow deriving Eq
+
+tokenize :: String -> [Token]
+tokenize ('[':'~':'|': rest) = Char '[' : Char '|' : tokenize rest
+tokenize ('|':'~':']': rest) = Char '|' : Char ']' : tokenize rest
+tokenize ('$':'$':xx) = Char '$' : tokenize xx
+tokenize ('-':'>':xx) = Arrow : tokenize xx
+tokenize ('$':xx) = Dollar : tokenize xx
+tokenize (x:xx) = Char x : tokenize xx
+tokenize [] = []
+
+isChar :: Token -> Bool
+isChar = isJust . getChar
+
+getChar :: Token -> Maybe Char
+getChar (Char c) = Just c
+getChar _ = Nothing
+
+isDollar :: Token -> Bool
+isDollar = not . isChar
+
+tokenToString :: Token -> String
+tokenToString (Char c) = [c]
+tokenToString Dollar   = "$"
+tokenToString Arrow = "->"
+
+instance Show Token where
+  show = tokenToString
+
+data Section =
     Other String
-  | Antiquote String (Maybe String)
-  deriving Show
+  | Antiquote {parenthised :: Bool, name:: !String, typ :: !(Maybe QuotedType)}
+  deriving (Eq, Show)
+
+normalizeProgram :: [Section] -> [Section]
+normalizeProgram (Other a : Other b : rest) = Other(a++b) : normalizeProgram rest
+normalizeProgram (x:xx) = x : normalizeProgram xx
+normalizeProgram [] = []
+
+data QuotedType = Con String
+                | Fun [QuotedType] QuotedType
+                | Unit
+  deriving (Eq, Show)
+
+renderQuotedType :: QuotedType -> String
+renderQuotedType = show where
+  show (Con x) = x
+  show Unit = "unit"
+  show (Fun args res) = intercalate "->" $ map show (args ++ [res])
+
+satisfy :: (Token -> Maybe a) -> Parser a
+satisfy = tokenPrim show (\pos t _cs -> updatePosString pos (tokenToString t))
+
+dollar :: Parser ()
+dollar = satisfy (\case Dollar -> Just () ; _ -> Nothing)
+arrow :: Parser String
+arrow  = const "->" <$> satisfy (\case Arrow  -> Just () ; _ -> Nothing)
+
+
+char :: Char -> Parser Char
+char c = satisfyChar (== c)
+
+string :: String -> Parser String
+string = mapM char
+
+satisfyChar :: (Char -> Bool) -> Parser Char
+satisfyChar f = satisfy (\case Char c | f c -> Just c ; _ -> Nothing)
+
+topP :: Parser [Section]
+topP = (normalizeProgram <$> many sectionP) <* eof
+
+sectionP :: Parser Section
+sectionP = (dollar *> (antiquoteP False <|> otherP "$")) <|>
+           otherP ""
+
+otherP :: String -> Parser Section
+otherP prefix = Other . (prefix ++) . concat <$> many1 (((:[]) <$> satisfy getChar) <|> arrow)
+
+antiquoteP :: Bool -> Parser Section
+antiquoteP parenthised = parens (antiquoteP True) <|>
+             (Antiquote parenthised <$> identP <*> option Nothing (Just <$> (char ':' *> typP)))
+
+parens :: Parser a -> Parser a
+parens = between (char '(') (char ')')
+
+identP :: Parser String
+identP = (:) <$> satisfyChar isAlpha <*> many(satisfyChar isIdent)
+  where
+    isIdent x = isAlphaNum x || x == '_'
+
+conP :: Parser QuotedType
+conP   = (readType .) . (:) <$> satisfyChar isTypeIdent <*> many(satisfyChar isTypeIdent)
+  where
+    isTypeIdent x = isAlphaNum x || x `elem` ("[]<>.,_-*"::String)
+    readType (CI "unit") = Unit
+    readType other = Con other
+
+typP :: Parser QuotedType
+typP = rebuild <$> conP <*> optionMaybe (arrow *> typP)
+  where
+    rebuild :: QuotedType -> Maybe QuotedType -> QuotedType
+    rebuild con Nothing = con
+    rebuild con (Just (Fun args' res)) = Fun (args' ++ [con]) res
+    rebuild con (Just res) = Fun [con] res
+
+pattern CI s <- (CI.mk -> s)
 
 -- TODO tokenizing quoted strings
-tokenized :: Iso' String [Token]
-tokenized = iso (tokenize (Other [])) untokenize
+tokenized :: Iso' String [Section]
+tokenized = iso parse untokenize
   where
-    tokenize :: Token -> String -> [Token]
-    -- Tokenizing inside clr code
-    tokenize (Other acc) [] = [Other (reverse acc)]
-    -- Start an antiquote
-    tokenize (Other acc) ('$':rest) = Other (reverse acc) : tokenize (Antiquote "" Nothing) rest
-    -- Escape F# array notation
-    tokenize (Other ('~':'|':acc)) (']':rest) = tokenize (Other (']':'|':acc)) rest
-    tokenize (Other ('~':'[':acc)) ('|':rest) = tokenize (Other ('|':'[':acc)) rest
-    tokenize (Other acc) (c  :rest) = tokenize (Other (c:acc)) rest
-    -- Tokenizing inside an antiquote
-    tokenize (Antiquote s t) [] = [Antiquote (reverse s) (reverse <$> t)]
-    tokenize (Antiquote s t) (c : rest) | isBreak c = Antiquote (reverse s) (reverse <$> t) : tokenize (Other [c]) rest
-    tokenize (Antiquote s Nothing)  (':':rest) = tokenize (Antiquote s (Just "")) rest
-    tokenize (Antiquote s Nothing)  (c  :rest) = tokenize (Antiquote (c:s) Nothing) rest
-    tokenize (Antiquote s (Just t)) (c  :rest) = tokenize (Antiquote s (Just (c:t))) rest
+    parse x = case runParser topP () "" (tokenize x) of
+                Right res -> res
+                Left e -> error $ show e
 
-    untokenize :: [Token] -> String
+    untokenize :: [Section] -> String
     untokenize [] = []
     untokenize (Other s: rest) = s ++ untokenize rest
-    untokenize (Antiquote v Nothing  : rest) = '$' : v ++ untokenize rest
-    untokenize (Antiquote v (Just t) : rest) = '$' : v ++ ':' : t ++ untokenize rest
-
-    isBreak c = isSpace c ||  c == ')'
+    untokenize (Antiquote True  v Nothing  : rest) = '$':'(':v ++ ')':untokenize rest
+    untokenize (Antiquote True  v (Just t) : rest) = '$':'(':v ++ ':' : renderQuotedType t ++ ')':untokenize rest
+    untokenize (Antiquote False v Nothing  : rest) = '$' : v ++ untokenize rest
+    untokenize (Antiquote False v (Just t) : rest) = '$' : v ++ ':' : renderQuotedType t ++ untokenize rest
 
 -- | Looks for antiquotes of the form $foo in the given string
 --   Returns the antiquotes found, and a new string with the
 --   antiquotes transformed
-extractArgs :: (String -> String) -> String -> (Map String String, String)
+extractArgs :: (String -> String) -> String -> (Map String QuotedType, String)
 extractArgs transf = mapAccumROf (tokenized.traversed) f mempty
   where
     f acc (Other s) = (acc, Other s)
-    f acc (Antiquote v (Just t)) = (Map.insert v t acc, Other (transf v))
-    f acc (Antiquote v Nothing)
+    f acc (Antiquote _ v (Just t)) = (Map.insert v t acc, Other (transf v))
+    f acc (Antiquote _ v Nothing )
       | Just _ <- acc ^? at v = (acc, Other (transf v))
       | otherwise = error $ "The first occurrence of an antiquote must include a type ann. (" ++ v ++ ")"
 
@@ -76,7 +178,7 @@ parseBody e =
 
 data ParseResult = ParseResult
   { body, returnType :: String
-  , args :: Map String String
+  , args :: Map String QuotedType
   }
 
 parse :: (String -> String) -> String -> ParseResult
