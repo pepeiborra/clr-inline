@@ -19,7 +19,7 @@ custom-setup
 
 executable winforms
   main-is:             Winforms.hs
-  build-depends:       base >=4.9 && <4.10, clr-inline
+  build-depends:       base >=4.9 && < 5, clr-inline
   hs-source-dirs:      src
   default-language:    Haskell2010
 
@@ -29,7 +29,7 @@ executable wpf
   else
      buildable:        False
   main-is:             Wpf.hs
-  build-depends:       base >=4.9 && <4.10, clr-inline, here
+  build-depends:       base >=4.9 && < 5, clr-inline, here
   hs-source-dirs:      src
   default-language:    Haskell2010
   other-modules:       WpfDeps
