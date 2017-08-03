@@ -1,5 +1,5 @@
 name:                clr-marshal
-version:             0.1.0.0
+version:             0.2.0.0
 synopsis:            Marshaling for the clr
 description:         A common dependency for other clr packages, marshalling between Haskell & CLR data types.
 homepage:            https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-marshal

@@ -3,7 +3,7 @@ clr-inline
 [![Unix build status](https://gitlab.com/tim-m89/clr-haskell/badges/master/build.svg)](https://gitlab.com/tim-m89/clr-haskell/commits/master)
 [![Windows Build Status](https://img.shields.io/appveyor/ci/TimMatthews/clr-haskell.svg?label=Windows%20build)](https://ci.appveyor.com/project/tim-m89/clr-haskell)
 
-**NOTE: you will need GHC >= 8.2 to use this package in Windows.
+NOTE: you will need GHC >= 8.2 to use this package in Windows.
 
 What is clr-inline
 =======================
@@ -52,6 +52,9 @@ Features
 * Automatic unmarshalling of CLR primitive types into Haskell.
 * Reference types support including arrays and generics.
 * Refer to (`Quotable`) Haskell values inside F# / C# quotations.
+* Experimental support for Haskell lambdas in F#.
+  * See the InlineSpec.hs test module for examples of usage.
+  * Only mscorlib types are admitted, type resolution will crash at runtime otherwise.
 
 Getting Started
 ===================
