@@ -2,6 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE StaticPointers     #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS  -Wno-missing-signatures #-}
 module InlineSpec where

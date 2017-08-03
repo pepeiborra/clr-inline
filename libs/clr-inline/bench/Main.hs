@@ -1,3 +1,4 @@
+{-# LANGUAGE StaticPointers     #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}

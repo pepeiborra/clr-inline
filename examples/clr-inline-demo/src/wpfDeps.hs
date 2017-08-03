@@ -1,4 +1,5 @@
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE StaticPointers     #-}
 {-# LANGUAGE TemplateHaskell #-}
 module WpfDeps where
 

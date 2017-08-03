@@ -1084,7 +1084,9 @@ namespace Salsa
                 System.Console.WriteLine("About to crash. Attach debugger or press Enter");
                 System.Console.ReadLine();
                 System.Diagnostics.Debugger.Break();
-                throw new ArgumentException("GetLoadedAssembly: " + assName.FullName, "Known assemblies: " + String.Join(",", LoadedAssemblies.Select(kv => kv.Key)));
+                throw new ArgumentException("GetLoadedAssembly: " + assName.FullName,
+                                            "Known assemblies: " + String.Join(",", LoadedAssemblies.Select(kv => kv.Key)) + "\n"+
+                                            "In GHC 8.2.1 the StaticPointers extension must be enabled in modules with clr inlined blocks and the module exports unrestricted");
             }
         }
         public static Type StringToType(string s)

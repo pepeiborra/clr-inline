@@ -1,4 +1,5 @@
 
+{-# LANGUAGE StaticPointers     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE QuasiQuotes #-}

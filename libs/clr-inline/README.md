@@ -73,6 +73,11 @@ Cabal requires that the CLR compiler is in the application path at `cabal config
 The module `Clr.Inline.Cabal` provides an optional Cabal user hook that can be added to a cabal
  Setup script to check for this automatically
 
+Bug [#14090] in GHC 8.2.1 requires that the **StaticPointers** language extension is turned on in every module that
+contains an inline F# or C# block. Moreover, the modules must have an unrestricted export list.
+
+[#14090]: http://ghc.haskell.org/trac/ghc/ticket/14090
+
 The quasiquoters look for the F#/C# compiler binaries in the
 application path. External dependencies and additional search paths can be provided to
 the quasiquoter as configuration. Configuration creates a new quasiquoter;
