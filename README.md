@@ -37,6 +37,11 @@ Project Structure
 
 * [**clr-win-linker**](https://gitlab.com/tim-m89/clr-haskell/tree/master/utils/clr-win-linker) - A front end to the linker to back-port a bug fix to GHC versions < 8.2
 
+In memoriam
+==============
+
+Tim Matthews passed out in the early days of August 2017, 4 months after the first release of the clr packages in April 2017. Without his work this suite of packages would probably not exist today. Tim was also the main proponent of the **clr-typed** frontend, which is no longer in active development.
+
 License
 ==========
 
