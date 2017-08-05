@@ -1,12 +1,12 @@
 name:                clr-bindings
-version:             0.1.0.0
+version:             0.2.0
 synopsis:            Glue between clr-host and clr-typed
 description:         Please see README.md
 homepage:            https://gitlab.com/tim-m89/clr-haskell/tree/master/libs/clr-bindings
 license:             BSD3
 license-file:        LICENSE
 author:              Tim Matthews
-maintainer:          tim.matthews7@gmail.com
+maintainer:          pepeiborra@gmail.com
 copyright:           2017 Tim Matthews
 category:            Language, FFI, CLR, .NET
 build-type:          Simple

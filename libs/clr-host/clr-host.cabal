@@ -10,7 +10,7 @@ bug-reports:         https://gitlab.com/tim-m89/clr-haskell/issues
 license:             BSD3
 license-file:        LICENSE
 author:              Tim Matthews
-maintainer:          tim.matthews7@gmail.com
+maintainer:          pepeiborra@gmail.com
 copyright:           2016-2017 Tim Matthews
 category:            Language, FFI, CLR, .NET
 build-type:          Custom
