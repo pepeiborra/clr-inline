@@ -123,6 +123,7 @@ typP = rebuild <$> conP <*> optionMaybe (arrow *> typP)
     rebuild con (Just (Fun args' res)) = Fun (args' ++ [con]) res
     rebuild con (Just res) = Fun [con] res
 
+pattern CI :: CI.FoldCase s => CI.CI s -> s
 pattern CI s <- (CI.mk -> s)
 
 -- TODO tokenizing quoted strings

@@ -1,3 +1,4 @@
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -6,6 +7,7 @@
 {-# LANGUAGE TypeInType             #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE ViewPatterns           #-}
+{-# OPTIONS -Wno-partial-type-signatures #-}
 module Clr.Inline.Types
   ( ClrPtr(..)
   , Clr(..)
@@ -107,6 +109,7 @@ handleOverlappingInstances msg s instances = error $ printf "Overlapping %s inst
   where
     names = [ quote | InstanceD _ _ (_ `AppT` quote `AppT` _ `AppT` _ `AppT` _) _ <- instances ]
 
+extractMostSpecificInstance :: String -> String -> _ -> _ -> [Dec] -> _
 extractMostSpecificInstance s msg f1 f2 instances =
   fromMaybe (handleOverlappingInstances msg s instances) . getFirst $
   foldMap (apply f1) instances <> foldMap (apply f2) instances
