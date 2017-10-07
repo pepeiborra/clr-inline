@@ -38,8 +38,11 @@ foreign import ccall "dotNetHost.c getICLRRuntimeHost" getICLRRuntimeHost :: IO 
 foreign import ccall "dotNetHost.c setHostRefs"        setHostRefs        :: ICorRuntimeHost -> ICLRRuntimeHost -> IO ()
 
 #if x86_64_HOST_ARCH
-foreign import ccall __unregister_hs_exception_handler :: IO ()
-unregister_hs_exception_handler = __unregister_hs_exception_handler
+-- 1. binding to __unregister_hs_exception_handler doesn't work reliably e.g. in ghci
+-- 2. Calling unregister_hs_exception_handler crashes if no exception handler has been registered previously.
+--    This is a problem in 8.2 where it appears the handler is not installed at startup and "main = startClr" crashes.
+-- foreign import ccall __unregister_hs_exception_handler :: IO ()
+unregister_hs_exception_handler = return () -- __unregister_hs_exception_handler
 #else
 -- symbol has extra leading underscore on 32 bit apprently
 --foreign import ccall ___unregister_hs_exception_handler :: IO ()
