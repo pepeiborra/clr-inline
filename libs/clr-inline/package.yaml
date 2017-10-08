@@ -28,6 +28,7 @@ dependencies:
 - here
 - lens
 - parsec
+- pipes
 - process
 - split
 - template-haskell
