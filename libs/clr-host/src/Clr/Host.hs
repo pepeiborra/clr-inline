@@ -1,7 +1,8 @@
 {-# LANGUAGE CPP, RankNTypes, ScopedTypeVariables #-}
 
-module Clr.Host where
+module Clr.Host (startClr, stopClr, withClr) where
 
+import Control.Exception
 import Clr.Marshal
 
 import Clr.Host.Config
@@ -20,6 +21,7 @@ import Data.Word
 import Foreign.Ptr
 
 
+{-# DEPRECATED startClr, stopClr "Use withClr" #-}
 startClr :: IO ()
 startClr = do
   ClrHostConfig hostType <- getClrHostConfig
@@ -42,7 +44,8 @@ startClr = do
 stopClr :: IO ()
 stopClr = putStrLn "stopClr"
 
-
+withClr :: IO a -> IO a
+withClr = bracket_ startClr stopClr
 
 
 
