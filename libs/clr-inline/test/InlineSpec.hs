@@ -5,13 +5,13 @@
 {-# LANGUAGE StaticPointers     #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS  -Wno-missing-signatures #-}
-module InlineSpec where
+module InlineSpec (module InlineSpec) where
 
 import Control.Concurrent
 import Control.Monad
 import Control.Lens
 import Clr.Inline
-import Clr.Inline.Utils.Parse
+import Clr.Inline.Types.Parse
 import Data.Int
 import Data.String
 import Data.Text as Text (pack)
@@ -31,38 +31,7 @@ open System.Collections.Generic
 
 type DateTime = Clr "System.DateTime"
 
-main = hspec spec
-
-spec = do
-  describe "Parsing antiquotes" parseSpec
-  describe "QuasiQuoting" qqSpec
-
-shouldParseTo program result = do
-  let p = view tokenized program
-  p `shouldBe` result
-
-shouldRoundtripAndParseTo program result = do
-  let p = view tokenized program
-  p `shouldBe` result
-  review tokenized p `shouldBe` program
-
-parseSpec :: Spec
-parseSpec = do
-  it "$foo"        $ "$foo"        `shouldRoundtripAndParseTo` [Antiquote False "foo" Nothing]
-  it "$foo:int"    $ "$foo:int"    `shouldRoundtripAndParseTo` [Antiquote False "foo" (Just (Con "int"))]
-  it "$foo:unit"   $ "$foo:unit"   `shouldRoundtripAndParseTo` [Antiquote False "foo" (Just Unit)]
-  it "$(foo:unit)" $ "$(foo:unit)" `shouldRoundtripAndParseTo` [Antiquote True  "foo" (Just Unit)]
-  it "($foo:unit)" $ "($foo:unit)" `shouldRoundtripAndParseTo` [Other "(", Antiquote False "foo" (Just Unit), Other ")"]
-  it "$$foo"       $ "$$foo"       `shouldParseTo` [Other "$foo"]
--- it "\"$foo\""    $ "\"$foo\""    `shouldRoundtripAndParseTo` [Other "\"$foo\""] TODO
-  it "1 $ 2"       $ "1 $ 2"       `shouldRoundtripAndParseTo` [Other "1 $ 2"]
-  it "1 $ 2"       $ "1 $ 2"       `shouldRoundtripAndParseTo` [Other "1 $ 2"]
-  it "a->b"        $ "a->b"        `shouldRoundtripAndParseTo` [Other "a->b"]
-  it "$a->b"       $ "$a->b"       `shouldRoundtripAndParseTo` [Antiquote False "a" Nothing, Other "->b"]
-  it "$foo:a->b"   $ "$foo:a->b"   `shouldRoundtripAndParseTo` [Antiquote False "foo" (Just (Fun [Con "a"] (Con "b")))]
-  it "$foo:unit->b" $ "$foo:unit->b" `shouldRoundtripAndParseTo` [Antiquote False "foo" (Just (Fun [Unit] (Con "b")))]
-  it "$foo:unit->unit" $ "$foo:unit->unit" `shouldRoundtripAndParseTo` [Antiquote False "foo" (Just (Fun [Unit] Unit))]
-
+spec = qqSpec
 
 h_i   = 2 :: Int
 h_i16 = 2 :: Int16

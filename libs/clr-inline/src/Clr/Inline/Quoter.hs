@@ -20,7 +20,8 @@ import Clr.Marshal
 import Clr.MarshalF
 import Clr.Inline.State
 import Clr.Inline.Types
-import Clr.Inline.Utils.Parse
+import Clr.Inline.Types.Parse
+import Clr.Inline.Types.Quote
 import Clr.Inline.Utils.Embed
 import Control.Lens
 import Control.Monad
@@ -49,12 +50,12 @@ quotes :: Traversal (ArgDetails name a) (ArgDetails name a')  a a'
 quotes f (Value q) = Value <$> f q
 quotes f (Delegate n aa r) = Delegate n <$> traverse f aa <*> traverse f r
 
-parseArgDetails :: QuotedType -> ArgDetails () String
+parseArgDetails :: ClrType -> ArgDetails () String
 parseArgDetails (Fun [Unit] Unit) = Delegate () [] Nothing
-parseArgDetails (Fun [Unit] a) = Delegate () [] (Just $ renderQuotedType a)
-parseArgDetails (Fun args Unit) = Delegate () (map renderQuotedType args) Nothing
-parseArgDetails (Fun args res ) = Delegate () (map renderQuotedType args) (Just $ renderQuotedType res)
-parseArgDetails other = Value (renderQuotedType other)
+parseArgDetails (Fun [Unit] a) = Delegate () [] (Just $ renderClrType a)
+parseArgDetails (Fun args Unit) = Delegate () (map renderClrType args) Nothing
+parseArgDetails (Fun args res ) = Delegate () (map renderClrType args) (Just $ renderClrType res)
+parseArgDetails other = Value (renderClrType other)
 
 data ClrInlinedExpDetails (language :: Symbol) argType = ClrInlinedExpDetails
   { language :: Proxy language
@@ -75,11 +76,17 @@ makeLensesFor [("args","_args")] ''ClrInlinedExpDetails
 
 data ClrInlinedGroup language = ClrInlinedGroup
   { mod :: Module
-  , units :: [ClrInlinedUnit language ClrType]
+  , units :: [ClrInlinedUnit language ClrTypeSymbol]
   }
 
 getNamespace :: Module -> String
-getNamespace (Module (PkgName pkg) _) = printf "Clr.Inline.%s" pkg
+getNamespace (Module (PkgName pkg) _) = printf "Clr.Inline.%s" (mapMaybe escape pkg)
+  where
+    escape '-' = Just '_'
+    escape '.' = Just '_'
+    escape x
+      | isAlpha x = Just x
+      | otherwise = Nothing
 
 getMethodName :: KnownSymbol language => ClrInlinedExpDetails language a -> String
 getMethodName ClrInlinedExpDetails{..} = printf "%s_quote_%d" (symbolVal language) unitId
@@ -139,8 +146,8 @@ generateClrCall :: KnownSymbol language => Module -> ClrInlinedExpDetails langua
 generateClrCall mod exp@ClrInlinedExpDetails{..} = do
   argsWithDelegates <- iforMOf (itraversed <. _Delegate) args $ \n (stubN,args,res) -> do
       delName <- newName (printf "delegate_%s" n)
-      argClrTypes <- mapM (fmap getClrType . lookupQuotableClrType) args
-      resClrType <- traverse (fmap getClrType . lookupQuotableClrType) res
+      argClrTypes <- mapM (fmap getClrTypeSymbol . lookupQuotableClrType) args
+      resClrType <- traverse (fmap getClrTypeSymbol . lookupQuotableClrType) res
       let argCount = case args of ["unit"] -> 0 ; other -> genericLength other
       DoE (init -> stmts) <-
             [| do wrapper <-
