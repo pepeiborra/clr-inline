@@ -79,7 +79,13 @@ data ClrInlinedGroup language = ClrInlinedGroup
   }
 
 getNamespace :: Module -> String
-getNamespace (Module (PkgName pkg) _) = printf "Clr.Inline.%s" pkg
+getNamespace (Module (PkgName pkg) _) = printf "Clr.Inline.%s" (mapMaybe escape pkg)
+  where
+    escape '-' = Just '_'
+    escape '.' = Just '_'
+    escape x
+      | isAlpha x = Just x
+      | otherwise = Nothing
 
 getMethodName :: KnownSymbol language => ClrInlinedExpDetails language a -> String
 getMethodName ClrInlinedExpDetails{..} = printf "%s_quote_%d" (symbolVal language) unitId
