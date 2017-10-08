@@ -80,10 +80,16 @@ data ClrInlinedGroup language = ClrInlinedGroup
 
 getNamespace :: Module -> String
 getNamespace (Module (PkgName pkg) _) = printf "Clr.Inline.%s" pkg
-getMethodName ClrInlinedExpDetails{..} = printf "%s_quote_%d" (symbolVal language) unitId
+
 getMethodName :: KnownSymbol language => ClrInlinedExpDetails language a -> String
+getMethodName ClrInlinedExpDetails{..} = printf "%s_quote_%d" (symbolVal language) unitId
+
 getClassName :: Module -> String
-getClassName (Module _ (ModName n)) = n
+getClassName (Module _ (ModName n)) = map escape n
+  where
+    escape '.' = '_'
+    escape  x  =  x
+
 getAssemblyName, getFullClassName :: KnownSymbol language => Proxy language -> Module -> String
 getAssemblyName language (Module (PkgName p) (ModName m)) = printf "%s_%s_%s" p m (symbolVal language)
 getFullClassName language mod =
