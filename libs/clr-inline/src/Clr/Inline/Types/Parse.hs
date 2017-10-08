@@ -2,8 +2,9 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE LambdaCase #-}
-module Clr.Inline.Utils.Parse where
+module Clr.Inline.Types.Parse where
 
+import Clr.Inline.Types
 import Control.Lens
 import qualified Data.CaseInsensitive as CI
 import Data.Char
@@ -49,24 +50,13 @@ instance Show Token where
 
 data Section =
     Other String
-  | Antiquote {parenthised :: Bool, name:: !String, typ :: !(Maybe QuotedType)}
+  | Antiquote {parenthised :: Bool, name:: !String, typ :: !(Maybe ClrType)}
   deriving (Eq, Show)
 
 normalizeProgram :: [Section] -> [Section]
 normalizeProgram (Other a : Other b : rest) = Other(a++b) : normalizeProgram rest
 normalizeProgram (x:xx) = x : normalizeProgram xx
 normalizeProgram [] = []
-
-data QuotedType = Con String
-                | Fun [QuotedType] QuotedType
-                | Unit
-  deriving (Eq, Show)
-
-renderQuotedType :: QuotedType -> String
-renderQuotedType = show where
-  show (Con x) = x
-  show Unit = "unit"
-  show (Fun args res) = intercalate "->" $ map show (args ++ [res])
 
 satisfy :: (Token -> Maybe a) -> Parser a
 satisfy = tokenPrim show (\pos t _cs -> updatePosString pos (tokenToString t))
@@ -108,20 +98,27 @@ identP = (:) <$> satisfyChar isAlpha <*> many(satisfyChar isIdent)
   where
     isIdent x = isAlphaNum x || x == '_'
 
-conP :: Parser QuotedType
-conP   = (readType .) . (:) <$> satisfyChar isTypeIdent <*> many(satisfyChar isTypeIdent)
+conP :: Parser String
+conP   = (:) <$> satisfyChar isTypeIdent <*> many(satisfyChar isTypeIdent)
   where
-    isTypeIdent x = isAlphaNum x || x `elem` ("[]<>.,_-*"::String)
-    readType (CI "unit") = Unit
-    readType other = Con other
+    isTypeIdent x = isAlphaNum x || x `elem` ("._-*"::String)
 
-typP :: Parser QuotedType
-typP = rebuild <$> conP <*> optionMaybe (arrow *> typP)
+tyconP,tyconFunP,typP :: Parser ClrType
+tyconP =
+  TyCon <$> conP <*>
+    (    between (char '<') (char '>') (typP `sepBy` char ',')
+     <|> pure [])
+
+tyconFunP = rebuild <$> tyconP <*> optionMaybe (arrow *> tyconFunP)
   where
-    rebuild :: QuotedType -> Maybe QuotedType -> QuotedType
+    rebuild :: ClrType -> Maybe ClrType -> ClrType
     rebuild con Nothing = con
     rebuild con (Just (Fun args' res)) = Fun (args' ++ [con]) res
     rebuild con (Just res) = Fun [con] res
+
+typP = flip ($) <$> tyconFunP <*> (foldr (.) id <$> many arrayP)
+  where
+    arrayP = Array . succ . length <$> between (char '[') (char ']') (many (char ','))
 
 pattern CI :: CI.FoldCase s => CI.CI s -> s
 pattern CI s <- (CI.mk -> s)
@@ -138,14 +135,14 @@ tokenized = iso parse untokenize
     untokenize [] = []
     untokenize (Other s: rest) = s ++ untokenize rest
     untokenize (Antiquote True  v Nothing  : rest) = '$':'(':v ++ ')':untokenize rest
-    untokenize (Antiquote True  v (Just t) : rest) = '$':'(':v ++ ':' : renderQuotedType t ++ ')':untokenize rest
+    untokenize (Antiquote True  v (Just t) : rest) = '$':'(':v ++ ':' : renderClrType t ++ ')':untokenize rest
     untokenize (Antiquote False v Nothing  : rest) = '$' : v ++ untokenize rest
-    untokenize (Antiquote False v (Just t) : rest) = '$' : v ++ ':' : renderQuotedType t ++ untokenize rest
+    untokenize (Antiquote False v (Just t) : rest) = '$' : v ++ ':' : renderClrType t ++ untokenize rest
 
 -- | Looks for antiquotes of the form $foo in the given string
 --   Returns the antiquotes found, and a new string with the
 --   antiquotes transformed
-extractArgs :: (String -> String) -> String -> (Map String QuotedType, String)
+extractArgs :: (String -> String) -> String -> (Map String ClrType, String)
 extractArgs transf = mapAccumROf (tokenized.traversed) f mempty
   where
     f acc (Other s) = (acc, Other s)
@@ -179,7 +176,7 @@ parseBody e =
 
 data ParseResult = ParseResult
   { body, returnType :: String
-  , args :: Map String QuotedType
+  , args :: Map String ClrType
   }
 
 parse :: (String -> String) -> String -> ParseResult

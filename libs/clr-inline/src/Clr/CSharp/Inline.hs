@@ -92,7 +92,7 @@ genCode ClrInlinedGroup {units, mod} =
             (intercalate ", " [ printf "%s %s" t a
                               | (a, argDetails) <- Map.toList args
                               , let t = case argDetails of
-                                          Value (ClrType t) -> t
+                                          Value (ClrTypeSymbol t) -> t
                                           Delegate{} -> error "delegates not yet supported in the C# quoter."
                               ])
         yield $ printf "#line %d \"%s\"" (fst $ loc_start loc) (loc_filename loc)

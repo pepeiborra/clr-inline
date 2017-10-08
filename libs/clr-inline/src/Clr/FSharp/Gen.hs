@@ -48,10 +48,10 @@ genCode ClrInlinedGroup {units, mod} =
                 other -> unwords [printf "(%s:%s)" a argType
                                  | (a, argDetails) <- other
                                  , let argType = case argDetails of
-                                                   Value (ClrType t) -> t
+                                                   Value (ClrTypeSymbol t) -> t
                                                    Delegate _ []   Nothing -> "System.Action"
-                                                   Delegate _ args Nothing -> printf "System.Action<%s>" (intercalate "," (map getClrType args))
-                                                   Delegate _ args (Just res) -> printf "System.Func<%s>" (intercalate "," (map getClrType args ++ [getClrType res]))
+                                                   Delegate _ args Nothing -> printf "System.Action<%s>" (intercalate "," (map getClrTypeSymbol args))
+                                                   Delegate _ args (Just res) -> printf "System.Func<%s>" (intercalate "," (map getClrTypeSymbol args ++ [getClrTypeSymbol res]))
                                  ]
         yield $ printf "#line %d \"%s\"" (fst $ loc_start loc) (loc_filename loc)
         yield $ printf   "  static member %s %s =" (getMethodName exp) argsString
