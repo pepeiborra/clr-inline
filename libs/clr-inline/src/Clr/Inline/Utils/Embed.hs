@@ -9,6 +9,7 @@ import           Clr.Host.DriverEntryPoints
 import           Control.Monad
 import           Data.ByteString            (ByteString)
 import qualified Data.ByteString            as BS
+import           Data.Char
 import           Foreign
 import           GHC.StaticPtr
 import           Language.Haskell.TH        as TH
@@ -26,13 +27,17 @@ instance TH.Lift ClrBytecode where
            (BS.pack $(TH.lift (BS.unpack bytecode)))
        |]
 
--- | Given a name and a file path, this TH action creates a new top level declaration
+-- | Given a valid Haskell name and a file path,
+--   this TH action creates a new top level declaration
 --   with the given name that embeds an assembly in the current module.
 --   The assembly will be loaded automatically the first time a clr-inline splice is called.
 embedAssembly :: String -> FilePath -> DecsQ
 embedAssembly name path = do
     bytes <- runIO $ BS.readFile path
-    embedBytecodeInPlace name (ClrBytecode bytes)
+    embedBytecodeInPlace (fixCase name) (ClrBytecode bytes)
+  where
+    fixCase (a:_) | isUpper a = "Not a valid Haskell binding name (first character uppercase)"
+    fixCase _ = _
 
 -- | TH action that embeds bytecode in the current module via a top level
 --   declaration of a StaticPtr
