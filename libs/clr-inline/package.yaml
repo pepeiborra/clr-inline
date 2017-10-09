@@ -43,6 +43,7 @@ library:
   - Clr.Inline
   - Clr.Inline.Cabal
   - Clr.Inline.Config
+  - Clr.Inline.IEnumerable
 tests:
   spec:
     main: Spec.hs
