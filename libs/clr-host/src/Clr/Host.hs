@@ -42,7 +42,7 @@ startClr = do
     getPtrToMethod_set getPtrToMethod
 
 stopClr :: IO ()
-stopClr = putStrLn "stopClr"
+stopClr = return ()
 
 withClr :: IO a -> IO a
 withClr = bracket_ startClr stopClr
