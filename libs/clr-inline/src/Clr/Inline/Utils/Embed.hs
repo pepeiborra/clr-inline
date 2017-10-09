@@ -37,7 +37,7 @@ embedAssembly name path = do
     embedBytecodeInPlace (fixCase name) (ClrBytecode bytes)
   where
     fixCase (a:_) | isUpper a = "Not a valid Haskell binding name (first character uppercase)"
-    fixCase _ = _
+    fixCase other = other
 
 -- | TH action that embeds bytecode in the current module via a top level
 --   declaration of a StaticPtr
