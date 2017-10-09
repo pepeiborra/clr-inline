@@ -25,8 +25,7 @@ module Global =
    let hello = "Hello World" |]
 
 main :: IO ()
-main = do
-  startClr
+main = withClr $ do
   o <- [fsharp| System.DateTime{System.DateTime.Today}|]
   defaultMain
     [
