@@ -19,8 +19,7 @@ open System.Windows.Shapes
 open System.Xml
 |]
 
-main = do
-  startClr
+main = withClr $
   [wpf|
       let loadXamlWindow (xaml:string) =
           use stream = new StringReader(xaml)
