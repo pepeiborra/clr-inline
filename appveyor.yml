@@ -25,4 +25,4 @@ test_script:
 - stack test clr-inline
 - stack bench clr-inline
 - stack build clr-inline-demo
-- stack exec assemblyDeps
+# - stack exec assemblyDeps TODO copy the assembly to the stack local-install-root

@@ -23,4 +23,5 @@ build:
     - stack build --bench clr-inline
     - stack exec clr-typed-demo
     - stack build clr-inline-demo
+    - cp examples/clr-inline-demo/lib/fsharplib.dll . # so that it gets loaded
     - stack exec assemblyDeps
