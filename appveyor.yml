@@ -24,3 +24,5 @@ test_script:
 - stack test clr-import-gen
 - stack test clr-inline
 - stack bench clr-inline
+- stack build clr-inline-demo
+- stack exec assemblyDeps

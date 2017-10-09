@@ -33,3 +33,11 @@ executable wpf
   hs-source-dirs:      src
   default-language:    Haskell2010
   other-modules:       WpfDeps
+
+executable assemblyDeps
+  main-is:             AssemblyDeps.hs
+  build-depends:       base >=4.9 && < 5, clr-inline, directory >= 1.3
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+  ghc-options:         -main-is AssemblyDeps
+  other-modules:       AssemblyDeps.Config
