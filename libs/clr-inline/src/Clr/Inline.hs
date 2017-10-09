@@ -4,6 +4,7 @@ module Clr.Inline
   , fsharp
   , fsharp'
   , withClr
+  , embedAssembly
   , GCHandle(..)
   , Quotable
   -- * Reexports for generated code
@@ -21,4 +22,5 @@ import           Clr.Host.BStr
 import           Clr.Host.GCHandle
 import           Clr.Inline.Types
 import           Clr.Inline.Types.Quote
+import           Clr.Inline.Utils.Embed
 import           Foreign

@@ -26,13 +26,21 @@ instance TH.Lift ClrBytecode where
            (BS.pack $(TH.lift (BS.unpack bytecode)))
        |]
 
+embedAssembly :: FilePath -> DecsQ
+embedAssembly path = do
+    bytes <- runIO $ BS.readFile path
+    embedBytecodeInPlace path (ClrBytecode bytes)
+
 -- | TH action that embeds bytecode in the current module via a top level
 --   declaration of a StaticPtr
 embedBytecode :: String -> ClrBytecode -> Q ()
-embedBytecode name bs = do
+embedBytecode name bs =
+    TH.addTopDecls =<< embedBytecodeInPlace name bs
+
+embedBytecodeInPlace :: String -> ClrBytecode -> DecsQ
+embedBytecodeInPlace name bs = do
     ptr <- TH.newName $ name ++ "_inlineclr__bytecode"
-    TH.addTopDecls =<<
-      sequence
+    sequence
         [ TH.sigD ptr [t| StaticPtr ClrBytecode |]
         , TH.valD (TH.varP ptr) (TH.normalB [| static $(TH.lift bs) |]) []
         ]
