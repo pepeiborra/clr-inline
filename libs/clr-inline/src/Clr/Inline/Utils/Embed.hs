@@ -26,10 +26,13 @@ instance TH.Lift ClrBytecode where
            (BS.pack $(TH.lift (BS.unpack bytecode)))
        |]
 
-embedAssembly :: FilePath -> DecsQ
-embedAssembly path = do
+-- | Given a name and a file path, this TH action creates a new top level declaration
+--   with the given name that embeds an assembly in the current module.
+--   The assembly will be loaded automatically the first time a clr-inline splice is called.
+embedAssembly :: String -> FilePath -> DecsQ
+embedAssembly name path = do
     bytes <- runIO $ BS.readFile path
-    embedBytecodeInPlace path (ClrBytecode bytes)
+    embedBytecodeInPlace name (ClrBytecode bytes)
 
 -- | TH action that embeds bytecode in the current module via a top level
 --   declaration of a StaticPtr
