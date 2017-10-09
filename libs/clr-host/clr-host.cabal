@@ -1,5 +1,5 @@
 name:                clr-host
-version:             0.2.0.1
+version:             0.2.0.2
 synopsis:            Hosting the Common Language Runtime
 description:         clr-host is a library that provides the ability to host (also known as embed) the
                      common language runtime within the current Haskell process. Generally you'll only
