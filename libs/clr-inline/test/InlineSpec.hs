@@ -10,6 +10,7 @@ module InlineSpec (module InlineSpec) where
 import Control.Concurrent
 import Control.Monad
 import Control.Lens
+import Clr.Host
 import Clr.Inline
 import Clr.Inline.Types.Parse
 import Data.Int

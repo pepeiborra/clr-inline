@@ -12,8 +12,7 @@ import Clr.Inline
   open System.Windows.Forms
        |]
 
-main = do
-  startClr
+main = withClr $ do
   let text = "Hello from Haskell"
   let onClick = [fsharp| MessageBox.Show($(text:string), "Hey!") |> ignore |]
   [fsharp|

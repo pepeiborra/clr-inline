@@ -3,7 +3,7 @@ module Clr.Inline
   , csharp'
   , fsharp
   , fsharp'
-  , startClr
+  , withClr
   , GCHandle(..)
   , Quotable
   -- * Reexports for generated code
