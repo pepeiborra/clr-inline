@@ -21,7 +21,17 @@ import Data.Word
 import Foreign.Ptr
 
 
-{-# DEPRECATED startClr, stopClr "Use withClr" #-}
+{-# WARNING startClr, stopClr [
+        "This function was deprecated in version 0.2.0 in favor of withClr "
+      , "which was never part of the public API."
+      , ""
+      , "withClr is there to provide a convenient syntax that ensures both "
+      , "startClr and stopClr are called."
+      , ""
+      , "stopClr is no-op and so startClr must be called once per process. "
+      , "See also: https://gitlab.com/tim-m89/clr-haskell/issues/33"
+      ]
+#-}
 startClr :: IO ()
 startClr = do
   ClrHostConfig hostType <- getClrHostConfig
