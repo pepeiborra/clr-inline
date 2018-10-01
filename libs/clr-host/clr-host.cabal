@@ -14,7 +14,7 @@ maintainer:          Nikos Baxevanis <nikos.baxevanis@gmail.com>
 copyright:           2016-2017 Tim Matthews
 category:            Language, FFI, CLR, .NET
 build-type:          Custom
-extra-source-files:  src/Driver.cs
+extra-source-files:  src/Driver.cs, CHANGELOG.md
 extra-tmp-files:     src/Driver.dll
 cabal-version:       >=1.24
 
