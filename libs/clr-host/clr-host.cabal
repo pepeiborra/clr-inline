@@ -16,7 +16,7 @@ category:            Language, FFI, CLR, .NET
 build-type:          Custom
 extra-source-files:  src/Driver.cs, CHANGELOG.md
 extra-tmp-files:     src/Driver.dll
-cabal-version:       >=1.24
+cabal-version:       1.24
 
 source-repository head
     type:            git
